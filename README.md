@@ -52,3 +52,24 @@ The database type file is intentionally an empty-schema placeholder until the sc
 Main dependencies are pinned: Next.js 16.4.0, React 19.3.0, Tailwind CSS 4.3.3, Turborepo 2.11.7, Zod 4.6.5 and Supabase CLI 2.120.0. The lockfile records the resolved dependency graph.
 
 TypeScript is pinned to 6.0.3 because current typescript-eslint supports TypeScript below 6.1, while the latest TypeScript is 7.0.2. Vitest and its coverage provider are pinned to 4.1.11 because Vitest 5 excludes Node 25. jsdom 29.1.1 is used because jsdom 30 also excludes Node 25. ESLint 9.39.5 is used because the plugins shipped with the latest Next.js ESLint config do not support ESLint 10. These compatibility pins are approved for this task. Vite 8.3.4 and PostCSS 8.5.29 use the latest stable releases. The workspace explicitly allows only required dependency build scripts using pnpm 11's `allowBuilds` setting.
+
+## Local data & test users
+
+**Local-only:** `pnpm supabase db reset` recreates two fictional communities and the accounts below. All passwords are `DomusLocal123!`; never run this seed against staging or production. All document numbers and addresses are fictional.
+
+| Email                       | Role                               | Community                          |
+| --------------------------- | ---------------------------------- | ---------------------------------- |
+| `platform@domus.local`      | Platform admin (MFA required)      | Platform; no tenant memberships    |
+| `admin.ceibos@domus.local`  | Tenant admin, all nine permissions | Barrio Los Ceibos                  |
+| `guard.ceibos@domus.local`  | Guard                              | Barrio Los Ceibos                  |
+| `holder.ceibos@domus.local` | Unit holder                        | Barrio Los Ceibos                  |
+| `member.ceibos@domus.local` | Household member                   | Barrio Los Ceibos                  |
+| `admin.tipas@domus.local`   | Tenant admin, all nine permissions | Barrio Las Tipas                   |
+| `guard.tipas@domus.local`   | Guard                              | Barrio Las Tipas                   |
+| `holder.tipas@domus.local`  | Unit holder                        | Barrio Las Tipas                   |
+| `member.tipas@domus.local`  | Household member                   | Barrio Las Tipas                   |
+| `shared@domus.local`        | Unit holder in both tenants        | Separate tenant-scoped person rows |
+
+H0 has no unit relationships yet; those arrive in M02. A platform login alone grants no database access: its signed JWT must have `aal2`. MFA enrollment and the support-access workflow arrive in M01; SQL tests impersonate signed claims locally with `request.jwt.claims`.
+
+Run `pnpm test:db` after reset for schema guards, membership isolation, and append-only audit checks. Helpers live in the private `app_private` schema, which is excluded from PostgREST. Attach `app_private.audit_row_change()` as an `AFTER INSERT OR UPDATE OR DELETE FOR EACH ROW` trigger when adding sensitive tables; its migration documents the required UUID primary key naming and diff format.
