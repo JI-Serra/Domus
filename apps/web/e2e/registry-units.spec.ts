@@ -215,7 +215,7 @@ test.describe
     await expectNoHorizontalOverflow(page);
   });
 
-  test('global search finds units, people, plates and emails, with the keyboard', async ({}, testInfo) => {
+  test('global search finds units, people, plates and emails, with the keyboard', async () => {
     const code = `E2E-S-${suffix}`;
     await page.goto('/registry/units/new');
     await page.getByLabel('Código', { exact: true }).fill(code);
@@ -267,6 +267,5 @@ test.describe
     await search.press('Escape');
     await expect(results).toBeHidden();
     await expectNoHorizontalOverflow(page);
-    void testInfo;
   });
 });

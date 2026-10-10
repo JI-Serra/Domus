@@ -1,13 +1,12 @@
 'use client';
 
-import { Car, PawPrint, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Field, Input } from '@/components/ui/field';
 import { Sheet } from '@/components/ui/sheet';
 import {
@@ -207,12 +206,7 @@ export function VehiclesCard({
         <AuthNotice tone="error">{message(action.error)}</AuthNotice>
       ) : null}
       {vehicles.length === 0 ? (
-        <EmptyState
-          icon={Car}
-          title={t('empty')}
-          align="start"
-          className="py-3"
-        />
+        <p className="text-text-secondary">{t('empty')}</p>
       ) : (
         <ul aria-label={t('listLabel')} className="flex flex-col">
           {vehicles.map((vehicle) => (
@@ -331,12 +325,7 @@ export function PetsCard({
         <AuthNotice tone="error">{message(action.error)}</AuthNotice>
       ) : null}
       {pets.length === 0 ? (
-        <EmptyState
-          icon={PawPrint}
-          title={t('empty')}
-          align="start"
-          className="py-3"
-        />
+        <p className="text-text-secondary">{t('empty')}</p>
       ) : (
         <ul aria-label={t('listLabel')} className="flex flex-col">
           {pets.map((pet) => (

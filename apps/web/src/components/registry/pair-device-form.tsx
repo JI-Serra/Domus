@@ -16,14 +16,24 @@ import { useErrorMessage } from './use-error-message';
  * Puestos. One uniform message covers a wrong, expired or already used code.
  */
 export function PairDeviceForm() {
+  // Remounting the form is what clears the previous answer for "Vincular otro".
+  const [round, setRound] = useState(0);
+  return (
+    <PairForm
+      key={round}
+      onAnother={() => setRound((current) => current + 1)}
+    />
+  );
+}
+
+function PairForm({ onAnother }: { onAnother: () => void }) {
   const t = useTranslations('devices.pair');
   const message = useErrorMessage();
   const { state, onSubmit, pending } = useSubmitAction(redeemPairingAction);
-  const [done, setDone] = useState(false);
   const values = state.status === 'error' ? (state.values ?? {}) : {};
   const errors = state.status === 'error' ? state.errors : {};
 
-  if (state.status === 'success' || done)
+  if (state.status === 'success')
     return (
       <div className="flex flex-col gap-4">
         <p
@@ -32,18 +42,10 @@ export function PairDeviceForm() {
           className="flex items-center gap-2 text-app-heading text-success"
         >
           <CircleCheck aria-hidden="true" className="size-6" strokeWidth={2} />
-          {t('success', {
-            name: state.status === 'success' ? (state.value ?? '') : '',
-          })}
+          {t('success', { name: state.value ?? '' })}
         </p>
         <div>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setDone(false);
-              window.location.reload();
-            }}
-          >
+          <Button variant="secondary" onClick={onAnother}>
             {t('another')}
           </Button>
         </div>
