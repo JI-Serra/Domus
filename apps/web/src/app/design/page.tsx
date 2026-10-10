@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { ThemeControls } from '@/components/theme/theme-controls';
+import { InfoButton } from '@/components/ui/info-button';
 import {
   BadgesSection,
   ButtonsSection,
@@ -50,8 +51,10 @@ export default async function DesignPage() {
           >
             {t('backHome')}
           </Link>
-          <h1 className="text-app-display">{t('title')}</h1>
-          <p className="text-text-secondary">{t('description')}</p>
+          <div className="flex items-center gap-1">
+            <h1 className="text-app-display">{t('title')}</h1>
+            <InfoButton label={t('infoLabel')}>{t('info')}</InfoButton>
+          </div>
         </div>
         <div className="w-full rounded-card-dense bg-surface-1 p-4 lg:max-w-sm">
           <ThemeControls />

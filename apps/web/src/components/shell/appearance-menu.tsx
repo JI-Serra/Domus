@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useId } from 'react';
 import { ThemeControls } from '@/components/theme/theme-controls';
 import { Button } from '@/components/ui/button';
-import { usePopover } from './use-popover';
+import { usePopover } from '@/components/ui/use-popover';
 
 /** Top-bar button that opens the theme and "modo garita" controls. */
 export function AppearanceMenu() {

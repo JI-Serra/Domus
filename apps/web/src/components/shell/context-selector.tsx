@@ -6,7 +6,7 @@ import { useId } from 'react';
 import { cn } from '@/lib/cn';
 import { useActiveContext } from './active-context';
 import type { ActiveContext } from './active-context';
-import { usePopover } from './use-popover';
+import { usePopover } from '@/components/ui/use-popover';
 
 /** Tenant name, or "Plataforma" for the platform context (which has no tenant). */
 export function useContextTitle() {

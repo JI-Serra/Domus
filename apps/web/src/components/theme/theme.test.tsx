@@ -61,6 +61,22 @@ describe('theme store', () => {
 });
 
 describe('ThemeControls', () => {
+  it('toggles gate mode when the visible switch track is clicked', () => {
+    const { container } = renderWithIntl(<ThemeControls />);
+    const track = container.querySelector('span[aria-hidden="true"]');
+    expect(track).not.toBeNull();
+
+    fireEvent.click(track as Element);
+    expect(html).toHaveAttribute('data-mode', 'gate');
+    expect(screen.getByRole('switch', { name: 'Modo garita' })).toBeChecked();
+
+    fireEvent.click(track as Element);
+    expect(html).not.toHaveAttribute('data-mode');
+    expect(
+      screen.getByRole('switch', { name: 'Modo garita' }),
+    ).not.toBeChecked();
+  });
+
   it('switches theme and gate mode, updating <html>', () => {
     renderWithIntl(<ThemeControls />);
     expect(screen.getByRole('radio', { name: 'Sistema' })).toBeChecked();

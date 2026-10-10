@@ -22,10 +22,7 @@ export default async function LoginPage({
   const error = first(params.error);
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-app-title">{t('title')}</h1>
-        <p className="text-text-secondary">{t('description')}</p>
-      </header>
+      <h1 className="text-app-title">{t('title')}</h1>
       <LoginForm
         next={safeNextPath(first(params.next))}
         initialError={isAuthErrorKey(error) ? error : undefined}

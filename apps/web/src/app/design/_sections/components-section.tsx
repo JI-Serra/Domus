@@ -19,7 +19,7 @@ const statuses: StatusTone[] = [
 export async function ButtonsSection() {
   const t = await getTranslations('design.buttons');
   return (
-    <Section id="buttons" title={t('title')} description={t('description')}>
+    <Section id="buttons" title={t('title')} info={t('info')}>
       <div className="grid gap-8 lg:grid-cols-2">
         <Specimen title={t('variantsTitle')}>
           <div className="flex flex-wrap gap-3">
@@ -38,9 +38,6 @@ export async function ButtonsSection() {
               {t('destructive')}
             </Button>
           </div>
-          <p className="text-app-caption text-text-secondary">
-            {t('destructiveNote')}
-          </p>
         </Specimen>
 
         <Specimen title={t('statesTitle')}>
@@ -60,9 +57,6 @@ export async function ButtonsSection() {
               <Plus aria-hidden="true" className="size-5" />
             </Button>
           </div>
-          <p className="text-app-caption text-text-secondary">
-            {t('sizesNote')}
-          </p>
         </Specimen>
 
         <Specimen title={t('panelTitle')}>
@@ -76,9 +70,12 @@ export async function ButtonsSection() {
 export async function InputsSection() {
   const t = await getTranslations('design.inputs');
   return (
-    <Section id="inputs" title={t('title')} description={t('description')}>
+    <Section id="inputs" title={t('title')} info={t('info')}>
       <div className="grid gap-6 md:grid-cols-2">
-        <Field label={t('defaultLabel')} hint={t('defaultHint')}>
+        <Field
+          label={t('defaultLabel')}
+          info={{ label: t('infoLabel'), text: t('infoText') }}
+        >
           <Input placeholder={t('placeholder')} autoComplete="off" />
         </Field>
         <Field label={t('errorLabel')} error={t('errorMessage')}>
@@ -102,7 +99,7 @@ export async function InputsSection() {
 export async function BadgesSection() {
   const t = await getTranslations('design.badges');
   return (
-    <Section id="badges" title={t('title')} description={t('description')}>
+    <Section id="badges" title={t('title')} info={t('info')}>
       <div className="flex flex-col gap-6">
         <Specimen title={t('statusTitle')}>
           <ul className="flex flex-wrap gap-3">
@@ -137,17 +134,13 @@ export async function CardsSection() {
   const t = await getTranslations('design.cards');
   const empty = await getTranslations('design.emptyState');
   return (
-    <Section id="cards" title={t('title')} description={t('description')}>
+    <Section id="cards" title={t('title')} info={t('info')}>
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <h3 className="text-app-heading">{t('comfortableTitle')}</h3>
-          <p className="mt-2 text-text-secondary">{t('comfortableBody')}</p>
         </Card>
         <Card density="dense">
           <h3 className="text-app-subheading">{t('denseTitle')}</h3>
-          <p className="mt-1 text-app-body-dense text-text-secondary">
-            {t('denseBody')}
-          </p>
         </Card>
       </div>
       <Card className="mt-6">

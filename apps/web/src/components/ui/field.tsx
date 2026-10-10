@@ -4,6 +4,7 @@ import { CircleAlert, ChevronDown } from 'lucide-react';
 import { createContext, useContext, useId } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { InfoButton } from './info-button';
 
 interface FieldContextValue {
   id: string;
@@ -28,34 +29,36 @@ function useFieldProps(): Partial<
 export interface FieldProps {
   /** Always visible above the control (never only a placeholder). */
   label: ReactNode;
-  hint?: ReactNode;
+  /** Optional help, shown behind an info button next to the label instead of as permanent text. */
+  info?: { label: string; text: ReactNode };
   /** Error text: what happened and what to do. Rendered with an icon, never color alone. */
   error?: ReactNode;
   className?: string;
   children: ReactNode;
 }
 
-/** Label + control + hint + error. Wire it around an `Input` or `Select`; ids and ARIA are handled here. */
-export function Field({ label, hint, error, className, children }: FieldProps) {
+/** Label + control + error (+ optional info button). Wire it around an `Input` or `Select`; ids and ARIA are handled here. */
+export function Field({ label, info, error, className, children }: FieldProps) {
   const id = useId();
-  const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
-  const describedBy =
-    [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ') ||
-    undefined;
+  const describedBy = error ? errorId : undefined;
 
   return (
     <FieldContext.Provider value={{ id, describedBy, invalid: Boolean(error) }}>
       <div className={cn('flex flex-col gap-2', className)}>
-        <label htmlFor={id} className="text-app-subheading">
-          {label}
-        </label>
+        {info ? (
+          <div className="flex items-center gap-1">
+            <label htmlFor={id} className="text-app-subheading">
+              {label}
+            </label>
+            <InfoButton label={info.label}>{info.text}</InfoButton>
+          </div>
+        ) : (
+          <label htmlFor={id} className="text-app-subheading">
+            {label}
+          </label>
+        )}
         {children}
-        {hint ? (
-          <p id={hintId} className="text-app-caption text-text-secondary">
-            {hint}
-          </p>
-        ) : null}
         {error ? (
           <p
             id={errorId}

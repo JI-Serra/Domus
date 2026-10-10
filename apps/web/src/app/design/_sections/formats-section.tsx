@@ -22,7 +22,7 @@ export async function FormatsSection() {
     },
   ];
   return (
-    <Section id="formats" title={t('title')} description={t('description')}>
+    <Section id="formats" title={t('title')} info={t('info')}>
       <dl className="grid max-w-2xl grid-cols-[1fr_auto] gap-x-6 gap-y-2 rounded-card-dense bg-surface-1 p-4">
         {rows.map((row) => (
           <div key={row.label} className="contents">

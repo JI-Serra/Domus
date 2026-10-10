@@ -28,7 +28,7 @@ export function ResetForm() {
       {formError ? <AuthNotice tone="error">{formError}</AuthNotice> : null}
       <Field
         label={t('passwordLabel')}
-        hint={t('passwordHint')}
+        info={{ label: t('passwordInfoLabel'), text: t('passwordInfo') }}
         error={errorFor('password')}
       >
         <Input

@@ -10,7 +10,7 @@ export default async function HomePage() {
   const t = await getTranslations('home');
   return (
     <>
-      <PageHeader title={t('title')} description={t('description')} />
+      <PageHeader title={t('title')} />
       <div className="flex flex-col items-start gap-6">
         <ContextSummary sampleInstant={SAMPLE_INSTANT} />
         <ButtonLink href="/design" variant="secondary">

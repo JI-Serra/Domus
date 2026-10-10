@@ -9,7 +9,7 @@ const themeOrder: ThemeName[] = ['light', 'dark', 'gate-light', 'gate-dark'];
 export async function ColorsSection() {
   const t = await getTranslations('design.colors');
   return (
-    <Section id="colors" title={t('title')} description={t('description')}>
+    <Section id="colors" title={t('title')} info={t('info')}>
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {colorTokenNames.map((token: ColorToken) => (
           <li key={token}>

@@ -9,7 +9,7 @@ const decisions: AccessDecision[] = ['green', 'yellow', 'red'];
 export async function SemaphoreSection() {
   const t = await getTranslations('design.semaphore');
   return (
-    <Section id="semaphore" title={t('title')} description={t('description')}>
+    <Section id="semaphore" title={t('title')} info={t('info')}>
       <ul className="grid gap-6 lg:grid-cols-2">
         {decisions.map((decision) => (
           <li key={decision} className="flex">
@@ -33,9 +33,6 @@ export async function SemaphoreSection() {
           </li>
         ))}
       </ul>
-      <p className="mt-4 text-app-caption text-text-secondary">
-        {t('fillNote')}
-      </p>
     </Section>
   );
 }

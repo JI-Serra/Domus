@@ -1,7 +1,8 @@
 {
   "common": {
     "appName": "Domus",
-    "skipToContent": "Saltar al contenido"
+    "skipToContent": "Saltar al contenido",
+    "moreInfo": "Más información: {topic}"
   },
   "roles": {
     "platform_admin": "Super-admin",
@@ -14,13 +15,11 @@
     "login": {
       "metaTitle": "Ingresar · Domus",
       "title": "Ingresá a Domus",
-      "description": "Usá tu email para acceder a tu barrio.",
       "methodLegend": "Cómo querés ingresar",
       "methodPassword": "Con contraseña",
       "methodMagicLink": "Con enlace por email",
       "emailLabel": "Email",
       "passwordLabel": "Contraseña",
-      "magicHint": "Te mandamos un enlace para ingresar sin contraseña.",
       "submitPassword": "Ingresar",
       "submittingPassword": "Ingresando…",
       "submitMagicLink": "Enviarme el enlace",
@@ -33,7 +32,6 @@
     "recover": {
       "metaTitle": "Recuperar contraseña · Domus",
       "title": "Recuperá tu contraseña",
-      "description": "Escribí tu email y te mandamos un enlace para elegir una contraseña nueva.",
       "emailLabel": "Email",
       "submit": "Enviar enlace",
       "submitting": "Enviando…",
@@ -44,9 +42,9 @@
     "reset": {
       "metaTitle": "Contraseña nueva · Domus",
       "title": "Elegí una contraseña nueva",
-      "description": "La vas a usar la próxima vez que ingreses.",
       "passwordLabel": "Contraseña nueva",
-      "passwordHint": "Al menos 8 caracteres.",
+      "passwordInfoLabel": "Requisitos de la contraseña",
+      "passwordInfo": "Al menos 8 caracteres.",
       "confirmLabel": "Repetí la contraseña nueva",
       "submit": "Guardar contraseña",
       "submitting": "Guardando…",
@@ -93,8 +91,7 @@
     "system": "Sistema",
     "light": "Claro",
     "dark": "Oscuro",
-    "gateLabel": "Modo garita",
-    "gateDescription": "Textos y botones más grandes, con alto contraste."
+    "gateLabel": "Modo garita"
   },
   "nav": {
     "sidebarLabel": "Navegación principal",
@@ -130,7 +127,6 @@
   },
   "home": {
     "title": "Inicio",
-    "description": "Esta es la base de la aplicación. Las pantallas de cada módulo se suman a partir de acá.",
     "contextTitle": "Tu contexto activo",
     "tenant": "Barrio",
     "role": "Rol",
@@ -141,7 +137,6 @@
   },
   "placeholder": {
     "title": "Esta sección llega pronto",
-    "description": "Todavía estamos armándola. Mientras tanto, volvé al inicio.",
     "backHome": "Volver al inicio"
   },
   "semaphore": {
@@ -151,7 +146,8 @@
   "design": {
     "metaTitle": "Sistema de diseño · Domus",
     "title": "Sistema de diseño",
-    "description": "Referencia interna de los tokens y componentes base. Probá los temas claro, oscuro y el modo garita con los controles.",
+    "infoLabel": "Más información sobre esta página",
+    "info": "Referencia interna de los tokens y componentes base. Probá los temas claro, oscuro y el modo garita con los controles.",
     "backHome": "Volver al inicio",
     "skipToContent": "Saltar al contenido",
     "indexLabel": "Secciones de esta página",
@@ -168,7 +164,7 @@
     },
     "colors": {
       "title": "Colores",
-      "description": "Cada token se muestra con su valor vivo (sigue el tema activo) y con los valores de los cuatro temas.",
+      "info": "Cada token se muestra con su valor vivo (sigue el tema activo) y con los valores de los cuatro temas.",
       "liveSwatch": "Valor en el tema activo",
       "themes": {
         "light": "Claro",
@@ -179,7 +175,7 @@
     },
     "typography": {
       "title": "Tipografía",
-      "description": "Inter como única familia. Tamaño / interlineado · peso, en píxeles.",
+      "info": "Inter como única familia. Tamaño / interlineado · peso, en píxeles.",
       "familyTitle": "Familia y cifras tabulares",
       "familySample": "Inter: Autorizá el ingreso y compartí el pase.",
       "numbersSample": "Cifras tabulares: 1.234,56 · 09/10/2026 15:30 · AB 123 CD",
@@ -202,37 +198,33 @@
     },
     "shape": {
       "title": "Espaciado y formas",
-      "description": "Unidad base de 4 px. Los radios y los tamaños táctiles salen de los tokens.",
+      "info": "Unidad base de 4 px. Los radios y los tamaños táctiles salen de los tokens. La única sombra permitida es la del modal.",
       "spacingTitle": "Escala de espaciado",
       "radiusTitle": "Radios",
       "touchTitle": "Tamaños táctiles",
-      "layoutTitle": "Layout y sombra",
-      "shadowNote": "La única sombra permitida es la del modal."
+      "layoutTitle": "Layout y sombra"
     },
     "buttons": {
       "title": "Botones",
-      "description": "Píldora de 44 px de alto (56 px en modo garita). Un solo botón primario por pantalla o sección.",
+      "info": "Píldora de 44 px de alto (56 px en modo garita). Un solo botón primario por pantalla o sección. La acción destructiva siempre pide confirmación antes de ejecutarse. El tamaño estándar pasa a 56 px solo cuando se activa el modo garita.",
       "variantsTitle": "Variantes",
       "primary": "Registrar ingreso",
       "secondary": "Compartir pase",
       "ghost": "Ver detalle",
       "destructive": "Revocar pase",
-      "destructiveNote": "La acción destructiva siempre pide confirmación antes de ejecutarse.",
       "statesTitle": "Estados",
       "disabled": "No disponible",
       "sizesTitle": "Tamaños",
       "sizeMd": "Estándar",
       "sizeGate": "Garita",
       "iconLabel": "Agregar",
-      "sizesNote": "El tamaño estándar pasa a 56 px solo cuando se activa el modo garita.",
       "panelTitle": "Acción principal del semáforo",
       "panelAction": "Registrar ingreso"
     },
     "inputs": {
       "title": "Campos",
-      "description": "Etiqueta siempre visible, 44 px de alto, anillo de foco de 2 px. El error dice qué pasó y qué hacer.",
+      "info": "Etiqueta siempre visible, 44 px de alto, anillo de foco de 2 px. El error dice qué pasó y qué hacer.",
       "defaultLabel": "Nombre de la visita",
-      "defaultHint": "Como figura en su documento.",
       "placeholder": "Por ejemplo, Ana Pérez",
       "errorLabel": "Patente del vehículo",
       "errorValue": "AB12",
@@ -242,11 +234,13 @@
       "optionDelivery": "Delivery",
       "optionService": "Servicio o trabajador",
       "disabledLabel": "Barrio",
-      "disabledValue": "Las Acacias"
+      "disabledValue": "Las Acacias",
+      "infoLabel": "Más información: Nombre de la visita",
+      "infoText": "Como figura en su documento."
     },
     "badges": {
       "title": "Insignias",
-      "description": "El estado se comunica con ícono y texto, nunca solo con color.",
+      "info": "El estado se comunica con ícono y texto, nunca solo con color.",
       "statusTitle": "Estados",
       "status": {
         "success": "Pago conciliado",
@@ -262,11 +256,9 @@
     },
     "cards": {
       "title": "Tarjetas y estados vacíos",
-      "description": "Sin sombra ni borde. Radio de 28 px, o de 16 px en listas densas del administrador.",
+      "info": "Sin sombra ni borde. Radio de 28 px, o de 16 px en listas densas del administrador.",
       "comfortableTitle": "Tarjeta destacada",
-      "comfortableBody": "Radio de 28 px y 28 px de relleno en pantallas anchas.",
       "denseTitle": "Tarjeta densa",
-      "denseBody": "Radio de 16 px, pensada para tablas y listas.",
       "emptyState": "Estado vacío"
     },
     "emptyState": {
@@ -276,8 +268,7 @@
     },
     "semaphore": {
       "title": "Panel semáforo",
-      "description": "Ícono, resultado, motivo, regla aplicada y quién autorizó. En la garita ocupa al menos la mitad de la pantalla.",
-      "fillNote": "Aquí se muestran compactos; en la consola de garita el panel ocupa al menos el 50 % de la pantalla.",
+      "info": "Ícono, resultado, motivo, regla aplicada y quién autorizó. En la garita ocupa al menos la mitad de la pantalla.",
       "green": {
         "result": "Permitido",
         "reason": "La visita tiene un pase vigente para el Lote 24.",
@@ -302,7 +293,7 @@
     },
     "formats": {
       "title": "Formatos es-AR",
-      "description": "Las fechas se guardan en UTC y se muestran en la zona horaria del barrio (por defecto, Tucumán).",
+      "info": "Las fechas se guardan en UTC y se muestran en la zona horaria del barrio (por defecto, Tucumán).",
       "currency": "Monto en pesos",
       "currencyLarge": "Monto grande",
       "utc": "Instante en UTC",

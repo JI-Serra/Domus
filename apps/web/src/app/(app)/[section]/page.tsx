@@ -33,7 +33,7 @@ export default async function SectionPlaceholderPage({
       <EmptyState
         icon={Hammer}
         title={t('title')}
-        description={t('description')}
+        align="start"
         action={<ButtonLink href="/">{t('backHome')}</ButtonLink>}
       />
     </>

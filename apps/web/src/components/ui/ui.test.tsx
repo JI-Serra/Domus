@@ -1,5 +1,6 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { Plus } from 'lucide-react';
+import { useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { renderWithIntl } from '@/test/render';
 import { Badge, StatusBadge } from './badge';
@@ -8,6 +9,7 @@ import { Button } from './button';
 import { Card } from './card';
 import { EmptyState } from './empty-state';
 import { Field, Input, Select } from './field';
+import { InfoButton } from './info-button';
 import { SegmentedControl } from './segmented-control';
 import { SemaphorePanel } from './semaphore-panel';
 import { Switch } from './switch';
@@ -55,19 +57,13 @@ it('Button sizes map to the touch tokens (44 px adaptive, 56 px gate, 64 px pane
 
 it('Field links the label, hint and error to the input', () => {
   renderWithIntl(
-    <Field
-      label="Patente"
-      hint="Seis o siete caracteres."
-      error="Revisá la patente."
-    >
+    <Field label="Patente" error="Revisá la patente.">
       <Input />
     </Field>,
   );
   const input = screen.getByLabelText('Patente');
   expect(input).toHaveAttribute('aria-invalid', 'true');
-  expect(input).toHaveAccessibleDescription(
-    'Seis o siete caracteres. Revisá la patente.',
-  );
+  expect(input).toHaveAccessibleDescription('Revisá la patente.');
 });
 
 it('Field without an error leaves the input valid, and works with Select', () => {
@@ -215,18 +211,90 @@ it('SegmentedControl reports the chosen option', () => {
   expect(onChange).toHaveBeenCalledWith('dark');
 });
 
-it('Switch exposes switch semantics with a description', () => {
+it('Switch exposes switch semantics and reports changes', () => {
   const onChange = vi.fn();
   renderWithIntl(
-    <Switch
-      label="Modo garita"
-      description="Más grande."
-      checked={false}
-      onChange={onChange}
-    />,
+    <Switch label="Modo garita" checked={false} onChange={onChange} />,
   );
   const toggle = screen.getByRole('switch', { name: 'Modo garita' });
-  expect(toggle).toHaveAccessibleDescription('Más grande.');
+  expect(toggle).not.toBeChecked();
   fireEvent.click(toggle);
-  expect(onChange).toHaveBeenCalled();
+  expect(onChange).toHaveBeenCalledTimes(1);
+});
+
+it('Switch toggles when the visible track or the text is clicked, not only the hidden input', () => {
+  function Controlled() {
+    const [on, setOn] = useState(false);
+    return (
+      <Switch
+        label="Modo garita"
+        checked={on}
+        onChange={(event) => setOn(event.target.checked)}
+      />
+    );
+  }
+  const { container } = renderWithIntl(<Controlled />);
+  const toggle = screen.getByRole('switch', { name: 'Modo garita' });
+  const track = container.querySelector('span[aria-hidden="true"]');
+  expect(track).not.toBeNull();
+  // The track is inside the same <label> as the input, so a click on it reaches the input.
+  expect(track?.closest('label')).toBe(toggle.closest('label'));
+
+  fireEvent.click(track as Element);
+  expect(toggle).toBeChecked();
+  fireEvent.click(screen.getByText('Modo garita'));
+  expect(toggle).not.toBeChecked();
+});
+
+it('Field shows its help behind an info button instead of permanent text', () => {
+  renderWithIntl(
+    <Field
+      label="Contraseña"
+      info={{ label: 'Más información', text: 'Ocho o más.' }}
+    >
+      <Input />
+    </Field>,
+  );
+  expect(screen.queryByText('Ocho o más.')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Más información' }));
+  expect(screen.getByText('Ocho o más.')).toBeInTheDocument();
+});
+
+it('InfoButton opens on click, names its popover, and closes on Escape and outside press', () => {
+  renderWithIntl(
+    <>
+      <InfoButton label="Más información: colores">
+        Valor vivo del tema.
+      </InfoButton>
+      <button type="button">Afuera</button>
+    </>,
+  );
+  const trigger = screen.getByRole('button', {
+    name: 'Más información: colores',
+  });
+  expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  expect(trigger).toHaveClass('size-(--control-height)');
+  expect(screen.queryByText('Valor vivo del tema.')).toBeNull();
+
+  fireEvent.click(trigger);
+  expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  const popover = screen.getByRole('group', {
+    name: 'Más información: colores',
+  });
+  expect(within(popover).getByText('Valor vivo del tema.')).toBeInTheDocument();
+  expect(trigger).toHaveAttribute('aria-controls', popover.id);
+
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(screen.queryByText('Valor vivo del tema.')).toBeNull();
+  expect(trigger).toHaveFocus();
+
+  fireEvent.click(trigger);
+  expect(screen.getByText('Valor vivo del tema.')).toBeInTheDocument();
+  fireEvent.pointerDown(screen.getByRole('button', { name: 'Afuera' }));
+  expect(screen.queryByText('Valor vivo del tema.')).toBeNull();
+
+  // The same button toggles it closed again.
+  fireEvent.click(trigger);
+  fireEvent.click(trigger);
+  expect(screen.queryByText('Valor vivo del tema.')).toBeNull();
 });

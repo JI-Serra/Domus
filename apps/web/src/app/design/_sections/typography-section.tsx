@@ -27,7 +27,7 @@ const spec = (style: {
 export async function TypographySection() {
   const t = await getTranslations('design.typography');
   return (
-    <Section id="typography" title={t('title')} description={t('description')}>
+    <Section id="typography" title={t('title')} info={t('info')}>
       <div className="flex flex-col gap-8">
         <Specimen title={t('familyTitle')}>
           <p className="text-app-body">{t('familySample')}</p>

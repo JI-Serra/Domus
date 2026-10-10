@@ -5,7 +5,7 @@ import { Section, Specimen } from './section';
 export async function ShapeSection() {
   const t = await getTranslations('design.shape');
   return (
-    <Section id="shape" title={t('title')} description={t('description')}>
+    <Section id="shape" title={t('title')} info={t('info')}>
       <div className="grid gap-8 lg:grid-cols-2">
         <Specimen title={t('spacingTitle')}>
           <ul className="flex flex-col gap-2">
@@ -69,9 +69,6 @@ export async function ShapeSection() {
               </div>
             ))}
           </dl>
-          <p className="text-app-caption text-text-secondary">
-            {t('shadowNote')}
-          </p>
           <div
             aria-hidden="true"
             className="h-16 max-w-xs rounded-card bg-surface-0"

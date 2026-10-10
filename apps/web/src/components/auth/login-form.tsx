@@ -113,7 +113,7 @@ function MagicLinkForm({ next }: { next: string }) {
     <form action={action} noValidate className="flex flex-col gap-5">
       {formError ? <AuthNotice tone="error">{formError}</AuthNotice> : null}
       <input type="hidden" name="next" value={next} />
-      <Field label={t('emailLabel')} hint={t('magicHint')} error={emailError}>
+      <Field label={t('emailLabel')} error={emailError}>
         <Input
           name="email"
           type="email"

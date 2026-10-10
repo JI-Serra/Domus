@@ -28,7 +28,6 @@ export function ThemeControls({ className }: { className?: string }) {
       />
       <Switch
         label={t('gateLabel')}
-        description={t('gateDescription')}
         checked={preference.gate}
         onChange={(event) => setGate(event.target.checked)}
       />
