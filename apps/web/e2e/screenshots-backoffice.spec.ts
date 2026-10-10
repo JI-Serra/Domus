@@ -137,7 +137,7 @@ test.describe.serial('backoffice screenshots', () => {
     await capture(admin, 'tenant-new', testInfo, 'light', { fullPage: true });
 
     // Create one with a logo for the detail page.
-    await admin.getByLabel('Logo', { exact: true }).setInputFiles({
+    await admin.locator('input[type="file"][name="logo"]').setInputFiles({
       name: 'logo.png',
       mimeType: 'image/png',
       buffer: PNG,

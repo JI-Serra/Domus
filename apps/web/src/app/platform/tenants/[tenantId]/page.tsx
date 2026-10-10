@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/shell/page-header';
 import { ButtonLink } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getTenant, listInvitations, signedLogoUrl } from '@/lib/platform/data';
+import { loadBillableCount } from '@/lib/registry/data';
 import { createRequestClient } from '@/lib/supabase/request-client';
 import {
   changeSubscriptionAction,
@@ -47,9 +48,10 @@ export default async function TenantDetailPage({
   const client = await createRequestClient();
   const tenant = await getTenant(client, tenantId);
   if (!tenant) notFound();
-  const [invitations, logoUrl, t, notices] = await Promise.all([
+  const [invitations, logoUrl, billableCount, t, notices] = await Promise.all([
     listInvitations(client, tenantId),
     signedLogoUrl(client, tenant.tenant_logo_path),
+    loadBillableCount(client, tenantId),
     getTranslations('platform.tenants'),
     getTranslations('platform.tenants.notices'),
   ]);
@@ -116,6 +118,7 @@ export default async function TenantDetailPage({
             <h2 className="mb-5 text-app-heading">{t('billable.title')}</h2>
             <BillableForm
               selected={tenant.tenant_billable_unit_statuses}
+              count={billableCount}
               action={saveBillableCriteriaAction.bind(null, tenantId)}
             />
           </Card>

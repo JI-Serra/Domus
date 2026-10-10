@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import messages from '../../messages/es-AR.json';
+import baseMessages from '../../messages/es-AR.json';
+import registryMessages from '../../messages/registry.es-AR.json';
+
+const messages = { ...baseMessages, ...registryMessages };
 
 function leaves(
   value: unknown,
@@ -27,6 +30,12 @@ describe('es-AR messages', () => {
         entry.text.split('}').length,
       );
     }
+  });
+
+  it('keeps the registry texts in top-level keys of their own', () => {
+    expect(
+      Object.keys(registryMessages).filter((key) => key in baseMessages),
+    ).toEqual([]);
   });
 
   it('has a navigation label and a tab label for every item', () => {

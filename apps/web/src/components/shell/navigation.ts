@@ -3,6 +3,8 @@ import {
   Building2,
   CircleUser,
   ClipboardList,
+  DoorOpen,
+  FileUp,
   House,
   KeyRound,
   LifeBuoy,
@@ -10,10 +12,12 @@ import {
   Megaphone,
   Package,
   Settings,
+  ShieldCheck,
   UsersRound,
   Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { AdminPermission } from '@/lib/registry/permissions';
 import type { MembershipRole } from './active-context';
 
 export type NavItemId =
@@ -22,6 +26,10 @@ export type NavItemId =
   | 'neighborhood'
   | 'account'
   | 'registry'
+  | 'registryUnits'
+  | 'registryImport'
+  | 'registryGuards'
+  | 'registryGates'
   | 'announcements'
   | 'finance'
   | 'settings'
@@ -37,6 +45,10 @@ export interface NavItem {
   icon: LucideIcon;
   /** Shown in the bottom tab bar on mobile. The bar holds 4–5 destinations (DESIGN.md §A.6). */
   tab: boolean;
+  /** Administrative permissions that open this entry: any one of them is enough. Omitted = no permission needed. */
+  permissions?: readonly AdminPermission[];
+  /** Second-level destinations, listed under the entry in the sidebar and as a strip on small screens. */
+  children?: readonly NavItem[];
 }
 
 const item = (
@@ -44,11 +56,32 @@ const item = (
   href: string,
   icon: LucideIcon,
   tab = true,
+  extra: Pick<NavItem, 'permissions' | 'children'> = {},
 ): NavItem => ({
   id,
   href,
   icon,
   tab,
+  ...extra,
+});
+
+/** Padrón: its destinations are gated by the administrator's permissions (`registry`, `guards`). */
+const registry = item('registry', '/registry', ClipboardList, true, {
+  permissions: ['registry', 'guards'],
+  children: [
+    item('registryUnits', '/registry/units', Building2, false, {
+      permissions: ['registry'],
+    }),
+    item('registryImport', '/registry/import', FileUp, false, {
+      permissions: ['registry'],
+    }),
+    item('registryGuards', '/registry/guards', ShieldCheck, false, {
+      permissions: ['registry'],
+    }),
+    item('registryGates', '/registry/gates', DoorOpen, false, {
+      permissions: ['guards'],
+    }),
+  ],
 });
 
 const home = item('home', '/', House);
@@ -70,7 +103,7 @@ const NAVIGATION: Record<MembershipRole, readonly NavItem[]> = {
   ],
   tenant_admin: [
     home,
-    item('registry', '/registry', ClipboardList),
+    registry,
     item('access', '/access', KeyRound),
     item('announcements', '/announcements', Megaphone),
     item('finance', '/finance', Wallet),
@@ -95,6 +128,39 @@ export function getNavigation(role: MembershipRole): readonly NavItem[] {
 
 export function getTabBarItems(role: MembershipRole): readonly NavItem[] {
   return NAVIGATION[role].filter((entry) => entry.tab);
+}
+
+const isAllowed = (entry: NavItem, held: readonly AdminPermission[]): boolean =>
+  !entry.permissions ||
+  entry.permissions.some((permission) => held.includes(permission));
+
+/**
+ * The destinations an administrator may open: entries (and their children) whose permissions they hold. The
+ * interface only offers what the database would also allow; it is never the control.
+ */
+export function filterByPermissions(
+  entries: readonly NavItem[],
+  held: readonly AdminPermission[],
+): NavItem[] {
+  return entries
+    .filter((entry) => isAllowed(entry, held))
+    .map((entry) =>
+      entry.children
+        ? { ...entry, children: filterByPermissions(entry.children, held) }
+        : entry,
+    );
+}
+
+/** First destination under a parent that the permissions allow (where `/registry` itself leads). */
+export function firstAllowedChild(
+  parent: NavItem | undefined,
+  held: readonly AdminPermission[],
+): NavItem | undefined {
+  return parent?.children?.find((child) => isAllowed(child, held));
+}
+
+export function getRegistryNavigation(): NavItem {
+  return registry;
 }
 
 /** Every top-level tenant-area href across roles, used to pre-render the placeholder pages. */

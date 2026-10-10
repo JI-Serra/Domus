@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
     '@domus/supabase',
     '@domus/observability',
   ],
+  experimental: {
+    // The registry import sends up to 8,000 parsed rows (about 2.5 MB of JSON) in one Server Action call.
+    serverActions: { bodySizeLimit: '8mb' },
+  },
   turbopack: { resolveAlias: { 'next-intl/config': I18N_REQUEST_CONFIG } },
   webpack(config) {
     config.resolve ??= {};

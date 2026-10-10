@@ -15,7 +15,10 @@ import {
 import type { MembershipRole } from './active-context';
 
 let pathname = '/';
-vi.mock('next/navigation', () => ({ usePathname: () => pathname }));
+vi.mock('next/navigation', () => ({
+  usePathname: () => pathname,
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 const [HOLDER, ADMIN, GUARD, MEMBER] = MOCK_CONTEXTS.map(
   (context) => context.membership_id,

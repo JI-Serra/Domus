@@ -9,7 +9,8 @@
     "./context": "./src/context/index.ts",
     "./platform": "./src/platform/index.ts",
     "./auth": "./src/auth/index.ts",
-    "./registry": "./src/registry/index.ts"
+    "./registry": "./src/registry/index.ts",
+    "./registry-ui": "./src/registry/ui.ts"
   },
   "scripts": {
     "lint": "eslint .",

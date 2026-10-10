@@ -114,7 +114,7 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
         .replace(/-+$/g, ''),
     );
     await admin.getByLabel('Dirección').fill('Calle Ficticia 123, Yerba Buena');
-    await admin.getByLabel('Logo', { exact: true }).setInputFiles({
+    await admin.locator('input[type="file"][name="logo"]').setInputFiles({
       name: 'logo.png',
       mimeType: 'image/png',
       buffer: PNG,

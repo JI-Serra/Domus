@@ -4,7 +4,9 @@ import type { ReactNode } from 'react';
 import { SupportSessionProvider } from '@/components/support/support-session';
 import { TenantStatusProvider } from '@/components/tenant/tenant-status';
 import { getSupportBanner } from '@/lib/support/banner';
+import { getAdminPermissions } from '@/lib/registry/permissions';
 import { getTenantSubscriptionStatus } from '@/lib/tenant/status';
+import { AdminPermissionsProvider } from './admin-permissions';
 import { AppShell } from './app-shell';
 import { ServerActiveContextProvider } from './server-active-context';
 
@@ -28,6 +30,7 @@ export async function ServerShell({
     ? await getTenantSubscriptionStatus(active.tenant_id)
     : null;
   const support = await getSupportBanner();
+  const permissions = await getAdminPermissions();
   return (
     <ServerActiveContextProvider
       contexts={contexts}
@@ -36,7 +39,9 @@ export async function ServerShell({
     >
       <TenantStatusProvider status={status}>
         <SupportSessionProvider value={support}>
-          <AppShell>{children}</AppShell>
+          <AdminPermissionsProvider permissions={permissions}>
+            <AppShell>{children}</AppShell>
+          </AdminPermissionsProvider>
         </SupportSessionProvider>
       </TenantStatusProvider>
     </ServerActiveContextProvider>

@@ -5,13 +5,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
 import { useActiveContext } from './active-context';
-import { getTabBarItems, isNavItemActive } from './navigation';
+import { useAdminPermissions } from './admin-permissions';
+import {
+  filterByPermissions,
+  getTabBarItems,
+  isNavItemActive,
+} from './navigation';
 
 /** Mobile navigation (< 1024 px): icon + label, 49 px plus the device safe area. */
 export function TabBar() {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const { active } = useActiveContext();
+  const permissions = useAdminPermissions();
+  const tabs = filterByPermissions(
+    getTabBarItems(active.membership_role),
+    permissions,
+  );
 
   return (
     <nav
@@ -19,7 +29,7 @@ export function TabBar() {
       className="fixed inset-x-0 bottom-0 z-30 bg-surface-1 pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="mx-auto flex max-w-xl">
-        {getTabBarItems(active.membership_role).map((entry) => {
+        {tabs.map((entry) => {
           const isActive = isNavItemActive(pathname, entry.href);
           const Icon = entry.icon;
           return (

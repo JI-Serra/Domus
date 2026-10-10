@@ -1,5 +1,6 @@
 import { DEFAULT_TENANT_TIME_ZONE, DISPLAY_LOCALE } from '@domus/domain/format';
 import { getRequestConfig } from 'next-intl/server';
+import registryMessages from '../../messages/registry.es-AR.json';
 
 /**
  * es-AR is the only locale (M00-F08), so there is no locale routing: every request resolves to the same
@@ -9,5 +10,9 @@ import { getRequestConfig } from 'next-intl/server';
 export default getRequestConfig(async () => ({
   locale: DISPLAY_LOCALE,
   timeZone: DEFAULT_TENANT_TIME_ZONE,
-  messages: (await import('../../messages/es-AR.json')).default,
+  // The admin registry area (M02) keeps its texts in its own file; the top-level keys never overlap.
+  messages: {
+    ...(await import('../../messages/es-AR.json')).default,
+    ...registryMessages,
+  },
 }));
