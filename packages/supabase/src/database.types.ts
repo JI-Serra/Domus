@@ -534,6 +534,13 @@ export type Database = {
           user_id: string;
         }[];
       };
+      preview_invitation: {
+        Args: { token: string };
+        Returns: {
+          invitation_membership_role: Database['public']['Enums']['membership_role'];
+          tenant_name: string;
+        }[];
+      };
       revoke_admin_permission: {
         Args: {
           target_membership_id: string;

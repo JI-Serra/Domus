@@ -75,6 +75,16 @@ start_support_session(
   client_event_id uuid, duration_minutes integer = 30
 ) returns support_session
 end_support_session(target_support_session_id uuid) returns void
+
+-- Added by T11 (reports/M01-backoffice.md); all revoked from anon/PUBLIC/service_role, SECURITY DEFINER, empty search_path.
+current_user_cancelled_tenants() returns table(tenant_id uuid, tenant_name text)
+  -- caller's OWN active memberships in cancelled tenants; empty for support tokens
+list_support_targets(target_tenant_id uuid, search text = null)
+  returns table(user_id uuid, person_first_name text, person_last_name text, membership_role membership_role)
+  -- MFA platform admin only (support tokens: uniform denial), tenant not cancelled, <= 50 active users, audited
+preview_invitation(token text)
+  returns table(tenant_name text, invitation_membership_role membership_role)
+  -- same gate as accept_invitation (shared app_private.pending_invitation_for_token), uniform 42501 'Invitation unavailable'
 ```
 
 `create_tenant` requires MFA platform authority and validates name, English slug, IANA zone and tenant-scoped logo path. Its tenant UUID is the onboarding event UUID, also recorded in a separate unique retry column. Defaults are `locale=es-AR`, `currency=ARS` and the typed billable set. A retry must keep the same tenant name/slug. Create the tenant first, then upload its logo and set `tenant_logo_path`, or supply the future `<client_event_id>/...` path during onboarding.

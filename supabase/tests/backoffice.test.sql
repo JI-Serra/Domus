@@ -179,5 +179,99 @@ select is((select count(*) from public.audit_event where audit_event_table_name=
 select throws_ok($$insert into public.audit_event(audit_event_db_role,audit_event_action,audit_event_table_name,audit_event_row_id,audit_event_diff) values('x','insert','support_target_lookup',gen_random_uuid(),'{}')$$,'42501',null,'Clients still cannot forge audit events');
 reset role;
 
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- preview_invitation(): same gate as accept_invitation, only tenant name and role come back.
+-- ---------------------------------------------------------------------------------------------------------------
+select ok(not has_function_privilege('anon','public.preview_invitation(text)','EXECUTE'),'Anonymous cannot preview invitations');
+select ok(not has_function_privilege('service_role','public.preview_invitation(text)','EXECUTE'),'Service role cannot preview invitations');
+select ok(not has_function_privilege('authenticated','app_private.pending_invitation_for_token(text,boolean)','EXECUTE'),'Clients cannot call the shared invitation gate');
+select is((select proconfig from pg_proc where oid='public.preview_invitation(text)'::regprocedure),array['search_path=""'],'Preview pins an empty search_path');
+select is((select proargnames from pg_proc where oid='public.preview_invitation(text)'::regprocedure),
+  array['token','tenant_name','invitation_membership_role'],'Preview returns only tenant name and role');
+select is((select proowner::regrole::text from pg_proc where oid='public.accept_invitation(text)'::regprocedure),'invitation_acceptor','Acceptance keeps the isolated consent owner');
+select ok(not has_schema_privilege('invitation_acceptor','public','CREATE'),'Consent capability still cannot create RPCs');
+select is((select prosrc ~ 'pending_invitation_for_token' from pg_proc where oid='public.accept_invitation(text)'::regprocedure),true,'Acceptance consumes the shared gate');
+select is((select prosrc ~ 'pending_invitation_for_token' from pg_proc where oid='public.preview_invitation(text)'::regprocedure),true,'Preview consumes the shared gate');
+
+select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal2"}',true);
+set local role authenticated;
+select lives_ok($$select public.create_invitation('10000000-0000-0000-0000-000000000001','holder.tipas@domus.local','guard',
+  encode(extensions.digest(repeat('p',64),'sha256'),'hex'),now()+interval '1 day','80000000-0000-0000-0000-0000000000b1',null,'Nuevo','Guardia')$$,'Platform invites a guard');
+select lives_ok($$select public.create_invitation('10000000-0000-0000-0000-000000000001','admin.ceibos@domus.local','household_member',
+  encode(extensions.digest(repeat('q',64),'sha256'),'hex'),now()+interval '1 day','80000000-0000-0000-0000-0000000000b2',null,'Soporte','Probe')$$,'Platform invites the supported user');
+reset role;
+
+select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000008","role":"authenticated","aal":"aal1"}',true);
+set local role authenticated;
+select results_eq($$select tenant_name, invitation_membership_role::text from public.preview_invitation(repeat('p',64))$$,
+  $$values ('Barrio Los Ceibos'::text,'guard'::text)$$,'Invitee sees tenant name and role');
+select is((select count(*) from public.invitation where client_event_id='80000000-0000-0000-0000-0000000000b1'),0::bigint,'Invitees still cannot read invitation rows');
+reset role;
+select is((select invitation_status::text from public.invitation where client_event_id='80000000-0000-0000-0000-0000000000b1'),'pending','Preview changes nothing');
+
+set local role authenticated;
+select throws_ok($$select * from public.preview_invitation(repeat('z',64))$$,'42501','Invitation unavailable','Unknown token is the uniform error');
+select throws_ok($$select * from public.preview_invitation('short')$$,'42501','Invitation unavailable','Malformed token is the uniform error');
+select throws_ok($$select * from public.preview_invitation(null)$$,'42501','Invitation unavailable','Missing token is the uniform error');
+reset role;
+select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000009","role":"authenticated","aal":"aal1"}',true);
+set local role authenticated;
+select throws_ok($$select * from public.preview_invitation(repeat('p',64))$$,'42501','Invitation unavailable','Another account gets the uniform error');
+reset role;
+select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000008","role":"authenticated","aal":"aal1"}',true);
+
+update public.invitation set invitation_expires_at=now()-interval '1 minute' where client_event_id='80000000-0000-0000-0000-0000000000b1';
+set local role authenticated;
+select throws_ok($$select * from public.preview_invitation(repeat('p',64))$$,'42501','Invitation unavailable','Expired invitation gets the uniform error');
+reset role;
+update public.invitation set invitation_expires_at=now()+interval '1 day' where client_event_id='80000000-0000-0000-0000-0000000000b1';
+
+update public.invitation set invitation_status='revoked' where client_event_id='80000000-0000-0000-0000-0000000000b1';
+set local role authenticated;
+select throws_ok($$select * from public.preview_invitation(repeat('p',64))$$,'42501','Invitation unavailable','Revoked invitation gets the uniform error');
+reset role;
+update public.invitation set invitation_status='pending' where client_event_id='80000000-0000-0000-0000-0000000000b1';
+
+update public.tenant set tenant_subscription_status='suspended' where tenant_id='10000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select throws_ok($$select * from public.preview_invitation(repeat('p',64))$$,'42501','Invitation unavailable','Suspended tenant gets the uniform error');
+reset role;
+update public.tenant set tenant_subscription_status='cancelled' where tenant_id='10000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select throws_ok($$select * from public.preview_invitation(repeat('p',64))$$,'42501','Invitation unavailable','Cancelled tenant gets the uniform error');
+reset role;
+update public.tenant set tenant_subscription_status='active' where tenant_id='10000000-0000-0000-0000-000000000001';
+
+update auth.users set email_confirmed_at=null where id='20000000-0000-0000-0000-000000000008';
+set local role authenticated;
+select throws_ok($$select * from public.preview_invitation(repeat('p',64))$$,'42501','Invitation unavailable','Unverified email gets the uniform error');
+reset role;
+update auth.users set email_confirmed_at=now() where id='20000000-0000-0000-0000-000000000008';
+
+select set_config('request.jwt.claims','',true);
+set local role anon;
+select throws_ok($$select * from public.preview_invitation(repeat('p',64))$$,'42501',null,'Anonymous callers are denied');
+reset role;
+
+-- A support token (even for the invited account) never previews.
+select set_config('request.jwt.claims',jsonb_build_object('sub','20000000-0000-0000-0000-000000000002','role','authenticated','aal','aal1',
+  'impersonator_user_id','20000000-0000-0000-0000-000000000001','impersonator_aal','aal2',
+  'support_session_id',(select support_session_id from support_fixture),'session_id',(select support_session_id from support_fixture),
+  'support_tenant_id','10000000-0000-0000-0000-000000000001','exp',extract(epoch from now()+interval '20 minutes'))::text,true);
+set local role authenticated;
+select throws_ok($$select * from public.preview_invitation(repeat('q',64))$$,'42501','Invitation unavailable','Support token cannot preview even a matching invitation');
+reset role;
+
+-- The shared gate keeps accept_invitation working exactly as before, and a preview does not consume the token.
+select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000008","role":"authenticated","aal":"aal1"}',true);
+set local role authenticated;
+select lives_ok($$select * from public.preview_invitation(repeat('p',64))$$,'Preview can repeat');
+select lives_ok($$select public.accept_invitation(repeat('p',64))$$,'Acceptance still works after previews');
+select throws_ok($$select * from public.preview_invitation(repeat('p',64))$$,'42501','Invitation unavailable','A used invitation can no longer be previewed');
+select throws_ok($$select public.accept_invitation(repeat('p',64))$$,'42501','Invitation unavailable','A used invitation can no longer be accepted');
+reset role;
+select is((select count(*) from public.membership m join public.person p using(tenant_id,person_id) where p.user_id='20000000-0000-0000-0000-000000000008' and m.tenant_id='10000000-0000-0000-0000-000000000001' and m.membership_role='guard'),1::bigint,'Acceptance created the membership');
+
 select * from finish();
 rollback;
