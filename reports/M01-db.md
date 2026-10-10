@@ -1,6 +1,6 @@
 # M01 database, invitations and impersonation — T8
 
-Implemented locally on 2026-10-10 on `JI-Serra/h1-t8-platform-db`. H0 migrations remain frozen. No remote database, hosting, web UI or UI-token changes were made. The coordinator approved the impersonation design through Orca `ask` before implementation and requested the separate caller-status RPC for T9.
+Implemented locally on 2026-10-10 on `JI-Serra/h1-t8-platform-db`. **Updated by T12** (`reports/T12-fixes.md`, security review T10): the M01 migrations are now five consolidated files with complete function definitions (`20261010000000_platform_schema` to `20261010000004_platform_policies`), and the contract changes below are marked "T12". H0 migrations remain frozen. No remote database, hosting, web UI or UI-token changes were made. The coordinator approved the impersonation design through Orca `ask` before implementation and requested the separate caller-status RPC for T9.
 
 ## Acceptance
 
@@ -22,9 +22,9 @@ Versions: Node 25.2.1, pnpm 11.11.0, Turbo 2.11.7, Supabase CLI 2.120.0, Postgre
 
 New tables are `invitation` and `support_session`; both have RLS, tenant-leading indexes, indexed foreign keys, immutable row identity, maintained timestamps, declared audit redactions and no direct client DML. Invitations reference people through `(tenant_id, person_id)`. Support targets reference `(tenant_id, user_id)` on `person`, so a target cannot belong solely to another tenant. The `invitation_acceptor` role is NOLOGIN/NOINHERIT, is not assumable by client/service roles and has no schema CREATE privilege. Its narrowly exposed consent RPC binds identity and creates roles/permissions atomically. Conditional audit triggers recognize that exclusive capability without letting the caller manufacture audit events or privileged request roles.
 
-Invitations store normalized email, an unclaimed target person or first/last-name data, role, permission snapshot, SHA256 token hash, expiry, status, creator, acceptance metadata and unique `client_event_id`. Acceptance checks the authenticated user's **database-verified email**, pending status, expiry, current grantor authority and tenant availability before binding. A token is consumed under a row lock and same-user/tenant advisory lock. Missing, expired, revoked, replayed, wrong-email and invalid-identity requests all return `42501 / Invitation unavailable`. Hash comparison performs all 64 comparison steps, including a dummy comparison when lookup fails; raw secrets are never compared or persisted. Existing linked-person role changes retain the H0 management RPCs; invitations bind unclaimed identities.
+Invitations store normalized email, an unclaimed target person or first/last-name data, role, permission snapshot, SHA256 token hash, expiry, status, creator, acceptance metadata, delivery time and unique `client_event_id`. **T12:** the database generates the 256-bit secret and the fixed 7-day expiry inside `create_invitation`; clients never choose either. Acceptance checks the authenticated user's **database-verified email** and (T12, M2) that **the session itself proves the mailbox**: its signed `amr` claim must contain an email-link/code method (Auth records invite, magic-link, signup and recovery links as `otp`) issued at or after the invitation's creation, so password, OAuth, TOTP-only and refreshed-only sessions are refused, and a missing or malformed claim fails closed. It also checks pending status, expiry, current grantor authority and tenant availability before binding. **T12 (H1):** a person-targeted invitation locks the person and binds it only while unclaimed; the membership and every permission can only land on the caller's own person; binding revokes every other pending invitation for that person; `create_invitation` allows at most one live invitation per person. **T12 (L5):** an existing member of the tenant accepts a person-less invitation on their own person (a role they already hold actively is refused). A token is consumed under a row lock and same-user/tenant advisory lock. Missing, expired, revoked, replayed, wrong-email and invalid-identity requests all return `42501 / Invitation unavailable`. Hash comparison performs all 64 comparison steps, including a dummy comparison when lookup fails; raw secrets are never compared or persisted. Existing linked-person role changes retain the H0 management RPCs; invitations bind unclaimed identities.
 
-D17 applies at invitation creation and acceptance: `admin_management` manages administrative roles; `registry` manages other roles; a tenant grantor can only grant held permissions, cannot invite themself, and loses pending invitation authority when their membership/permission is revoked. The platform email function grants its first-admin invitations all ten permissions. Retry keys bind the invitation to its creator, tenant, recipient, role and permission snapshot; retries reuse the same opaque HMAC-derived token and never extend its stored expiry.
+D17 applies at invitation creation and acceptance: `admin_management` manages administrative roles; `registry` manages other roles; a tenant grantor can only grant held permissions, cannot invite themself, and loses pending invitation authority when their membership/permission is revoked. The platform email function grants its first-admin invitations all ten permissions. Retry keys bind the invitation to its creator, tenant, recipient, target person, role and permission snapshot and never extend its stored expiry. **T12:** before delivery is recorded a retry rotates the secret (an earlier, possibly leaked, undelivered secret dies); after `mark_invitation_delivered` a retry returns the same `invitation_id` with no secret, so nothing is mailed again.
 
 `app_private.current_identity_is_valid()` is the single identity validator. All tenant membership/role/permission/own-person/own-membership sets consume it through `current_user_id()`. H0 exposed RPCs were upgraded in **new migrations** to consume central identity helpers and reject suspended management authority before target lookup/locking. Client policies continue to use uncorrelated set-returning helpers. The identity-tenant helper itself returns only authorized tenant IDs for ordinary callers, avoiding even foreign UUID disclosure through direct helper use. Tests reject direct `auth.uid()`/`auth.jwt()` references in exposed application definers or public/Storage policies. Future application policies and RPCs must follow this pattern.
 
@@ -60,14 +60,16 @@ create_tenant(
 
 current_user_is_platform_admin() returns boolean
 
+-- T12 (L2): no client-chosen token hash or expiry. The secret is returned once to the creating caller (the
+-- send-invitation function); invitation_token is null when the invitation was already delivered.
 create_invitation(
-  target_tenant_id uuid, invited_email text, target_role membership_role,
-  token_hash text, expires_at timestamptz, client_event_id uuid,
+  target_tenant_id uuid, invited_email text, target_role membership_role, client_event_id uuid,
   target_person_id uuid = null, first_name text = null, last_name text = null,
   admin_permissions admin_permission[] = '{}'
-) returns uuid
+) returns table(invitation_id uuid, invitation_token text)
+mark_invitation_delivered(target_invitation_id uuid) returns void -- T12 (L5): creator only, pending, idempotent
 
-accept_invitation(token text) returns uuid -- created membership_id
+accept_invitation(token text) returns uuid -- created membership_id; requires an email-link session (T12, M2)
 revoke_invitation(target_invitation_id uuid) returns void
 
 start_support_session(
@@ -75,6 +77,9 @@ start_support_session(
   client_event_id uuid, duration_minutes integer = 30
 ) returns support_session
 end_support_session(target_support_session_id uuid) returns void
+-- T12 (L3): any MFA platform administrator stops any live session; reason 1..500 chars, stored in
+-- support_session_revocation_reason (redacted in audit), revoker in support_session_ended_by_user_id.
+revoke_support_session(target_support_session_id uuid, reason text) returns void
 
 -- Added by T11 (reports/M01-backoffice.md); all revoked from anon/PUBLIC/service_role, SECURITY DEFINER, empty search_path.
 current_user_cancelled_tenants() returns table(tenant_id uuid, tenant_name text)
@@ -102,9 +107,9 @@ Typed wrappers are exported from `@domus/supabase/platform`. Input schemas are e
 
 ## Edge endpoints and UI flow
 
-`POST /functions/v1/send-invitation` accepts `target_tenant_id`, `invited_email`, `target_role`, `client_event_id`, plus `target_person_id` or `first_name`/`last_name`, and optional `admin_permissions`. It verifies the authenticated user, creates the invitation through caller-bound SQL, then uses server-only Auth administration to invite a new user. Existing users receive `signInWithOtp(shouldCreateUser=false)`. The redirect is `/invitations/accept?token=<opaque secret>`. Response: `{ invitation_id }`; the raw secret is delivered only in the email.
+`POST /functions/v1/send-invitation` accepts `target_tenant_id`, `invited_email`, `target_role`, `client_event_id`, plus `target_person_id` or `first_name`/`last_name`, and optional `admin_permissions`. It verifies the authenticated user, **fails closed with 503 unless Auth reports `mailer_autoconfirm: false`** (T12, M2), creates the invitation through caller-bound SQL (which returns the database-generated secret), then uses server-only Auth administration to invite a new user. Existing users receive `signInWithOtp(shouldCreateUser=false)`. The redirect is `/invitations/accept?token=<opaque secret>`. After a successful send it calls `mark_invitation_delivered`; a retry with the same `client_event_id` then answers `{ invitation_id }` **without mailing again** (T12, L5). Response: `{ invitation_id }`; the raw secret is delivered only in the email.
 
-After Supabase email verification establishes an ordinary user session, the invitation UI calls `accept_invitation(token)` and removes the secret from the URL. All UI text/error mappings belong in es-AR i18n. UI pages were intentionally left to the later task.
+After Supabase email verification establishes an ordinary user session, the invitation UI calls `accept_invitation(token)` and removes the secret from the URL. Since T12 the acceptance must happen in a session created by the emailed link (or a later email link/code): signing in with a password and then accepting yields the uniform `Invitation unavailable`. All UI text/error mappings belong in es-AR i18n. UI pages were intentionally left to the later task.
 
 `POST /functions/v1/support-session` accepts either:
 
@@ -142,15 +147,32 @@ Auth 2.197.0's `requireAuthentication` loads the token's `session_id` and reject
 
 Claims are target `sub`, `role=authenticated`, `aud=authenticated`, `aal=aal1`, `session_id=support_session_id`, `support_session_id`, `support_tenant_id`, `impersonator_user_id`, `impersonator_aal=aal2`, `iat`, and `exp=floor(session expiry)`. Every identity resolution checks matching claims, live status, expiry, active platform actor, non-platform target and the absence of an Auth session with that ID. Tenant sets return only the selected tenant, even for a user belonging to several tenants. Target membership/permissions and subscription restrictions still apply. Ending/revoking, expiry, actor deactivation, target promotion or claim mismatch removes identity on subsequent requests. A transaction already authorized before concurrent termination can finish; revocation is checked at each subsequent statement/request.
 
-Support identities cannot start/extend support sessions, accept/send/revoke invitations, use platform-management RPCs, or read/modify support rows through tables. They may end their own current support session through the authorized RPC. The actor can also end it using their ordinary MFA token. Support-session reason/duration remain visible to tenant administrators with `access_audit`.
+Support identities cannot start/extend/revoke support sessions, accept/send/revoke invitations, **read invitation rows** (T12, L4), use platform-management RPCs, or read/modify support rows through tables. They may end their own current support session through the authorized RPC. The actor can also end it using their ordinary MFA token. Support-session reason/duration remain visible to tenant administrators with `access_audit`.
 
 Hosted configuration is deferred under D19. Before enabling it, the orchestrator must generate/import a **dedicated ES256 or RS256 signing key distinct from normal Auth's active key**, retain it as a trusted previous key and set the private JWK (including `alg` and matching `kid`) only in the Edge secret `DOMUS_SUPPORT_SIGNING_JWK`. Reject use of the caller's normal Auth key ID. Import/activation followed by rotating back to the normal Auth key establishes the dedicated key as previously used; follow platform transition timing and verify a test token through PostgREST before enabling support. Private keys cannot be recovered from managed Supabase after import. [Supabase signing-key lifecycle and import documentation](https://supabase.com/docs/guides/auth/signing-keys) supports this configuration.
 
-For rotation, register/trust a new dedicated key, verify it, replace the Edge secret and keep the previous support key trusted for at most the remaining 60-minute token window. Then revoke the old key. For an emergency, revoke support sessions immediately through database status/end operations and revoke the compromised signing key; also replace the Edge secret. Do not rotate normal Auth's key as a substitute for support-session revocation.
+For rotation, register/trust a new dedicated key, verify it, replace the Edge secret and keep the previous support key trusted for at most the remaining 60-minute token window. Then revoke the old key. For an emergency, revoke support sessions immediately with `revoke_support_session` (any MFA platform administrator, audited; T12) and revoke the compromised signing key; also replace the Edge secret. Do not rotate normal Auth's key as a substitute for support-session revocation.
 
-Other Edge secrets: `DOMUS_INVITATION_TOKEN_KEY` (at least 32 characters; independently generated), `DOMUS_APP_URL`, and Supabase-provided URL/anon/service credentials. Invitation-key rotation requires preserving the old key during pending-token retry windows or revoking those invitations and issuing new event IDs; stored token hashes remain valid for already-delivered secrets.
+**`DOMUS_SUPPORT_SIGNING_JWK` is a tier-0 secret (T12, L1).** PostgREST, Storage and Realtime trust every key in the project JWKS for _any_ claims; the database validator only engages when support claims are present. Whoever holds this key can therefore mint ordinary tokens for any `sub`, any `aal` and even `role: service_role`. A dedicated key separates rotation and revocation from normal Auth, **not privilege**. Treat it exactly like the service-role key: Edge secret only, never logged, returned or copied into the web app or CI; restrict who can read Edge secrets; prefer KMS/HSM-backed signing once Supabase offers it for custom tokens; and make "rotate the support key and verify that an old-key token is rejected by PostgREST" a rehearsed step of the D19 runbook. The code never logs or returns the JWK (it only returns the signed token to the MFA actor).
+
+Other Edge secrets: `DOMUS_APP_URL` and Supabase-provided URL/anon/service credentials. `DOMUS_INVITATION_TOKEN_KEY` is **no longer used** (T12, L2: the database generates invitation secrets); delete it from hosted Edge secrets.
 
 The HS256 fallback is strictly local: `DOMUS_ENVIRONMENT=local`, `SUPABASE_URL` exactly `http://kong:8000`, `http://127.0.0.1:54321` or `http://localhost:54321`, and an explicit server-only `DOMUS_LOCAL_JWT_SECRET`. It fails closed for hosted URLs or other environments. No private key or `.env` file is committed. Hosted asymmetric key registration has not been performed or claimed as tested; local acceptance uses the explicitly approved local fallback.
+
+## Hosted configuration (T12, M2: required before inviting real users)
+
+Invitation consent trusts that the invitee proved control of the mailbox. The database enforces this per session (`amr` email proof after the invitation existed), but the hosted Auth settings must not undermine it:
+
+| Setting (Dashboard, Authentication)                                                                | Required value                                | Why                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Email provider, **Confirm email**                                                                  | **ON**                                        | A self-signup must never count as a verified address. Locally `[auth.email] enable_confirmations = true`.                                    |
+| Autoconfirm (`GOTRUE_MAILER_AUTOCONFIRM`, reported as `mailer_autoconfirm` by `/auth/v1/settings`) | **OFF**                                       | `send-invitation` refuses to run (503) while it is on.                                                                                       |
+| Phone provider / phone sign-in                                                                     | **OFF**                                       | Auth records SMS codes with the same `otp` method as email links; with phone sign-in on, the session check could be met without the mailbox. |
+| Secure password change (`secure_password_change`)                                                  | ON (recommended)                              | Limits takeover of a briefly unattended session. Not changed locally, to keep the H0 password flows as they are.                             |
+| Allow new users to sign up                                                                         | Optional                                      | Invite-only (`enable_signup = false`) further narrows pre-registration; the invitation flow does not need public signup.                     |
+| Redirect allow-list                                                                                | includes `<DOMUS_APP_URL>/invitations/accept` | Email links must land on the acceptance page.                                                                                                |
+
+Verify after configuring: `curl -s -H "apikey: <anon key>" https://<ref>.supabase.co/auth/v1/settings` must show `"mailer_autoconfirm": false`.
 
 ## Live demo evidence and repeatability
 
@@ -177,6 +199,7 @@ node supabase/functions/local-demo.mjs --prepare
 pnpm supabase functions serve --env-file supabase/.env.local
 # In a second terminal:
 node supabase/functions/local-demo.mjs
+node --test supabase/probes/http-security.test.mjs   # T12 independent HTTP security probes (also in CI)
 ```
 
 The setup writes only a gitignored local function environment. The demo is hard-limited to the local API and never prints credentials or token values. It adds temporary fictional fixtures; coordinate any reset with other workers using the shared stack.
