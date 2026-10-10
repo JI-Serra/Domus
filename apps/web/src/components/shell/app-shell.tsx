@@ -1,12 +1,14 @@
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { TenantStatusBanner } from '@/components/tenant/tenant-status-banner';
 import { Sidebar } from './sidebar';
 import { TabBar } from './tab-bar';
 import { TopBar } from './top-bar';
 
 /**
- * Base layout (M00-F03): sidebar from 1024 px, bottom tab bar below it, and a top bar with the active context.
- * Must be rendered inside an `ActiveContextProvider`.
+ * Base layout (M00-F03): sidebar from 1024 px, bottom tab bar below it, a top bar with the active context and, while
+ * the tenant is suspended, a compact read-only notice. Must be rendered inside an `ActiveContextProvider` and a
+ * `TenantStatusProvider`.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations('common');
@@ -21,6 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar />
       <div className="flex min-w-0 flex-col">
         <TopBar />
+        <TenantStatusBanner />
         <main
           id="main"
           className="w-full max-w-(--container-content) flex-1 px-4 pt-6 pb-[calc(max(var(--tab-bar-height),var(--control-height))+env(safe-area-inset-bottom)+2rem)] lg:px-6 lg:pb-12"
