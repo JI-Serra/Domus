@@ -7,6 +7,7 @@ import {
 } from '@/components/shell/navigation';
 import { PageHeader } from '@/components/shell/page-header';
 import { ButtonLink } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 
 export const dynamicParams = false;
@@ -30,12 +31,14 @@ export default async function SectionPlaceholderPage({
   return (
     <>
       <PageHeader title={nav(`items.${entry.id}`)} />
-      <EmptyState
-        icon={Hammer}
-        title={t('title')}
-        align="start"
-        action={<ButtonLink href="/">{t('backHome')}</ButtonLink>}
-      />
+      <Card>
+        <EmptyState
+          icon={Hammer}
+          title={t('title')}
+          align="start"
+          action={<ButtonLink href="/">{t('backHome')}</ButtonLink>}
+        />
+      </Card>
     </>
   );
 }

@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <TopBar />
         <main
           id="main"
-          className="mx-auto w-full max-w-(--container-content) flex-1 px-4 pt-6 pb-[calc(max(var(--tab-bar-height),var(--control-height))+env(safe-area-inset-bottom)+2rem)] lg:px-6 lg:pb-12"
+          className="w-full max-w-(--container-content) flex-1 px-4 pt-6 pb-[calc(max(var(--tab-bar-height),var(--control-height))+env(safe-area-inset-bottom)+2rem)] lg:px-6 lg:pb-12"
         >
           {children}
         </main>

@@ -16,7 +16,7 @@ vi.mock('next-intl/server', async () => {
   };
 });
 
-it('renders the page title and the active context inside the main landmark', async () => {
+it('renders the page title, the active context and the section shortcuts inside the main landmark', async () => {
   const page = await HomePage();
   const { container } = renderWithShell(<main>{page}</main>);
 
@@ -26,6 +26,10 @@ it('renders the page title and the active context inside the main landmark', asy
   expect(container).toHaveTextContent('Las Acacias');
   expect(container).toHaveTextContent('Titular');
   expect(container).toHaveTextContent('Lote 24');
-  // 18:30 UTC is 15:30 in Tucumán (UTC-3).
-  expect(container).toHaveTextContent('09/10/2026 15:30');
+  // The titular's role offers the resident sections as shortcuts.
+  expect(screen.getByRole('link', { name: 'Accesos' })).toHaveAttribute(
+    'href',
+    '/access',
+  );
+  expect(screen.queryByRole('link', { name: 'Inicio' })).toBeNull();
 });

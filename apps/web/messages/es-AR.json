@@ -128,11 +128,11 @@
   "home": {
     "title": "Inicio",
     "contextTitle": "Tu contexto activo",
+    "sectionsTitle": "Secciones",
     "tenant": "Barrio",
     "role": "Rol",
     "unit": "Unidad",
     "noUnit": "Sin unidad",
-    "sampleTime": "Hora de ejemplo en {zone}",
     "designLink": "Ver el sistema de diseño"
   },
   "placeholder": {
