@@ -8,7 +8,7 @@ export async function submitLogin(
   email: string,
   password: string = PASSWORD,
 ): Promise<void> {
-  await page.goto('/ingresar');
+  await page.goto('/login');
   await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByLabel('Contraseña', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
@@ -33,7 +33,7 @@ export function contextSelector(page: Page) {
 
 export async function logout(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-  await expect(page).toHaveURL(/\/ingresar$/);
+  await expect(page).toHaveURL(/\/login$/);
 }
 
 /** Asserts the page has no horizontal overflow at the current viewport. */

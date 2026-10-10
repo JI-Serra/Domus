@@ -44,20 +44,20 @@ beforeEach(() => {
 });
 
 describe('proxy: route protection', () => {
-  it('sends a visitor to /ingresar with the return path', async () => {
+  it('sends a visitor to /login with the return path', async () => {
     identity.mockResolvedValue(null);
     const response = await proxy(request('/access?x=1'));
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe(
-      `${ORIGIN}/ingresar?next=%2Faccess%3Fx%3D1`,
+      `${ORIGIN}/login?next=%2Faccess%3Fx%3D1`,
     );
     expect(loadResolvedContext).not.toHaveBeenCalled();
   });
 
   it.each([
-    '/ingresar',
-    '/recuperar',
-    '/restablecer',
+    '/login',
+    '/forgot-password',
+    '/reset-password',
     '/auth/callback',
     '/design',
   ])('lets a visitor open the public route %s', async (path) => {
@@ -69,9 +69,9 @@ describe('proxy: route protection', () => {
 
   it('keeps a signed-in user away from the login form only', async () => {
     identity.mockResolvedValue({ userId: 'u1', email: null, aal: 'aal1' });
-    const away = await proxy(request('/ingresar'));
+    const away = await proxy(request('/login'));
     expect(away.headers.get('location')).toBe(`${ORIGIN}/`);
-    const reset = await proxy(request('/restablecer'));
+    const reset = await proxy(request('/reset-password'));
     expect(reset.status).toBe(200);
   });
 

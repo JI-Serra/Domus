@@ -31,19 +31,19 @@ export function safeNextPath(
   }
 }
 
-/** `/ingresar` URL that sends the user back to `returnPath` after signing in. */
+/** `/login` URL that sends the user back to `returnPath` after signing in. */
 export function loginUrlFor(returnPath: string): string {
   const next = safeNextPath(returnPath);
   return next === DEFAULT_AFTER_LOGIN_PATH
-    ? '/ingresar'
-    : `/ingresar?next=${encodeURIComponent(next)}`;
+    ? '/login'
+    : `/login?next=${encodeURIComponent(next)}`;
 }
 
 /** Routes that need no session. Everything else is protected by default (see `proxy.ts`). */
 const PUBLIC_EXACT = new Set([
-  '/ingresar',
-  '/recuperar',
-  '/restablecer',
+  '/login',
+  '/forgot-password',
+  '/reset-password',
   '/api/debug/error',
 ]);
 const PUBLIC_SECTIONS = ['/auth', '/design'];

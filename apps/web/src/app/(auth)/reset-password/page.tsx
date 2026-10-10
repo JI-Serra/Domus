@@ -21,7 +21,7 @@ export default async function ResetPasswordPage() {
         <AuthNotice tone="error" title={t('noSessionTitle')}>
           {t('noSessionBody')}
         </AuthNotice>
-        <ButtonLink href="/recuperar">{t('requestNew')}</ButtonLink>
+        <ButtonLink href="/forgot-password">{t('requestNew')}</ButtonLink>
       </div>
     );
   }

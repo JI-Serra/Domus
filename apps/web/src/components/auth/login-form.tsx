@@ -76,7 +76,7 @@ function PasswordForm({
         {pending ? t('submittingPassword') : t('submitPassword')}
       </Button>
       <Link
-        href="/recuperar"
+        href="/forgot-password"
         className="inline-flex min-h-(--control-height) items-center justify-center text-app-body-dense text-info underline underline-offset-4"
       >
         {t('forgotPassword')}

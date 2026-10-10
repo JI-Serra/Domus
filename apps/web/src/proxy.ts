@@ -22,12 +22,12 @@ interface PendingCookie {
 }
 
 /** Routes an authenticated user has no reason to open (they would just see a login form). */
-const SIGNED_OUT_ONLY_PATHS = new Set(['/ingresar']);
+const SIGNED_OUT_ONLY_PATHS = new Set(['/login']);
 
 /**
  * Runs before every page and Server Action (static assets excluded by the matcher):
  * 1. refreshes the Supabase session, writing the rotated cookies on the response;
- * 2. protects everything except the public routes (default deny) and sends visitors to `/ingresar` with a return
+ * 2. protects everything except the public routes (default deny) and sends visitors to `/login` with a return
  *    path;
  * 3. sets the tenant/role request headers from the context re-validated against the user's active memberships.
  *

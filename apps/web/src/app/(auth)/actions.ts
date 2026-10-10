@@ -90,7 +90,7 @@ export async function requestPasswordResetAction(
 
   const client = await createRequestClient();
   const { error } = await client.auth.resetPasswordForEmail(email, {
-    redirectTo: `${await getSiteUrl()}/auth/callback?next=${encodeURIComponent('/restablecer')}`,
+    redirectTo: `${await getSiteUrl()}/auth/callback?next=${encodeURIComponent('/reset-password')}`,
   });
   if (error && !revealsAccountExistence(error))
     return {

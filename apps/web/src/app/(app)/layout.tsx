@@ -11,7 +11,7 @@ import { getRequestContext } from '@/lib/context/request-context';
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const request = await getRequestContext();
-  if (!request) redirect('/ingresar');
+  if (!request) redirect('/login');
 
   const { active, options } = request.resolved;
   if (!active) return <NoMemberships />;

@@ -27,7 +27,7 @@ export function RecoverForm() {
         <AuthNotice tone="success" title={t('sentTitle')}>
           {t('sentBody', { email: state.email })}
         </AuthNotice>
-        <Link href="/ingresar" className={backLink}>
+        <Link href="/login" className={backLink}>
           {t('backToLogin')}
         </Link>
       </div>
@@ -60,7 +60,7 @@ export function RecoverForm() {
       <Button type="submit" disabled={pending}>
         {pending ? t('submitting') : t('submit')}
       </Button>
-      <Link href="/ingresar" className={backLink}>
+      <Link href="/login" className={backLink}>
         {t('backToLogin')}
       </Link>
     </form>

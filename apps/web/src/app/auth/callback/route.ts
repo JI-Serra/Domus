@@ -16,7 +16,7 @@ const EMAIL_OTP_TYPES: readonly string[] = [
 ];
 
 function failure(request: NextRequest, error: string) {
-  const target = new URL('/ingresar', siteUrlFromHeaders(request.headers));
+  const target = new URL('/login', siteUrlFromHeaders(request.headers));
   target.searchParams.set('error', error);
   return NextResponse.redirect(target);
 }

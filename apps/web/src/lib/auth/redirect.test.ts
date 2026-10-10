@@ -29,26 +29,26 @@ describe('safeNextPath', () => {
   it('rejects non-strings and uses the given fallback', () => {
     expect(safeNextPath(undefined)).toBe('/');
     expect(safeNextPath(['/a'])).toBe('/');
-    expect(safeNextPath(null, '/restablecer')).toBe('/restablecer');
+    expect(safeNextPath(null, '/reset-password')).toBe('/reset-password');
   });
 });
 
 describe('loginUrlFor', () => {
   it('carries the return path', () => {
-    expect(loginUrlFor('/access?x=1')).toBe('/ingresar?next=%2Faccess%3Fx%3D1');
+    expect(loginUrlFor('/access?x=1')).toBe('/login?next=%2Faccess%3Fx%3D1');
   });
 
   it('omits the return path for the home page and for unsafe values', () => {
-    expect(loginUrlFor('/')).toBe('/ingresar');
-    expect(loginUrlFor('//evil.example')).toBe('/ingresar');
+    expect(loginUrlFor('/')).toBe('/login');
+    expect(loginUrlFor('//evil.example')).toBe('/login');
   });
 });
 
 describe('isPublicPath', () => {
   it.each([
-    '/ingresar',
-    '/recuperar',
-    '/restablecer',
+    '/login',
+    '/forgot-password',
+    '/reset-password',
     '/auth/callback',
     '/design',
     '/design/anything',
@@ -65,7 +65,7 @@ describe('isPublicPath', () => {
     '/api/debug/error/extra',
     '/designer',
     '/authors',
-    '/ingresar/extra',
+    '/login/extra',
   ])('%s needs a session', (path) => {
     expect(isPublicPath(path)).toBe(false);
   });

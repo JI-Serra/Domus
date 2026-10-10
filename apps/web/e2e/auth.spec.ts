@@ -32,7 +32,7 @@ test.describe('login and logout', () => {
   test('a wrong password shows an es-AR error and stays on the form', async ({
     page,
   }) => {
-    await page.goto('/ingresar');
+    await page.goto('/login');
     await page.getByLabel('Email', { exact: true }).fill(ACCOUNTS.adminCeibos);
     await page
       .getByLabel('Contraseña', { exact: true })
@@ -42,7 +42,7 @@ test.describe('login and logout', () => {
     await expect(formAlert(page)).toContainText(
       'El email o la contraseña no coinciden. Revisalos y volvé a intentar.',
     );
-    await expect(page).toHaveURL(/\/ingresar$/);
+    await expect(page).toHaveURL(/\/login$/);
     // What the user typed (except the password) is kept.
     await expect(page.getByLabel('Email', { exact: true })).toHaveValue(
       ACCOUNTS.adminCeibos,
@@ -52,7 +52,7 @@ test.describe('login and logout', () => {
   test('field validation errors are in es-AR and tied to the field', async ({
     page,
   }) => {
-    await page.goto('/ingresar');
+    await page.goto('/login');
     await page.getByLabel('Email', { exact: true }).fill('no-es-un-email');
     await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
     await expect(
@@ -68,11 +68,11 @@ test.describe('login and logout', () => {
     await loginWithPassword(page, ACCOUNTS.guardTipas);
     await logout(page);
     await page.goto('/');
-    await expect(page).toHaveURL(/\/ingresar$/);
+    await expect(page).toHaveURL(/\/login$/);
   });
 
   test('the login page has no horizontal overflow', async ({ page }) => {
-    await page.goto('/ingresar');
+    await page.goto('/login');
     await expectNoHorizontalOverflow(page);
   });
 });
@@ -82,7 +82,7 @@ test.describe('route protection', () => {
     page,
   }) => {
     await page.goto('/access');
-    await expect(page).toHaveURL(/\/ingresar\?next=%2Faccess$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Faccess$/);
 
     await page.getByLabel('Email', { exact: true }).fill(ACCOUNTS.holderCeibos);
     await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
@@ -92,7 +92,7 @@ test.describe('route protection', () => {
   });
 
   test('a hostile return path is ignored', async ({ page }) => {
-    await page.goto('/ingresar?next=https%3A%2F%2Fevil.example%2F');
+    await page.goto('/login?next=https%3A%2F%2Fevil.example%2F');
     await page.getByLabel('Email', { exact: true }).fill(ACCOUNTS.holderCeibos);
     await page.getByLabel('Contraseña', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
@@ -120,7 +120,7 @@ test.describe('route protection', () => {
     page,
   }) => {
     await loginWithPassword(page, ACCOUNTS.holderCeibos);
-    await page.goto('/ingresar');
+    await page.goto('/login');
     await expect(page).toHaveURL(/\/$/);
   });
 });
@@ -130,7 +130,7 @@ test.describe('magic link', () => {
     page,
   }) => {
     await clearMailbox();
-    await page.goto('/ingresar');
+    await page.goto('/login');
     await page.getByText('Con enlace por email').click();
     await page.getByLabel('Email', { exact: true }).fill(ACCOUNTS.holderCeibos);
     await page.getByRole('button', { name: 'Enviarme el enlace' }).click();
@@ -144,7 +144,7 @@ test.describe('magic link', () => {
   });
 
   test('answers the same for an email without an account', async ({ page }) => {
-    await page.goto('/ingresar');
+    await page.goto('/login');
     await page.getByText('Con enlace por email').click();
     await page
       .getByLabel('Email', { exact: true })
@@ -160,7 +160,7 @@ test.describe('magic link', () => {
     page,
   }) => {
     await clearMailbox();
-    await page.goto('/ingresar');
+    await page.goto('/login');
     await page.getByText('Con enlace por email').click();
     await page.getByLabel('Email', { exact: true }).fill(ACCOUNTS.guardTipas);
     await page.getByRole('button', { name: 'Enviarme el enlace' }).click();
@@ -171,7 +171,7 @@ test.describe('magic link', () => {
     await logout(page);
 
     await page.goto(link);
-    await expect(page).toHaveURL(/\/ingresar/);
+    await expect(page).toHaveURL(/\/login/);
     await expect(formAlert(page)).toContainText(
       'El enlace venció o ya se usó.',
     );
@@ -186,16 +186,16 @@ test.describe('password recovery', () => {
     const newPassword = 'ClaveNueva456!';
     await clearMailbox();
 
-    await page.goto('/ingresar');
+    await page.goto('/login');
     await page.getByRole('link', { name: 'Olvidé mi contraseña' }).click();
-    await expect(page).toHaveURL(/\/recuperar$/);
+    await expect(page).toHaveURL(/\/forgot-password$/);
     await page.getByLabel('Email', { exact: true }).fill(user.email);
     await page.getByRole('button', { name: 'Enviar enlace' }).click();
     await expect(page.getByRole('status')).toContainText('Revisá tu email');
 
     const link = extractAuthLink(await waitForEmailText(user.email));
     await page.goto(link);
-    await expect(page).toHaveURL(/\/restablecer$/);
+    await expect(page).toHaveURL(/\/reset-password$/);
     await expect(
       page.getByRole('heading', { name: 'Elegí una contraseña nueva' }),
     ).toBeVisible();
@@ -221,7 +221,7 @@ test.describe('password recovery', () => {
       }),
     ).toBeVisible();
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-    await expect(page).toHaveURL(/\/ingresar$/);
+    await expect(page).toHaveURL(/\/login$/);
 
     // The old password no longer works; the new one does.
     await page.getByLabel('Email', { exact: true }).fill(user.email);
@@ -240,7 +240,7 @@ test.describe('password recovery', () => {
   });
 
   test('does not reveal whether the email has an account', async ({ page }) => {
-    await page.goto('/recuperar');
+    await page.goto('/forgot-password');
     await page
       .getByLabel('Email', { exact: true })
       .fill('nadie.registrado@domus.local');
@@ -253,10 +253,10 @@ test.describe('password recovery', () => {
   test('opening the reset page without a recovery session explains the expired link', async ({
     page,
   }) => {
-    await page.goto('/restablecer');
+    await page.goto('/reset-password');
     await expect(formAlert(page)).toContainText('El enlace venció');
     await page.getByRole('link', { name: 'Pedir un enlace nuevo' }).click();
-    await expect(page).toHaveURL(/\/recuperar$/);
+    await expect(page).toHaveURL(/\/forgot-password$/);
   });
 });
 
@@ -271,6 +271,6 @@ test.describe('no memberships', () => {
     ).toBeVisible();
     await expect(page.getByText('Cuando la administración')).toBeVisible();
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
-    await expect(page).toHaveURL(/\/ingresar$/);
+    await expect(page).toHaveURL(/\/login$/);
   });
 });

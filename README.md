@@ -70,14 +70,14 @@ Node comes from `.nvmrc`, pnpm from `packageManager` in `package.json`, and the 
 
 Sign-in uses Supabase Auth with the session in cookies (`@supabase/ssr`), so it survives reloads. All routes and copy are es-AR.
 
-| Route            | Purpose                                                                                                                    |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `/ingresar`      | Email + password, or a magic link sent by email (segmented control). Honors `?next=<path>` (same-origin paths only)        |
-| `/recuperar`     | Password recovery request. The answer is identical whether or not the email has an account                                 |
-| `/restablecer`   | Choose a new password; needs the recovery session opened by the email link                                                 |
-| `/auth/callback` | Route handler the email links land on: exchanges the `code` (PKCE) or `token_hash` for a session, then redirects to `next` |
+| Route              | Purpose                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `/login`           | Email + password, or a magic link sent by email (segmented control). Honors `?next=<path>` (same-origin paths only)        |
+| `/forgot-password` | Password recovery request. The answer is identical whether or not the email has an account                                 |
+| `/reset-password`  | Choose a new password; needs the recovery session opened by the email link                                                 |
+| `/auth/callback`   | Route handler the email links land on: exchanges the `code` (PKCE) or `token_hash` for a session, then redirects to `next` |
 
-- **Protection.** `apps/web/src/proxy.ts` refreshes the session on every request and protects everything except `/ingresar`, `/recuperar`, `/restablecer`, `/auth/*`, `/design` and `/api/debug/error` (default deny; list in `lib/auth/redirect.ts`). Visitors go to `/ingresar?next=<path>`. The `(app)` layout checks the session again.
+- **Protection.** `apps/web/src/proxy.ts` refreshes the session on every request and protects everything except `/login`, `/forgot-password`, `/reset-password`, `/auth/*`, `/design` and `/api/debug/error` (default deny; list in `lib/auth/redirect.ts`). Visitors go to `/login?next=<path>`. The `(app)` layout checks the session again.
 - **Errors.** Supabase errors are mapped to es-AR messages in `lib/auth/errors.ts` (invalid credentials, unconfirmed email, rate limit, expired link, network, weak password…). The raw English message is never shown.
 - **Active context.** The server loads the user's active memberships (with their tenant) through the user's own RLS-scoped client — never `service_role` — and `@domus/domain/context` validates the choice: the `domus-context` cookie only _requests_ a context, and it is re-checked on every request, so a stale or forged value falls back to the first barrio by name. Switching uses a server action. Units arrive in M02 (unit is `null`). The "Plataforma" option appears only for an active platform admin whose session is `aal2` (MFA enrollment: M01-F05). A user without memberships sees an empty state with a logout button.
 - **Error-reporting headers.** The proxy sets `x-domus-tenant-id` and `x-domus-membership-role` from the validated context (and strips any client-supplied values), so `@domus/observability` reports tenant context.
@@ -89,7 +89,7 @@ Sign-in uses Supabase Auth with the session in cookies (`@supabase/ssr`), so it 
 
 - First run: `pnpm --filter @domus/web exec playwright install chromium`.
 - `E2E_DEV=1` runs against `next dev` instead; an already running server on the port is reused locally. `E2E_PORT`, `E2E_BASE_URL` and `MAILPIT_URL` override the defaults.
-- `E2E_SCREENSHOTS=1 pnpm --filter @domus/web test:e2e screenshots` refreshes `docs/screenshots/h0/login-*` and `context-selector-*`.
+- `E2E_SCREENSHOTS=1 pnpm --filter @domus/web test:e2e screenshots` refreshes every capture in `docs/screenshots/h0/` (design and home shell in four themes, login, info button, context selector).
 - The tests read `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `apps/web/.env.local` (CI exports them from `supabase status`).
 
 ## Error reporting

@@ -42,5 +42,5 @@ export async function signOutAction(): Promise<void> {
   const client = await createRequestClient();
   await client.auth.signOut({ scope: 'local' });
   (await cookies()).delete(CONTEXT_COOKIE_NAME);
-  redirect('/ingresar');
+  redirect('/login');
 }
