@@ -11,11 +11,27 @@ Multitenant community management for gated communities in Argentina. This is the
 ## Setup
 
 1. Run `pnpm install` at the repository root.
-2. Run `pnpm supabase start` to start the local stack.
-3. Copy `apps/web/.env.example` to `apps/web/.env.local`. Use `Copy-Item` in PowerShell or `cp` on POSIX. Replace the anon key placeholder with the local anon key printed by Supabase (`pnpm supabase status` shows it again).
-4. Run `pnpm dev` and open <http://localhost:3000>.
+2. Run `pnpm stack`.
 
-Stop the web server with Ctrl+C and the local stack with `pnpm supabase stop`. Cloud Supabase is staging and is managed by the orchestrator; these commands target local development only.
+`pnpm stack` starts the local Supabase stack if it is not running, prepares the gitignored env files (`supabase/.env.local` with the Edge Function secrets, and `apps/web/.env.local` from the running stack when missing), serves the Edge Functions, and starts the web dev server. When ready it prints the URLs:
+
+| Service   | URL                                   |
+| --------- | ------------------------------------- |
+| App       | <http://127.0.0.1:3000>               |
+| Mailpit   | <http://127.0.0.1:54324>              |
+| Studio    | <http://127.0.0.1:54323>              |
+| Functions | <http://127.0.0.1:54321/functions/v1> |
+
+Ctrl+C stops the web server and the Edge Functions; Supabase keeps running (`pnpm supabase stop` stops it, or run `pnpm stack -- --stop` to stop it on exit). `pnpm stack:reset` is a separate, explicit command: it resets the local database (migrations + seed) and refreshes the env files. Cloud Supabase is staging and is managed by the orchestrator; these commands target local development only.
+
+### Troubleshooting
+
+- **"Could not start the local Supabase stack"**: start Docker Desktop (Linux containers) and run `pnpm stack` again.
+- **Port 3000 is busy**: stop the other dev server (another `pnpm stack` or `next dev`); the auth `site_url` requires port 3000.
+- **Invitation or support-session actions fail**: the Edge Functions are not being served; check the `pnpm stack` output, or run `node scripts/e2e-preflight.mjs`.
+- **Function secrets look stale after `supabase stop`/`start`**: run `node scripts/prepare-function-env.mjs` (`--force` also rotates the invitation token key, which invalidates pending invitations).
+- **Logo upload fails**: Storage is not running; `pnpm supabase status` should list no stopped `storage` service. Restart with `pnpm supabase stop && pnpm stack`.
+- **Clean data**: `pnpm stack:reset`.
 
 ## Workspace
 
@@ -33,18 +49,20 @@ Internal TypeScript packages export source modules through workspace exports; Ne
 
 ## Commands
 
-| Command                   | Purpose                                                                         |
-| ------------------------- | ------------------------------------------------------------------------------- |
-| `pnpm dev`                | Start the web application (start Supabase first)                                |
-| `pnpm build`              | Production web build                                                            |
-| `pnpm lint`               | ESLint across packages                                                          |
-| `pnpm typecheck`          | Generate Next.js route types and check strict TypeScript                        |
-| `pnpm test`               | Unit and smoke tests; domain coverage must be at least 80%                      |
-| `pnpm test:db`            | Run local pgTAP tests (requires running Supabase)                               |
-| `pnpm test:e2e`           | Build, then run the Playwright suite (needs local Supabase; see Authentication) |
-| `pnpm format`             | Format code using the shared Prettier configuration                             |
-| `pnpm supabase <command>` | Invoke the installed Supabase CLI                                               |
-| `pnpm gen:types`          | Replace `packages/supabase/src/database.types.ts` from the local database       |
+| Command                   | Purpose                                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pnpm stack`              | Start Supabase, Edge Functions and the web dev server in one command                                     |
+| `pnpm stack:reset`        | Reset the local database (migrations + seed) and refresh the env files                                   |
+| `pnpm dev`                | Start only the web application (start Supabase first)                                                    |
+| `pnpm build`              | Production web build                                                                                     |
+| `pnpm lint`               | ESLint across packages                                                                                   |
+| `pnpm typecheck`          | Generate Next.js route types and check strict TypeScript                                                 |
+| `pnpm test`               | Unit and smoke tests; domain coverage must be at least 80%                                               |
+| `pnpm test:db`            | Run local pgTAP tests (requires running Supabase)                                                        |
+| `pnpm test:e2e`           | Build, then run the Playwright suite (needs the full local stack, i.e. `pnpm stack`; see Authentication) |
+| `pnpm format`             | Format code using the shared Prettier configuration                                                      |
+| `pnpm supabase <command>` | Invoke the installed Supabase CLI                                                                        |
+| `pnpm gen:types`          | Replace `packages/supabase/src/database.types.ts` from the local database                                |
 
 The database type file is intentionally an empty-schema placeholder until the schema task. Type generation uses a Node script so it writes UTF-8 consistently on Windows and POSIX and preserves the existing file on CLI failure.
 
@@ -58,11 +76,11 @@ TypeScript is pinned to 6.0.3 because current typescript-eslint supports TypeScr
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. A newer push to the same branch cancels the older run (concurrency group per branch).
 
-| Job        | What it runs                                                                                                                                                                                                                                                      |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `quality`  | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` through Turborepo                                                                                                                                                                                        |
-| `e2e`      | Full local Supabase start (Postgres, Auth, API gateway, mail catcher), `pnpm build`, then Playwright (Chromium; 1440 px and 360 px projects) against `next start`. The HTML report and traces are uploaded as the `playwright-report` artifact when the job fails |
-| `database` | `pnpm supabase start` with only Postgres and Auth (all other services excluded with `-x`), then `pnpm test:db` (pgTAP, including the RLS/isolation suite), then `supabase stop`                                                                                   |
+| Job        | What it runs                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality`  | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` through Turborepo                                                                                                                                                                                                                                                                                                                                                                               |
+| `e2e`      | Local Supabase start (Postgres, Auth, API gateway, Storage, Edge runtime, mail catcher), function env prepared at run time and `supabase functions serve` in the background, a preflight that fails the job if Storage, a function or Mailpit is unreachable, `pnpm build`, then Playwright (Chromium; 1440 px and 360 px projects) against `next start`. The HTML report and traces are uploaded as the `playwright-report` artifact when the job fails |
+| `database` | `pnpm supabase start` with only Postgres and Auth (all other services excluded with `-x`), then `pnpm test:db` (pgTAP, including the RLS/isolation suite), then `supabase stop`                                                                                                                                                                                                                                                                          |
 
 Node comes from `.nvmrc`, pnpm from `packageManager` in `package.json`, and the pnpm store is cached by `actions/setup-node`; `.turbo` is cached separately. Run the same checks locally with the commands in the table above before pushing.
 
@@ -85,7 +103,7 @@ Sign-in uses Supabase Auth with the session in cookies (`@supabase/ssr`), so it 
 
 ### End-to-end tests
 
-`pnpm test:e2e` builds the app and runs Playwright (Chromium, projects `desktop-1440` and `mobile-360`) against `next start` on port 3000, with the local Supabase stack running and seeded (`pnpm supabase start`; `pnpm supabase db reset` for a clean seed). It covers login, wrong password, logout, route protection, magic link and password recovery through the mail catcher, switching between the two barrios of `shared@domus.local`, forged context cookies, and an isolation demo (a tenant A user querying tenant B rows with supabase-js gets nothing). Recovery and empty-state tests create their own throwaway account, so the seeded users are never modified.
+`pnpm test:e2e` builds the app and runs Playwright (Chromium, projects `desktop-1440` and `mobile-360`) against `next start` on port 3000, with the local stack running and seeded (`pnpm stack`; `pnpm stack:reset` for a clean seed). A Playwright preflight (`scripts/e2e-preflight.mjs`) fails the run immediately when Storage, the Edge Functions or Mailpit are not reachable, so those tests never skip silently. It covers login, wrong password, logout, route protection, magic link and password recovery through the mail catcher, switching between the two barrios of `shared@domus.local`, forged context cookies, and an isolation demo (a tenant A user querying tenant B rows with supabase-js gets nothing). Recovery and empty-state tests create their own throwaway account, so the seeded users are never modified.
 
 - First run: `pnpm --filter @domus/web exec playwright install chromium`.
 - `E2E_DEV=1` runs against `next dev` instead; an already running server on the port is reused locally. `E2E_PORT`, `E2E_BASE_URL` and `MAILPIT_URL` override the defaults.

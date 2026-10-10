@@ -14,6 +14,8 @@ const SERVER_COMMAND = process.env.E2E_DEV
 
 export default defineConfig({
   testDir: './e2e',
+  // Fails the whole run up front when Storage, Edge Functions or the mail catcher are down (no silent skips).
+  globalSetup: '../../scripts/e2e-preflight.mjs',
   // The tests share one local Supabase stack and one mail catcher, so they run one at a time.
   fullyParallel: false,
   workers: 1,
