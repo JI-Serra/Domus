@@ -82,6 +82,9 @@ hand-write duplicate row types.
 
 ## Quality bar
 
+- Write your task report to `reports/<feature-id or task>.md` (what was done, versions, decisions, acceptance output).
+- Several agents may run at once on this machine: use the dev-server port your task assigns (default 3000) and don't stop
+  Docker containers or servers you didn't start.
 - Before reporting done: `pnpm lint`, `pnpm typecheck`, `pnpm test` (and `pnpm test:db` if you touched `supabase/`) pass.
 - Tests for every behavior you add; `packages/domain` coverage ≥ 80 %.
 - UI: works at 360 px and 1440 px; touch targets ≥ 44 px (≥ 56 px in gate mode); state is never conveyed by color only;
