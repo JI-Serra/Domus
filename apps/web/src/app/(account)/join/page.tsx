@@ -21,7 +21,7 @@ export default async function JoinPage() {
   return (
     <>
       <PageHeader title={t('title')} />
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-2">
         <JoinForm />
         <MyJoinRequests requests={requests} />
       </div>

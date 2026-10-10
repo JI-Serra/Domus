@@ -266,9 +266,7 @@
       "endBody": "Pierde el acceso a la unidad. Si más adelante vuelve, la podés invitar de nuevo.",
       "endConfirm": "Quitar del hogar",
       "ending": "Quitando…",
-      "listLabel": "Miembros del hogar",
-      "emailLocked": "El email no se puede cambiar mientras tenga cuenta.",
-      "emailInfoLabel": "Más información sobre el email"
+      "listLabel": "Miembros del hogar"
     },
     "delegations": {
       "title": "Permisos de {name}",

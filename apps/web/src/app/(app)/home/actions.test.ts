@@ -402,7 +402,7 @@ describe('updateMemberAction', () => {
     });
   });
 
-  it('keeps the email an account was invited to', async () => {
+  it('does not edit people with an account or a live invitation (only a registry admin can)', async () => {
     loadHouseholdSheet.mockResolvedValue(
       baseSheet({
         memberships: [
@@ -417,10 +417,10 @@ describe('updateMemberAction', () => {
         ],
       }),
     );
-    await actions.updateMemberAction(PERSON, IDLE, detailForm());
-    expect(saveResident.mock.calls[0]?.[1].person_data.person_email).toBe(
-      'diego@domus.local',
-    );
+    expect(
+      await actions.updateMemberAction(PERSON, IDLE, detailForm()),
+    ).toMatchObject({ formError: 'denied' });
+    expect(saveResident).not.toHaveBeenCalled();
   });
 
   it('does not touch another holder', async () => {
@@ -432,7 +432,16 @@ describe('updateMemberAction', () => {
 });
 
 describe('endMembershipAction', () => {
-  it('ends the residence now and withdraws a pending invitation', async () => {
+  it('ends the residence of a person without account, now', async () => {
+    const state = await actions.endMembershipAction(PERSON);
+    expect(state).toEqual({ status: 'success', notice: 'ended' });
+    const ended =
+      saveResident.mock.calls[0]?.[1].resident_data.unit_resident_valid_to_at;
+    expect(Date.parse(ended)).toBeLessThanOrEqual(Date.now());
+    expect(Date.parse(ended)).toBeGreaterThan(Date.now() - 60_000);
+  });
+
+  it('does not end a person with an account or a live invitation', async () => {
     loadHouseholdSheet.mockResolvedValue(
       baseSheet({
         pending_invitations: [
@@ -448,17 +457,10 @@ describe('endMembershipAction', () => {
         ],
       }),
     );
-    const state = await actions.endMembershipAction(PERSON);
-    expect(state).toEqual({ status: 'success', notice: 'ended' });
-    expect(revokeResidentInvitation).toHaveBeenCalledWith(client, {
-      target_tenant_id: TENANT,
-      target_unit_id: UNIT,
-      target_invitation_id: INVITATION,
+    expect(await actions.endMembershipAction(PERSON)).toMatchObject({
+      formError: 'denied',
     });
-    const ended =
-      saveResident.mock.calls[0]?.[1].resident_data.unit_resident_valid_to_at;
-    expect(Date.parse(ended)).toBeLessThanOrEqual(Date.now());
-    expect(Date.parse(ended)).toBeGreaterThan(Date.now() - 60_000);
+    expect(saveResident).not.toHaveBeenCalled();
   });
 
   it('never ends a holder', async () => {

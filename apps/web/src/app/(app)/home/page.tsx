@@ -63,7 +63,7 @@ export default async function HouseholdPage() {
   return (
     <>
       <PageHeader title={t('title')} />
-      <div className="grid items-start gap-6 xl:grid-cols-6">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-6">
         {scope.isHolder ? (
           <div className="xl:col-span-6 empty:hidden">
             <JoinRequestSection requests={view.requests} />

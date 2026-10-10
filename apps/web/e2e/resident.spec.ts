@@ -17,6 +17,7 @@ import {
   createHouseholdFixture,
   membershipIdOf,
   openInvitationEmail,
+  personIdByEmail,
   removePetPhotos,
 } from './support/residents';
 import type { ResidentFixture } from './support/residents';
@@ -107,7 +108,12 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
       holderEmail,
       holderName: { first: 'Carla', last: 'Hogar' },
     });
-    emails.push(fixture.adminEmail, holderEmail, memberEmail);
+    emails.push(
+      fixture.adminEmail,
+      holderEmail,
+      memberEmail,
+      `e2e.lucas.${stamp}@domus.local`,
+    );
     holderContext = await newContext(browser, testInfo);
     holder = await holderContext.newPage();
     memberContext = await newContext(browser, testInfo);
@@ -284,6 +290,14 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
     await group.getByText('Reservar amenities').click();
     await expect(amenities).toBeChecked();
     await expect(access).toBeChecked();
+    // Each toggle is saved on its own; wait for the database before reloading anything.
+    await expect
+      .poll(async () => (await sheet()).permissions)
+      .toEqual([
+        'view_unit_finance',
+        'book_amenities',
+        'manage_access_authorizations',
+      ]);
     await holder.reload();
     await expect(
       holder
@@ -347,7 +361,9 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
     await expect(
       again.getByLabel('Ver finanzas de la unidad'),
     ).not.toBeChecked();
-    await expect(holder.getByText('Permisos guardados.')).toBeVisible();
+    await expect
+      .poll(async () => (await sheet()).permissions)
+      .toEqual(['book_amenities', 'manage_access_authorizations']);
     await member.reload();
     await expect(delegated.getByRole('listitem')).toHaveCount(2);
     await expect(member.getByText('Finanzas de la unidad')).toHaveCount(0);
@@ -355,6 +371,9 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
     // Back to the default so the rest of the flow starts from it.
     await again.getByText('Reservar amenities').click();
     await expect(again.getByLabel('Reservar amenities')).not.toBeChecked();
+    await expect
+      .poll(async () => (await sheet()).permissions)
+      .toEqual(['manage_access_authorizations']);
   });
 
   test('the holder adds, edits and removes vehicles; the plate format help is behind an info button', async () => {
@@ -476,7 +495,7 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
     await confirm.getByRole('button', { name: 'Generar código' }).click();
     const code = (await holder.getByTestId('unit-code').innerText()).trim();
     expect(code).toMatch(
-      /^[23456789A-HJKMNP-Z]{4}-[23456789A-HJKMNP-Z]{4}-[23456789A-HJKMNP-Z]{4}$/,
+      /^[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/,
     );
     await expect(
       holder.getByRole('button', { name: 'Generar código nuevo' }),
@@ -514,10 +533,11 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
       };
       await fill('ABC');
       await expect(page.getByText(answer)).toBeVisible();
-      const malformed = await page.locator('main').innerText();
+      const errors = page.locator('p[id$="-error"]');
+      const malformed = await errors.allInnerTexts();
       await fill('ZZZZ-ZZZZ-ZZZZ');
       await expect(page.getByText(answer)).toBeVisible();
-      expect(await page.locator('main').innerText()).toBe(malformed);
+      expect(await errors.allInnerTexts()).toEqual(malformed);
       await expect(page.getByLabel('Nombre', { exact: true })).toHaveValue(
         'Ana',
       );
@@ -633,41 +653,94 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
     ).toBeVisible();
   });
 
-  test('the holder can end a membership; the person loses access', async ({
-    browser,
-  }, testInfo) => {
+  test('the holder manages people without an account (minor, revoked invitation); a member with an account is out of the holder reach', async () => {
+    const members = holder.getByRole('list', { name: 'Miembros del hogar' });
+    const rowOf = (name: string) =>
+      members.getByRole('listitem').filter({ hasText: name });
     await holder.goto('/home');
-    const row = holder
-      .getByRole('list', { name: 'Miembros del hogar' })
-      .getByRole('listitem')
-      .filter({ hasText: 'Diego Hogar' });
-    await row.getByRole('button', { name: 'Editar a Diego Hogar' }).click();
+
+    // A person with an account can't be edited or removed by the holder (T19): not offered, and refused by the database.
+    const diego = rowOf('Diego Hogar');
+    await expect(diego.getByText('Con cuenta')).toBeVisible();
+    await expect(
+      diego.getByRole('button', { name: /Editar|Quitar/ }),
+    ).toHaveCount(0);
+    const asHolder = clientWithToken(
+      await accessTokenFromCookies(await holderContext.cookies()),
+    );
+    const ended = await asHolder.rpc('save_resident', {
+      target_tenant_id: tenantId,
+      target_unit_id: fixture.unitId,
+      person_data: {
+        person_id: await personIdByEmail(tenantId, memberEmail),
+        person_first_name: 'Diego',
+        person_last_name: 'Hogar',
+      },
+      resident_data: {
+        unit_resident_relationship: 'family',
+        unit_resident_valid_to_at: new Date().toISOString(),
+      },
+      client_event_id: randomUUID(),
+    });
+    expect(ended.error?.code).toBe('42501');
+
+    // A minor is registered without account: no invitation, no permissions; it can be edited and removed.
+    await holder.getByRole('button', { name: 'Agregar miembro' }).click();
+    const add = dialogOf(holder, 'Agregar miembro');
+    await add.getByLabel('Nombre').fill('Mateo');
+    await add.getByLabel('Apellido').fill('Hogar');
+    await add.getByText('Es menor de edad').click();
+    await expect(add.getByLabel('Email')).toHaveCount(0);
+    await add.getByRole('button', { name: 'Guardar' }).click();
+    await expect(holder.getByText('Menor agregado al hogar.')).toBeVisible();
+    const mateo = rowOf('Mateo Hogar');
+    await expect(mateo.getByText('Menor', { exact: true })).toBeVisible();
+    await expect(mateo.getByRole('button', { name: /Invitar/ })).toHaveCount(0);
+    await expect(mateo.getByRole('group')).toHaveCount(0);
+
+    await mateo.getByRole('button', { name: 'Editar a Mateo Hogar' }).click();
     const edit = dialogOf(holder, 'Editar miembro');
     await edit.getByLabel('Relación').selectOption('tenant');
-    await edit.getByLabel('Teléfono').fill('3815550100');
     await edit.getByRole('button', { name: 'Guardar' }).click();
-    await expect(row).toContainText('Inquilino');
-
-    await row
-      .getByRole('button', { name: 'Quitar a Diego Hogar del hogar' })
+    await expect(mateo).toContainText('Inquilino');
+    await mateo
+      .getByRole('button', { name: 'Quitar a Mateo Hogar del hogar' })
       .click();
-    const confirm = dialogOf(holder, 'Quitar a Diego Hogar del hogar');
+    const confirm = dialogOf(holder, 'Quitar a Mateo Hogar del hogar');
     await expect(confirm).toContainText('Pierde el acceso a la unidad');
     await confirm.getByRole('button', { name: 'Quitar del hogar' }).click();
     await expect(
       holder.getByText('Quitaste a la persona del hogar.'),
     ).toBeVisible();
-    await expect(
-      holder.getByRole('list', { name: 'Miembros del hogar' }),
-    ).not.toContainText('Diego Hogar');
+    await expect(members).not.toContainText('Mateo Hogar');
 
-    // The member's next request has nothing to show for that unit.
-    await member.goto('/home');
+    // An invitation that is revoked leaves a resident without account who can be invited again or removed.
+    await holder.getByRole('button', { name: 'Agregar miembro' }).click();
+    const invite = dialogOf(holder, 'Agregar miembro');
+    await invite.getByLabel('Nombre').fill('Lucas');
+    await invite.getByLabel('Apellido').fill('Hogar');
+    await invite.getByLabel('Email').fill(`e2e.lucas.${stamp}@domus.local`);
+    await invite.getByRole('button', { name: 'Enviar invitación' }).click();
+    const lucas = rowOf('Lucas Hogar');
+    await expect(lucas.getByText('Invitado')).toBeVisible();
     await expect(
-      member.getByText('Todavía no tenés un barrio asignado'),
+      lucas.getByRole('button', { name: /Editar|Quitar/ }),
+    ).toHaveCount(0);
+    await lucas
+      .getByRole('button', { name: 'Revocar la invitación de Lucas Hogar' })
+      .click();
+    await expect(holder.getByText('Invitación revocada.')).toBeVisible();
+    await expect(lucas.getByText('Sin cuenta')).toBeVisible();
+    await expect(
+      lucas.getByRole('button', { name: 'Invitar a Lucas Hogar' }),
     ).toBeVisible();
-    void browser;
-    void testInfo;
+    await lucas
+      .getByRole('button', { name: 'Quitar a Lucas Hogar del hogar' })
+      .click();
+    await dialogOf(holder, 'Quitar a Lucas Hogar del hogar')
+      .getByRole('button', { name: 'Quitar del hogar' })
+      .click();
+    await expect(members).not.toContainText('Lucas Hogar');
   });
 
   test('Mi hogar in dark mode and the bottom tab bar on mobile', async ({

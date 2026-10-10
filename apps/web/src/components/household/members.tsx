@@ -204,7 +204,6 @@ function EditMemberForm({
   useCloseOnSuccess(state, onDone);
   const values = state.status === 'error' ? (state.values ?? {}) : {};
   const errors = state.status === 'error' ? state.errors : {};
-  const hasAccount = member.standing === 'member';
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
@@ -265,25 +264,13 @@ function EditMemberForm({
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label={t('fields.email')}
-          info={
-            hasAccount
-              ? {
-                  label: t('members.emailInfoLabel'),
-                  text: t('members.emailLocked'),
-                }
-              : undefined
-          }
-          error={message(errors.person_email)}
-        >
+        <Field label={t('fields.email')} error={message(errors.person_email)}>
           <Input
             name="person_email"
             type="email"
             inputMode="email"
             autoCapitalize="none"
             spellCheck={false}
-            readOnly={hasAccount}
             defaultValue={values.person_email ?? member.email ?? ''}
           />
         </Field>
@@ -421,6 +408,9 @@ function MemberRow({
   const name = fullName(member);
   const manageable =
     canManage && member.standing !== 'holder' && !member.isSelf;
+  // The database only lets a holder edit or end people without an account who were never invited.
+  const editable =
+    member.standing === 'unregistered' || member.standing === 'minor';
   const close = (notice: Notice | null) => {
     setSheet(null);
     onNotice(notice);
@@ -518,22 +508,26 @@ function MemberRow({
               </Button>
             </>
           ) : null}
-          <Button
-            variant="secondary"
-            disabled={!writable}
-            aria-label={t('members.editLabel', { name })}
-            onClick={() => setSheet('edit')}
-          >
-            {t('members.edit')}
-          </Button>
-          <Button
-            variant="destructive"
-            disabled={!writable}
-            aria-label={t('members.endLabel', { name })}
-            onClick={() => setConfirmEnd(true)}
-          >
-            {t('members.end')}
-          </Button>
+          {editable ? (
+            <>
+              <Button
+                variant="secondary"
+                disabled={!writable}
+                aria-label={t('members.editLabel', { name })}
+                onClick={() => setSheet('edit')}
+              >
+                {t('members.edit')}
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={!writable}
+                aria-label={t('members.endLabel', { name })}
+                onClick={() => setConfirmEnd(true)}
+              >
+                {t('members.end')}
+              </Button>
+            </>
+          ) : null}
         </div>
       ) : null}
 

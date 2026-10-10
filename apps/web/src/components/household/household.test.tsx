@@ -88,6 +88,12 @@ const member = (overrides: Partial<MemberView> = {}): MemberView => ({
   ...overrides,
 });
 
+const noAccount = member({
+  standing: 'unregistered',
+  membershipId: null,
+  permissions: [],
+});
+
 const holder = member({
   residentId: 'r0',
   personId: 'p0',
@@ -235,8 +241,15 @@ describe('MemberSection (holder)', () => {
     );
   });
 
-  it('removes a person from the household only after confirming the effect', async () => {
+  it('offers neither edit nor removal for a person with an account (only a registry admin can)', () => {
     renderWithShell(<MemberSection canManage members={[member()]} />);
+    expect(
+      screen.queryByRole('button', { name: /Editar|Quitar/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('removes a person from the household only after confirming the effect', async () => {
+    renderWithShell(<MemberSection canManage members={[noAccount]} />);
     fireEvent.click(
       screen.getByRole('button', { name: 'Quitar a Diego Ceibos del hogar' }),
     );
@@ -387,7 +400,7 @@ describe('MemberSection (holder)', () => {
 
   it('disables every write while the barrio is read-only (suspended)', () => {
     renderWithShell(
-      <MemberSection canManage members={[member()]} />,
+      <MemberSection canManage members={[member(), noAccount]} />,
       undefined,
       {
         tenantStatus: 'suspended',

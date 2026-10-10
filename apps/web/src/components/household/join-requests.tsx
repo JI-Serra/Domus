@@ -86,7 +86,7 @@ export function JoinRequestSection({
       {requests.length > 0 ? (
         <ul
           aria-label={t('requests.listLabel')}
-          className="grid gap-3 md:grid-cols-2"
+          className="grid grid-cols-1 gap-3 md:grid-cols-2"
         >
           {requests.map((request) => (
             <RequestRow

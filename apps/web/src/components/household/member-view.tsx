@@ -27,7 +27,7 @@ export function DelegatedSections({
       ) : (
         <ul
           aria-label={t('sections.delegated')}
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+          className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
         >
           {enabled.map((permission) => (
             <li
@@ -69,7 +69,7 @@ export function OwnData({ member }: { member: MemberView }) {
   return (
     <Card density="dense" className="flex flex-col gap-4">
       <h2 className="text-app-heading">{t('sections.yourData')}</h2>
-      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {rows
           .filter(([, value]) => value)
           .map(([label, value]) => (

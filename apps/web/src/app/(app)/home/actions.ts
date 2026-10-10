@@ -87,6 +87,15 @@ async function deliveryFailure(
   return formError('unknown', values);
 }
 
+/**
+ * What the database lets a holder change (T19, `save_resident`): only people they registered who have no account and
+ * were never invited. Account members and invited people can't be edited or ended by the holder (a registry admin
+ * does that); the holder can revoke an invitation, after which the person is editable again.
+ */
+function isEditableStanding(standing: MemberView['standing']): boolean {
+  return standing === 'unregistered' || standing === 'minor';
+}
+
 type SheetResident = HouseholdSheet['residents'][number];
 
 /** The person and residence of a sheet row as the full-replacement payloads of `save_resident`. */
@@ -351,7 +360,7 @@ export async function updateMemberAction(
     !UUID.test(personId) ||
     !member ||
     !resident ||
-    member.standing === 'holder'
+    !isEditableStanding(member.standing)
   )
     return formError('denied', values);
   const parsed = memberDetailsSchema.safeParse(values);
@@ -363,11 +372,7 @@ export async function updateMemberAction(
       person_last_name: parsed.data.person_last_name,
       person_phone: parsed.data.person_phone,
       person_birth_date: parsed.data.person_birth_date,
-      // The address an account was invited to stays as it is.
-      person_email:
-        member.standing === 'member'
-          ? resident.person_email
-          : parsed.data.person_email,
+      person_email: parsed.data.person_email,
     },
     resident: {
       unit_resident_relationship: parsed.data.unit_resident_relationship,
@@ -385,7 +390,7 @@ export async function updateMemberAction(
   return { status: 'success', notice: 'saved' };
 }
 
-/** Ends a member's residence (and with it their access to the unit) and withdraws any pending invitation. */
+/** Ends the residence of a person without account (see `isEditableStanding`). */
 export async function endMembershipAction(
   personId: string,
 ): Promise<PlatformFormState> {
@@ -400,20 +405,11 @@ export async function endMembershipAction(
     !UUID.test(personId) ||
     !member ||
     !resident ||
-    member.standing === 'holder' ||
+    !isEditableStanding(member.standing) ||
     member.isSelf
   )
     return formError('denied');
 
-  if (member.invitation) {
-    const revoked = await revokeResidentInvitation(scope.client, {
-      target_tenant_id: scope.tenantId,
-      target_unit_id: scope.unitId,
-      target_invitation_id: member.invitation.invitationId,
-    });
-    if (revoked.error)
-      return failure(revoked.error, 'household.invitation.revoke');
-  }
   const { person_data, resident_data } = residentPayload(resident, {
     resident: { unit_resident_valid_to_at: new Date().toISOString() },
   });
