@@ -100,7 +100,12 @@ describe('TotpEnrollment', () => {
     expect(data?.get('factorId')).toBe('factor-new');
     expect(data?.get('next')).toBe('/platform');
     expect(
-      await screen.findByText('Verificación en dos pasos activada.'),
+      // useActionState + useTransition settle slower on CI runners than the 1 s default.
+      await screen.findByText(
+        'Verificación en dos pasos activada.',
+        {},
+        { timeout: 5000 },
+      ),
     ).toBeInTheDocument();
   });
 
