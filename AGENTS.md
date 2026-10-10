@@ -19,6 +19,9 @@ Never weaken a security principle (S1–S9) to make something work.
 
 - **All code is English**: identifiers, file names, DB objects, comments, commit messages, PR descriptions, test names.
 - **All user-facing text is Spanish (es-AR)**, kept in i18n message files — never hard-coded in components.
+- **URL paths are English** (`/login`, `/forgot-password`, `/units/[unitId]`); only the visible text is Spanish.
+- **Minimal UI text**: no explanatory paragraphs, descriptive subtitles or permanent helper text. Extra help goes behind
+  an info ("i") button popover. Use the full screen width (see `DESIGN.md` A.8–A.9).
 - Use the names from `GLOSSARY.md`. If a concept is missing, add it there in the same change.
 
 ## Database naming (GeneXus-style semantics, snake_case)

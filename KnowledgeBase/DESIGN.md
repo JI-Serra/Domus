@@ -112,7 +112,7 @@ Tema de alto contraste para la consola de guardia (tablet en horizontal, a pleno
 
 - **Móvil (📱):** gutter lateral de 16 px, una columna, barra de pestañas inferior y acción principal al alcance del pulgar.
 - **Tablet garita (📟):** dos paneles en horizontal (acciones/semáforo a la izquierda, cola de solicitudes/presentes a la derecha).
-- **Desktop (🖥️):** sidebar + contenido con un ancho máximo de 1200 px (1440 px para tablas anchas), gutter de 24–32 px. Las bandas alternadas `#fff`/`#f5f5f7` se usan para separar secciones de páginas de lectura (transparencia, comunicados), no dentro de formularios.
+- **Desktop (🖥️):** sidebar + contenido con un ancho máximo de 1200 px (1440 px para tablas anchas), gutter de 24–32 px. **Aprovechar la pantalla (HR-00):** el contenido arranca pegado al gutter del sidebar (sin márgenes extra ni centrado con aire a los costados), usa el ancho disponible con grillas de varias columnas y evita tarjetas angostas aisladas en un lienzo vacío. Las bandas alternadas `#fff`/`#f5f5f7` se usan para separar secciones de páginas de lectura (transparencia, comunicados), no dentro de formularios.
 - Breakpoints: `sm 640` · `md 768` · `lg 1024` · `xl 1280`.
 
 ## A.9 Tono de los textos (UX copy)
@@ -121,6 +121,7 @@ Tema de alto contraste para la consola de guardia (tablet en horizontal, a pleno
 - Verbos de acción en los botones ("Registrar ingreso", no "Aceptar").
 - Errores que digan qué pasó y qué hacer ("El pase venció a las 18:00. Pedile al anfitrión uno nuevo.").
 - Sin culpar al usuario; sin tecnicismos en la garita.
+- **Texto mínimo (HR-00):** nada de párrafos explicativos, subtítulos descriptivos ni textos de ayuda permanentes en pantallas, campos o formularios. Quien opera el sistema todos los días no los vuelve a leer. Si algo necesita aclaración, va detrás de un botón de información (ícono "i", con nombre accesible) que muestra la ayuda en un popover. Se mantienen solo títulos, etiquetas, valores, acciones y mensajes de error o de estado.
 
 ## A.10 Tokens nuevos (para agregar a Tailwind v4 / CSS)
 
