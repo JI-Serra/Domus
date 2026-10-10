@@ -139,3 +139,29 @@ Keep Sentry's own default PII collection off (`sendDefaultPii: false`) so the pr
 | `DOMUS_ENABLE_DEBUG_ROUTES`     | unset (debug routes are on in dev) | `true` only while running the HR-00 demo   | Staging runs a production build, where debug routes are off by default |
 
 `apps/web/.env.example` lists the same variables with no secrets.
+
+## Local data & test users
+
+**Local-only:** `pnpm supabase db reset` recreates two fictional communities and the accounts below. All passwords are `DomusLocal123!`; never run this seed against staging or production. All document numbers and addresses are fictional.
+
+| Email                         | Role                              | Community                          |
+| ----------------------------- | --------------------------------- | ---------------------------------- |
+| `platform@domus.local`        | Platform admin (MFA required)     | Platform; no tenant memberships    |
+| `admin.ceibos@domus.local`    | Tenant admin, all ten permissions | Barrio Los Ceibos                  |
+| `guard.ceibos@domus.local`    | Guard                             | Barrio Los Ceibos                  |
+| `holder.ceibos@domus.local`   | Unit holder                       | Barrio Los Ceibos                  |
+| `member.ceibos@domus.local`   | Household member                  | Barrio Los Ceibos                  |
+| `admin.tipas@domus.local`     | Tenant admin, all ten permissions | Barrio Las Tipas                   |
+| `guard.tipas@domus.local`     | Guard                             | Barrio Las Tipas                   |
+| `holder.tipas@domus.local`    | Unit holder                       | Barrio Las Tipas                   |
+| `member.tipas@domus.local`    | Household member                  | Barrio Las Tipas                   |
+| `registry.ceibos@domus.local` | Tenant admin, registry only       | Barrio Los Ceibos                  |
+| `shared@domus.local`          | Unit holder in both tenants       | Separate tenant-scoped person rows |
+
+H0 has no unit relationships yet; those arrive in M02. A platform login alone grants no database access: its signed JWT must have `aal2`. MFA enrollment and the support-access workflow arrive in M01; SQL tests impersonate signed claims locally with `request.jwt.claims`.
+
+Run `pnpm test:db` after reset for schema guards, membership isolation, and append-only audit checks. Helpers live in the private `app_private` schema, which is excluded from PostgREST. Attach `app_private.audit_row_change()` as an `AFTER INSERT OR UPDATE OR DELETE FOR EACH ROW` trigger when adding sensitive tables; its migration documents the required UUID primary key naming and diff format.
+
+Role and permission tables accept no direct client writes. The exposed `public` RPCs are `create_membership`, `update_membership`, `revoke_membership`, `delete_membership`, `grant_admin_permission`, `revoke_admin_permission`, `create_platform_admin`, `update_platform_admin`, `delete_platform_admin`, and `update_tenant_platform_settings`. Registry admins manage non-admin memberships; admin memberships and permission grants require `admin_management`. Membership and permission RPCs reject targeting the caller's own membership, and tenant grantors can grant only permissions they hold. Platform-admin management RPCs require MFA. MFA platform admins can bootstrap/manage admin memberships and permissions, with every write audited, but have no standing access to people, memberships, or permission tables.
+
+Clients cannot bind `person.user_id`; invitation acceptance will bind the authenticated user in M02-F04. Slug and subscription updates use the MFA platform RPC. Audit redacts document numbers, phones, and birth dates as changed markers, and stores the originating database role. Register each sensitive table in `audit_redacted_columns`, attach its audit trigger, and enable the trigger **always**. The operator-only `app_private.purge_audit_events(before_at)` runs as a dedicated NOLOGIN role and audits purge volume; no cron schedule is installed. Exceptional platform support access (M01-F04) and a minimal guard projection (L4, M05) remain pilot blockers.

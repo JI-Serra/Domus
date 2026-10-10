@@ -10,6 +10,7 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 |---|---|---|
 | Barrio / Tenant | `tenant` | |
 | Usuario | `auth.users` (Supabase) | Referenced as `user_id`. |
+| Super-admin de plataforma | `platform_admin` | Global, not a tenant membership; requires MFA. |
 | Persona | `person` | Human known to a tenant, with or without a user. |
 | Membresía | `membership` | person ↔ tenant ↔ role (↔ unit). |
 | Permiso granular de admin | `membership_permission` | Values in "Admin permissions" below. |
@@ -64,7 +65,8 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Concept | Spec values (es) | Code values |
 |---|---|---|
 | Role (`membership_role`) | super-admin / administrador / guardia / titular / miembro | `platform_admin` (not a tenant membership) / `tenant_admin` / `guard` / `unit_holder` / `household_member` |
-| Admin permissions | `padron`, `accesos_config`, `accesos_auditoria`, `comunicacion`, `reclamos`, `amenities`, `finanzas`, `guardias`, `configuracion_tenant` | `registry`, `access_config`, `access_audit`, `communication`, `complaints`, `amenities`, `finance`, `guards`, `tenant_settings` |
+| Membership status (`membership_status`) | activa / suspendida / revocada | `active` / `suspended` / `revoked` |
+| Admin permissions | `padron`, `accesos_config`, `accesos_auditoria`, `comunicacion`, `reclamos`, `amenities`, `finanzas`, `guardias`, `configuracion_tenant`, `gestion_administradores` | `registry`, `access_config`, `access_audit`, `communication`, `complaints`, `amenities`, `finance`, `guards`, `tenant_settings`, `admin_management` |
 | Tenant subscription status | piloto / activo / suspendido / baja | `pilot` / `active` / `suspended` / `cancelled` |
 | Unit status | ocupada / en obra / vacía | `occupied` / `under_construction` / `vacant` |
 | Visitor type | `autorizado_permanente`, `autorizado_recurrente`, `invitado_con_pase`, `invitado_evento`, `delivery`, `servicio_trabajador`, `desconocido` | `permanent_authorized`, `recurring_authorized`, `pass_guest`, `event_guest`, `delivery`, `service_worker`, `unknown` |
@@ -85,3 +87,12 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Parcel status | recibido / notificado / entregado | `received` / `notified` / `delivered` |
 | Guard notice status | enviado / visto / atendido | `sent` / `seen` / `handled` |
 | Emergency alert status | activa / atendida / cerrada | `active` / `handled` / `closed` |
+| Audit event action (`audit_event_action`) | insertar / actualizar / eliminar | `insert` / `update` / `delete` |
+| Person document type (`person_document_type`) | DNI / pasaporte / otro | `dni` / `passport` / `other` |
+
+## Reusable PostgreSQL domains
+
+| Spec (es) | Domain / code name | Notes |
+|---|---|---|
+| Número de documento | `document_number` | Text, 1–32 characters; no document image or PDF417 payload. |
+| Teléfono | `phone_number` | Text, 1–32 characters; formatting is handled by shared presentation rules. |
