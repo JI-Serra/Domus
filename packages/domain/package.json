@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./tenant/subscription-status": "./src/tenant/subscription-status.ts"
+    "./tenant/subscription-status": "./src/tenant/subscription-status.ts",
+    "./format": "./src/format/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
