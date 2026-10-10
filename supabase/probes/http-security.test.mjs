@@ -465,6 +465,154 @@ describe('M02 registry over HTTP', () => {
       { status: 'unavailable' },
     );
   });
+  it('resolves tenantless join codes, minimizes own history and cancels idempotently', async () => {
+    const email = `probe.registry.contract.${run}@domus.local`;
+    await createConfirmedUser(email);
+    const caller = await passwordToken(email);
+    const code = ok(
+      await rpc(
+        'rotate_unit_join_code',
+        {
+          target_tenant_id: tenant,
+          target_unit_id: unit,
+        },
+        registry.holder,
+      ),
+      'rotate contract code',
+    );
+    const input = {
+      join_code: code,
+      person_data: { person_first_name: 'HTTP', person_last_name: 'Contract' },
+      client_event_id: randomUUID(),
+    };
+    assert.deepEqual(
+      ok(
+        await rpc(
+          'submit_unit_join_request',
+          {
+            ...input,
+            target_tenant_id: foreignTenant,
+          },
+          caller,
+        ),
+        'mismatching tenant',
+      ),
+      { status: 'unavailable' },
+    );
+    const request = ok(
+      await rpc('submit_unit_join_request', input, caller),
+      'tenantless request',
+    );
+    assert.equal(request.status, 'pending');
+    const history = ok(
+      await rpc('my_unit_join_requests', {}, caller),
+      'own history',
+    );
+    assert.equal(history.length, 1);
+    assert.equal(history[0].unit_join_request_id, request.unit_join_request_id);
+    assert.deepEqual(Object.keys(history[0]).sort(), [
+      'tenant_name',
+      'unit_code',
+      'unit_join_request_created_at',
+      'unit_join_request_id',
+      'unit_join_request_status',
+    ]);
+    assert.equal(typeof history[0].unit_code, 'string');
+    assert.deepEqual(
+      ok(
+        await rpc('my_unit_join_requests', {}, registry.guard),
+        'other history',
+      ),
+      [],
+    );
+    const cancellation = {
+      target_unit_join_request_id: request.unit_join_request_id,
+      client_event_id: randomUUID(),
+    };
+    const denied = await rpc(
+      'cancel_unit_join_request',
+      cancellation,
+      registry.guard,
+    );
+    const missing = await rpc(
+      'cancel_unit_join_request',
+      {
+        ...cancellation,
+        target_unit_join_request_id: randomUUID(),
+      },
+      registry.guard,
+    );
+    assert.equal(denied.status, 403);
+    assert.deepEqual(denied.body, missing.body);
+    assert.deepEqual(
+      ok(await rpc('cancel_unit_join_request', cancellation, caller), 'cancel'),
+      { status: 'cancelled' },
+    );
+    assert.deepEqual(
+      ok(
+        await rpc('cancel_unit_join_request', cancellation, caller),
+        'cancel retry',
+      ),
+      { status: 'cancelled' },
+    );
+    assert.equal(
+      ok(await rpc('my_unit_join_requests', {}, caller), 'cancelled history')[0]
+        .unit_join_request_status,
+      'cancelled',
+    );
+    assert.equal(
+      (
+        await rpc(
+          'cancel_unit_join_request',
+          {
+            ...cancellation,
+            client_event_id: randomUUID(),
+          },
+          caller,
+        )
+      ).status,
+      403,
+    );
+    const holderSheet = ok(
+      await rpc(
+        'unit_sheet',
+        {
+          target_tenant_id: tenant,
+          target_unit_id: unit,
+        },
+        registry.holder,
+      ),
+      'holder permission map',
+    );
+    assert.ok(
+      Object.hasOwn(
+        holderSheet.member_permissions,
+        '40000000-0000-0000-0000-000000000005',
+      ),
+    );
+    const member = ok(
+      await call('/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        body: {
+          email: 'member.ceibos@domus.local',
+          password: 'DomusLocal123!',
+        },
+      }),
+      'seed member sign-in',
+    ).access_token;
+    const memberSheet = ok(
+      await rpc(
+        'unit_sheet',
+        {
+          target_tenant_id: tenant,
+          target_unit_id: unit,
+        },
+        member,
+      ),
+      'member permission map',
+    );
+    assert.deepEqual(memberSheet.member_permissions, {});
+  });
   it('requires pending join approval and an actual email-link session before household access', async () => {
     const email = `probe.registry.join.${run}@domus.local`;
     await createConfirmedUser(email);
