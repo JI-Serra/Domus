@@ -6,8 +6,8 @@ Implemented locally on 2026-10-10 on `JI-Serra/h1-t8-platform-db`. H0 migrations
 
 | Check                                | Result                                                                                                                      |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm supabase db reset`             | PASS: two frozen H0 migrations, five new M01 migrations and both fictional tenants                                          |
-| `pnpm test:db`                       | PASS: **490 assertions** across six files (60 audit, 31 constraints, 219 isolation, 108 platform, 71 schema guard, 1 smoke) |
+| `pnpm supabase db reset`             | PASS: two frozen H0 migrations, six new M01 migrations and both fictional tenants                                           |
+| `pnpm test:db`                       | PASS: **491 assertions** across six files (60 audit, 31 constraints, 219 isolation, 109 platform, 71 schema guard, 1 smoke) |
 | `pnpm gen:types`                     | PASS: generated Supabase types, formatted with repository Prettier                                                          |
 | `pnpm exec supabase db lint --local` | PASS: no issues                                                                                                             |
 | `pnpm lint` / `pnpm typecheck`       | PASS: six tasks each                                                                                                        |
@@ -26,7 +26,7 @@ Invitations store normalized email, an unclaimed target person or first/last-nam
 
 D17 applies at invitation creation and acceptance: `admin_management` manages administrative roles; `registry` manages other roles; a tenant grantor can only grant held permissions, cannot invite themself, and loses pending invitation authority when their membership/permission is revoked. The platform email function grants its first-admin invitations all ten permissions. Retry keys bind the invitation to its creator, tenant, recipient, role and permission snapshot; retries reuse the same opaque HMAC-derived token and never extend its stored expiry.
 
-`app_private.current_identity_is_valid()` is the single identity validator. All tenant membership/role/permission/own-person/own-membership sets consume it through `current_user_id()`. H0 exposed RPCs were upgraded in **new migrations** to consume central identity helpers and reject suspended management authority before target lookup/locking. Client policies continue to use uncorrelated set-returning helpers. Tests reject direct `auth.uid()`/`auth.jwt()` references in exposed application definers or public/Storage policies. Future application policies and RPCs must follow this pattern.
+`app_private.current_identity_is_valid()` is the single identity validator. All tenant membership/role/permission/own-person/own-membership sets consume it through `current_user_id()`. H0 exposed RPCs were upgraded in **new migrations** to consume central identity helpers and reject suspended management authority before target lookup/locking. Client policies continue to use uncorrelated set-returning helpers. The identity-tenant helper itself returns only authorized tenant IDs for ordinary callers, avoiding even foreign UUID disclosure through direct helper use. Tests reject direct `auth.uid()`/`auth.jwt()` references in exposed application definers or public/Storage policies. Future application policies and RPCs must follow this pattern.
 
 Audit remains append-only under the existing dedicated writer/purger roles. Added `audit_event_on_behalf_of_user_id` and `support_session_id`; support writes and lifecycle events carry the real platform actor, target and session reference. New redactions cover invitation email/names/token hash and support reason, while the original reason remains available to authorized tenant audit readers in `support_session`. Audit references intentionally have no deletion-sensitive FK, preserving durable history. No new Realtime publication was added; future Realtime tenant policies must consume the same identity sets.
 
@@ -148,10 +148,10 @@ Actual local HTTP output (2026-10-10):
 
 ```text
 PASS Mailpit email -> verified acceptance -> membership with 10 permissions
-  invitation: 52edd12d-e677-4e34-a9e7-36fe4d385d14
+  invitation: 3355b957-1bbc-4975-89c9-6e71491e26f6
 PASS suspended tenant remains readable; profile write rejected with 42501
 PASS target write audited with impersonator, target and support session
-  support session: 6a40158b-cc0f-4c2f-b1d5-93013036d27b
+  support session: b09d7992-6452-4de1-b538-72125b1de174
 PASS direct Auth password, email, MFA enrollment and factor deletion rejected: session_not_found
 PASS support session ended from target token; subsequent reads return zero rows
 Local HTTP acceptance complete
