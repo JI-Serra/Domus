@@ -815,7 +815,7 @@ Al terminar cada funcionalidad o módulo marcado con 🔍, **el desarrollo se de
 | Hito | Contenido | Revisiones 🔍 | Estado |
 |---|---|---|---|
 | **H0** | M00 Fundaciones | HR-00 ([guía](./reviews/HR-00.md)) | ✅ Aprobado (2026-10-10, fundador) |
-| **H1** | M01 Plataforma y tenants | HR-01 | ⏳ |
+| **H1** | M01 Plataforma y tenants | HR-01 ([guía](./reviews/HR-01.md)) | 🔍 En revisión (2026-10-10) |
 | **H2** | M02 Padrón | HR-02 | ⏳ |
 | **H3** | M03 Reglamento de accesos | HR-03 | ⏳ |
 | **H4** | M04 Accesos — residente + página del invitado | HR-04a, HR-04b, HR-04c | ⏳ |
