@@ -60,6 +60,11 @@ hand-write duplicate row types.
 - Business-critical decisions (access decision, pass consumption, closing approval requests) live in SQL functions or
   Edge Functions, never in UI code. Retryable writes are idempotent via a unique `client_event_id`.
 - Minimal personal data (S5): no ID document photos, no full PDF417 payload.
+- SECURITY DEFINER triggers/functions authorize the caller before reading or locking other rows; unauthorized
+  callers receive the same error regardless of the target data.
+- RLS policies use set-returning helpers: `tenant_id in (select app_private.<helper>())`, never per-row helper calls.
+- Audited tables declare their redacted PII columns; audit records changes without retaining those values.
+- No direct client writes to permission/role tables; use authorized RPCs with self-target and grantor checks.
 
 ## Stack and layout
 

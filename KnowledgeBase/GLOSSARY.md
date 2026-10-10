@@ -66,7 +66,7 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 |---|---|---|
 | Role (`membership_role`) | super-admin / administrador / guardia / titular / miembro | `platform_admin` (not a tenant membership) / `tenant_admin` / `guard` / `unit_holder` / `household_member` |
 | Membership status (`membership_status`) | activa / suspendida / revocada | `active` / `suspended` / `revoked` |
-| Admin permissions | `padron`, `accesos_config`, `accesos_auditoria`, `comunicacion`, `reclamos`, `amenities`, `finanzas`, `guardias`, `configuracion_tenant` | `registry`, `access_config`, `access_audit`, `communication`, `complaints`, `amenities`, `finance`, `guards`, `tenant_settings` |
+| Admin permissions | `padron`, `accesos_config`, `accesos_auditoria`, `comunicacion`, `reclamos`, `amenities`, `finanzas`, `guardias`, `configuracion_tenant`, `gestion_administradores` | `registry`, `access_config`, `access_audit`, `communication`, `complaints`, `amenities`, `finance`, `guards`, `tenant_settings`, `admin_management` |
 | Tenant subscription status | piloto / activo / suspendido / baja | `pilot` / `active` / `suspended` / `cancelled` |
 | Unit status | ocupada / en obra / vacía | `occupied` / `under_construction` / `vacant` |
 | Visitor type | `autorizado_permanente`, `autorizado_recurrente`, `invitado_con_pase`, `invitado_evento`, `delivery`, `servicio_trabajador`, `desconocido` | `permanent_authorized`, `recurring_authorized`, `pass_guest`, `event_guest`, `delivery`, `service_worker`, `unknown` |
@@ -87,6 +87,8 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Parcel status | recibido / notificado / entregado | `received` / `notified` / `delivered` |
 | Guard notice status | enviado / visto / atendido | `sent` / `seen` / `handled` |
 | Emergency alert status | activa / atendida / cerrada | `active` / `handled` / `closed` |
+| Audit event action (`audit_event_action`) | insertar / actualizar / eliminar | `insert` / `update` / `delete` |
+| Person document type (`person_document_type`) | DNI / pasaporte / otro | `dni` / `passport` / `other` |
 
 ## Reusable PostgreSQL domains
 
