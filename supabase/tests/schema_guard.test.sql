@@ -39,7 +39,7 @@ select is((select count(*) from pg_proc p cross join lateral aclexplode(p.proacl
 select is((select count(*) from pg_policies where schemaname='public' and cmd='ALL'),0::bigint,'All policies are separate per operation');
 select is((select count(*) from pg_policies where schemaname='public' and tablename in ('person','membership','membership_permission')
   and roles @> array['authenticated']::name[] and (coalesce(qual,'')||coalesce(with_check,'')) like '%is_platform_admin%'),0::bigint,'No standing platform policy exposes tenant registry data');
-select is((select count(*) from pg_policies where schemaname='public' and tablename in ('membership','membership_permission') and cmd in ('INSERT','UPDATE','DELETE')),0::bigint,'Role and permission tables have no client write policies');
+select is((select count(*) from pg_policies where schemaname='public' and tablename in ('platform_admin','membership','membership_permission') and cmd in ('INSERT','UPDATE','DELETE')),0::bigint,'Role and permission tables have no client write policies');
 select is((select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
   where n.nspname='public' and t.tgname='audit_row_change'),5::bigint,'All H0 sensitive tables are audited');
 select is((select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
@@ -80,6 +80,9 @@ select ok(not has_table_privilege('service_role','public.membership_permission',
 select ok(not has_table_privilege('service_role','public.membership_permission','TRIGGER'),'Server role lacks TRIGGER on membership_permission');
 select ok(not has_table_privilege('service_role','public.membership_permission','REFERENCES'),'Server role lacks REFERENCES on membership_permission');
 select ok(not has_table_privilege('authenticated','public.membership','INSERT'),'Clients lack INSERT on membership');
+select ok(not has_table_privilege('authenticated','public.platform_admin','INSERT'),'Clients lack INSERT on platform_admin');
+select ok(not has_table_privilege('authenticated','public.platform_admin','UPDATE'),'Clients lack UPDATE on platform_admin');
+select ok(not has_table_privilege('authenticated','public.platform_admin','DELETE'),'Clients lack DELETE on platform_admin');
 select ok(not has_table_privilege('authenticated','public.membership','UPDATE'),'Clients lack UPDATE on membership');
 select ok(not has_table_privilege('authenticated','public.membership','DELETE'),'Clients lack DELETE on membership');
 select ok(not has_table_privilege('authenticated','public.membership_permission','INSERT'),'Clients lack INSERT on membership_permission');

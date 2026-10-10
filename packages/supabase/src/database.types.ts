@@ -308,8 +308,16 @@ export type Database = {
         };
         Returns: string;
       };
+      create_platform_admin: {
+        Args: { target_user_id: string };
+        Returns: string;
+      };
       delete_membership: {
         Args: { target_membership_id: string };
+        Returns: undefined;
+      };
+      delete_platform_admin: {
+        Args: { target_platform_admin_id: string };
         Returns: undefined;
       };
       grant_admin_permission: {
@@ -338,6 +346,10 @@ export type Database = {
           valid_from: string;
           valid_to?: string;
         };
+        Returns: undefined;
+      };
+      update_platform_admin: {
+        Args: { is_active: boolean; target_platform_admin_id: string };
         Returns: undefined;
       };
       update_tenant_platform_settings: {

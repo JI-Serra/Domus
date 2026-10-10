@@ -210,7 +210,6 @@ end;
 $$;
 grant insert, delete on public.tenant to authenticated;
 grant update (tenant_name, tenant_address, tenant_time_zone, tenant_settings, tenant_logo_path) on public.tenant to authenticated;
-grant insert, update, delete on public.platform_admin to authenticated;
 grant insert (person_id, tenant_id, person_first_name, person_last_name, person_document_type,
   person_document_number, person_phone, person_birth_date) on public.person to authenticated;
 grant update (person_first_name, person_last_name, person_document_type, person_document_number,
@@ -228,12 +227,6 @@ create policy "platform admins can delete tenants" on public.tenant for delete t
   using ((select app_private.is_platform_admin()));
 
 create policy "MFA platform admins can read platform admins" on public.platform_admin for select to authenticated
-  using ((select app_private.is_platform_admin()));
-create policy "MFA platform admins can insert platform admins" on public.platform_admin for insert to authenticated
-  with check ((select app_private.is_platform_admin()));
-create policy "MFA platform admins can update platform admins" on public.platform_admin for update to authenticated
-  using ((select app_private.is_platform_admin())) with check ((select app_private.is_platform_admin()));
-create policy "MFA platform admins can delete platform admins" on public.platform_admin for delete to authenticated
   using ((select app_private.is_platform_admin()));
 
 create policy "registry admins guards and owners can read people" on public.person for select to authenticated
@@ -391,6 +384,43 @@ begin
 end;
 $$;
 
+-- Platform roles obey the same RPC-only boundary as tenant roles.
+create function public.create_platform_admin(target_user_id uuid) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare created_id uuid;
+begin
+  if not (select app_private.is_platform_admin()) then
+    raise exception 'MFA platform administrator required' using errcode = '42501';
+  end if;
+  insert into public.platform_admin(user_id) values(target_user_id)
+    on conflict(user_id) do nothing returning platform_admin_id into created_id;
+  if created_id is null then
+    select platform_admin_id into created_id from public.platform_admin where user_id=target_user_id;
+  end if;
+  return created_id;
+end;
+$$;
+create function public.update_platform_admin(target_platform_admin_id uuid, is_active boolean) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if not (select app_private.is_platform_admin()) then
+    raise exception 'MFA platform administrator required' using errcode = '42501';
+  end if;
+  update public.platform_admin set platform_admin_is_active=is_active
+    where platform_admin_id=target_platform_admin_id;
+  if not found then raise exception 'Platform administrator not found' using errcode = 'P0002'; end if;
+end;
+$$;
+create function public.delete_platform_admin(target_platform_admin_id uuid) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if not (select app_private.is_platform_admin()) then
+    raise exception 'MFA platform administrator required' using errcode = '42501';
+  end if;
+  delete from public.platform_admin where platform_admin_id=target_platform_admin_id;
+end;
+$$;
+
 revoke all on all functions in schema app_private from public, anon, authenticated;
 grant execute on function app_private.member_tenant_ids(), app_private.role_tenant_ids(public.membership_role[]),
   app_private.permission_tenant_ids(public.admin_permission), app_private.current_person_ids(), app_private.own_membership_ids(),
@@ -401,4 +431,5 @@ grant execute on function public.create_membership(uuid, public.membership_role,
   public.update_membership(uuid, public.membership_role, public.membership_status, timestamptz, timestamptz),
   public.revoke_membership(uuid), public.delete_membership(uuid),
   public.grant_admin_permission(uuid, public.admin_permission), public.revoke_admin_permission(uuid, public.admin_permission),
-  public.update_tenant_platform_settings(uuid, text, public.tenant_subscription_status) to authenticated;
+  public.update_tenant_platform_settings(uuid, text, public.tenant_subscription_status),
+  public.create_platform_admin(uuid), public.update_platform_admin(uuid, boolean), public.delete_platform_admin(uuid) to authenticated;

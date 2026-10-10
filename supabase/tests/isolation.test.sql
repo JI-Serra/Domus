@@ -1,5 +1,7 @@
 begin;
 select no_plan();
+create temp table test_platform_admin_id(platform_admin_id uuid);
+grant select,insert on test_platform_admin_id to authenticated;
 -- The denied cross-tenant grant targets a genuinely absent permission.
 delete from public.membership_permission where membership_id='40000000-0000-0000-0000-000000000006' and membership_permission_admin_permission='finance';
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000002","role":"authenticated","aal":"aal1"}',true);
@@ -243,9 +245,13 @@ select throws_ok('insert into public.tenant(tenant_name,tenant_slug) values(''Bl
 select throws_ok('insert into public.platform_admin(user_id) values(''20000000-0000-0000-0000-000000000004'')','42501',null,'Platform aal1 cannot insert platform_admin');
 with changed as (update public.tenant set tenant_name='Blocked' returning 1) select is((select count(*) from changed),0::bigint,'Platform aal1 cannot update tenant');
 with changed as (delete from public.tenant returning 1) select is((select count(*) from changed),0::bigint,'Platform aal1 cannot delete tenant');
-with changed as (update public.platform_admin set platform_admin_is_active=false returning 1) select is((select count(*) from changed),0::bigint,'Platform aal1 cannot update platform_admin');
-with changed as (delete from public.platform_admin returning 1) select is((select count(*) from changed),0::bigint,'Platform aal1 cannot delete platform_admin');
+select throws_ok('update public.platform_admin set platform_admin_is_active=false','42501',null,'Platform aal1 cannot update platform_admin');
+select throws_ok('delete from public.platform_admin','42501',null,'Platform aal1 cannot delete platform_admin');
 select throws_ok('select public.update_tenant_platform_settings(''10000000-0000-0000-0000-000000000001'',''blocked'',''suspended'')','42501',null,'Platform aal1 cannot use settings RPC');
+select throws_ok('select public.create_platform_admin(''20000000-0000-0000-0000-000000000005'')','42501',null,'aal1 cannot create platform role through RPC');
+select throws_ok('select public.update_platform_admin(''50000000-0000-0000-0000-000000000001'',false)','42501',null,'aal1 cannot update platform role through RPC');
+select throws_ok('select public.delete_platform_admin(''50000000-0000-0000-0000-000000000001'')','42501',null,'aal1 cannot delete platform role through RPC');
+
 reset role;
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal2"}',true);
 set local role authenticated;
@@ -259,10 +265,23 @@ select lives_ok('select public.update_tenant_platform_settings(''10000000-0000-0
 select lives_ok('select public.grant_admin_permission(''40000000-0000-0000-0000-000000000012'',''finance'')','MFA platform bootstraps admin permission');
 select lives_ok('delete from public.tenant where tenant_slug=''platform-test''','MFA platform deletes empty tenant');
 select ok((select count(*)>0 from public.audit_event),'MFA platform reads audit');
+select throws_ok('insert into public.platform_admin(user_id) values(''20000000-0000-0000-0000-000000000005'')','42501',null,'Even MFA clients cannot directly write platform roles');
+select throws_ok('update public.platform_admin set platform_admin_is_active=false','42501',null,'Even MFA clients cannot directly write platform roles');
+select throws_ok('delete from public.platform_admin','42501',null,'Even MFA clients cannot directly write platform roles');
+select lives_ok('insert into test_platform_admin_id select public.create_platform_admin(''20000000-0000-0000-0000-000000000005'')','MFA platform creates another role via RPC');
+select lives_ok('select public.create_platform_admin(''20000000-0000-0000-0000-000000000005'')','Platform role creation is idempotent');
+select lives_ok('select public.update_platform_admin((select platform_admin_id from test_platform_admin_id),false)','MFA platform updates another role via RPC');
+select lives_ok('select public.delete_platform_admin((select platform_admin_id from test_platform_admin_id))','MFA platform deletes another role via RPC');
+select is((select count(*) from public.audit_event where audit_event_table_name='platform_admin' and audit_event_row_id=(select platform_admin_id from test_platform_admin_id)),3::bigint,'Platform role RPC lifecycle is fully audited');
+
 reset role;
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000004","role":"authenticated","aal":"aal2"}',true);
 set local role authenticated;
 select throws_ok('insert into public.platform_admin(user_id) values(''20000000-0000-0000-0000-000000000004'')','42501',null,'Non-platform aal2 cannot create platform admin');
+select throws_ok('select public.create_platform_admin(''20000000-0000-0000-0000-000000000004'')','42501',null,'Non-platform aal2 cannot use platform role RPC');
+select throws_ok('select public.update_platform_admin(''50000000-0000-0000-0000-000000000001'',false)','42501',null,'Non-platform aal2 cannot use platform role RPC');
+select throws_ok('select public.delete_platform_admin(''50000000-0000-0000-0000-000000000001'')','42501',null,'Non-platform aal2 cannot use platform role RPC');
+
 reset role;
 update public.platform_admin set platform_admin_is_active=false;
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal2"}',true);
