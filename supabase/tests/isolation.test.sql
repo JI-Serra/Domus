@@ -259,7 +259,7 @@ select is((select count(*) from public.person),0::bigint,'Platform aal2 lacks st
 select is((select count(*) from public.membership),0::bigint,'Platform aal2 lacks standing membership access');
 select is((select count(*) from public.membership_permission),0::bigint,'Platform aal2 lacks standing membership_permission access');
 with changed as (update public.person set person_first_name='Blocked' where person_id='30000000-0000-0000-0000-000000000008' returning 1) select is((select count(*) from changed),0::bigint,'Platform aal2 cannot edit people');
-select is((select count(*) from public.tenant),2::bigint,'MFA platform reads tenant metadata');
+select is((select count(*) from public.tenant where tenant_id in ('10000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002')),2::bigint,'MFA platform reads seeded tenant metadata');
 select lives_ok('insert into public.tenant(tenant_name,tenant_slug) values(''Platform test'',''platform-test'')','MFA platform creates tenant');
 select lives_ok('select public.update_tenant_platform_settings(''10000000-0000-0000-0000-000000000001'',''los-ceibos'',''active'')','MFA platform updates protected settings');
 select lives_ok('select public.grant_admin_permission(''40000000-0000-0000-0000-000000000012'',''finance'')','MFA platform bootstraps admin permission');
