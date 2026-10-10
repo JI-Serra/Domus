@@ -1,4 +1,4 @@
-﻿Timing is on.
+Timing is on.
 BEGIN
 Time: 0.178 ms
 CREATE TABLE
@@ -7,7 +7,7 @@ GRANT
 Time: 0.257 ms
 INSERT 0 1
 Time: 43.346 ms
-                                     set_config                                     
+                                     set_config
 ------------------------------------------------------------------------------------
  {"sub":"20000000-0000-0000-0000-000000000002","role":"authenticated","aal":"aal1"}
 (1 row)
@@ -17,7 +17,7 @@ SET
 Time: 0.152 ms
 UPDATE 1
 Time: 43405.443 ms (00:43.405)
-                       confirm_registry_import                       
+                       confirm_registry_import
 ---------------------------------------------------------------------
  {"status": "confirmed", "unit_count": 2000, "resident_count": 6000}
 (1 row)
@@ -41,7 +41,7 @@ ANALYZE
 Time: 0.450 ms
 SET
 Time: 0.080 ms
-                                                      QUERY PLAN                                                      
+                                                      QUERY PLAN
 ----------------------------------------------------------------------------------------------------------------------
  Function Scan on search_registry  (cost=0.25..10.25 rows=1000 width=192) (actual time=10.688..10.689 rows=1 loops=1)
    Buffers: shared hit=560
@@ -50,7 +50,7 @@ Time: 0.080 ms
 (4 rows)
 
 Time: 11.007 ms
-                                                      QUERY PLAN                                                       
+                                                      QUERY PLAN
 -----------------------------------------------------------------------------------------------------------------------
  Function Scan on search_registry  (cost=0.25..10.25 rows=1000 width=192) (actual time=19.744..19.746 rows=50 loops=1)
    Buffers: shared hit=36190
@@ -59,7 +59,7 @@ Time: 11.007 ms
 (4 rows)
 
 Time: 19.999 ms
-                                                    QUERY PLAN                                                     
+                                                    QUERY PLAN
 -------------------------------------------------------------------------------------------------------------------
  Seq Scan on registry_performance  (cost=0.00..238.80 rows=880 width=32) (actual time=6.684..6.685 rows=1 loops=1)
    Buffers: shared hit=978, local hit=1
@@ -68,7 +68,7 @@ Time: 19.999 ms
 (4 rows)
 
 Time: 6.988 ms
-                                                                                                   QUERY PLAN                                                                                                   
+                                                                                                   QUERY PLAN
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Seq Scan on unit  (cost=15.53..86.13 rows=1 width=26) (actual time=1.877..3.062 rows=1 loops=1)
    Filter: ((tenant_id = '10000000-0000-0000-0000-000000000001'::uuid) AND ((ANY (tenant_id = (hashed SubPlan 1).col1)) OR (ANY (unit_id = (hashed SubPlan 2).col1))) AND (unit_code ~~* '%Scale 1000%'::text))
@@ -86,7 +86,7 @@ Time: 6.988 ms
 (13 rows)
 
 Time: 3.320 ms
-                                                                               QUERY PLAN                                                                               
+                                                                               QUERY PLAN
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Nested Loop  (cost=58.19..125.73 rows=2 width=37) (actual time=3.503..3.513 rows=3 loops=1)
    Buffers: shared hit=52, local hit=1
