@@ -1,0 +1,129 @@
+﻿Timing is on.
+BEGIN
+Time: 0.178 ms
+CREATE TABLE
+Time: 2.036 ms
+GRANT
+Time: 0.257 ms
+INSERT 0 1
+Time: 43.346 ms
+                                     set_config                                     
+------------------------------------------------------------------------------------
+ {"sub":"20000000-0000-0000-0000-000000000002","role":"authenticated","aal":"aal1"}
+(1 row)
+
+Time: 0.194 ms
+SET
+Time: 0.152 ms
+UPDATE 1
+Time: 43405.443 ms (00:43.405)
+                       confirm_registry_import                       
+---------------------------------------------------------------------
+ {"status": "confirmed", "unit_count": 2000, "resident_count": 6000}
+(1 row)
+
+Time: 50897.136 ms (00:50.897)
+SET CONSTRAINTS
+Time: 0.155 ms
+SET CONSTRAINTS
+Time: 0.117 ms
+UPDATE 1
+Time: 2.866 ms
+RESET
+Time: 0.186 ms
+ANALYZE
+Time: 3.255 ms
+ANALYZE
+Time: 17.551 ms
+ANALYZE
+Time: 6.389 ms
+ANALYZE
+Time: 0.450 ms
+SET
+Time: 0.080 ms
+                                                      QUERY PLAN                                                      
+----------------------------------------------------------------------------------------------------------------------
+ Function Scan on search_registry  (cost=0.25..10.25 rows=1000 width=192) (actual time=10.688..10.689 rows=1 loops=1)
+   Buffers: shared hit=560
+ Planning Time: 0.027 ms
+ Execution Time: 10.703 ms
+(4 rows)
+
+Time: 11.007 ms
+                                                      QUERY PLAN                                                       
+-----------------------------------------------------------------------------------------------------------------------
+ Function Scan on search_registry  (cost=0.25..10.25 rows=1000 width=192) (actual time=19.744..19.746 rows=50 loops=1)
+   Buffers: shared hit=36190
+ Planning Time: 0.021 ms
+ Execution Time: 19.760 ms
+(4 rows)
+
+Time: 19.999 ms
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Seq Scan on registry_performance  (cost=0.00..238.80 rows=880 width=32) (actual time=6.684..6.685 rows=1 loops=1)
+   Buffers: shared hit=978, local hit=1
+ Planning Time: 0.025 ms
+ Execution Time: 6.697 ms
+(4 rows)
+
+Time: 6.988 ms
+                                                                                                   QUERY PLAN                                                                                                   
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on unit  (cost=15.53..86.13 rows=1 width=26) (actual time=1.877..3.062 rows=1 loops=1)
+   Filter: ((tenant_id = '10000000-0000-0000-0000-000000000001'::uuid) AND ((ANY (tenant_id = (hashed SubPlan 1).col1)) OR (ANY (unit_id = (hashed SubPlan 2).col1))) AND (unit_code ~~* '%Scale 1000%'::text))
+   Rows Removed by Filter: 2079
+   Buffers: shared hit=49
+   SubPlan 1
+     ->  ProjectSet  (cost=0.00..5.27 rows=1000 width=16) (actual time=1.855..1.860 rows=1 loops=1)
+           Buffers: shared hit=20
+           ->  Result  (cost=0.00..0.01 rows=1 width=0) (actual time=0.000..0.000 rows=1 loops=1)
+   SubPlan 2
+     ->  ProjectSet  (cost=0.00..5.27 rows=1000 width=16) (never executed)
+           ->  Result  (cost=0.00..0.01 rows=1 width=0) (never executed)
+ Planning Time: 0.039 ms
+ Execution Time: 3.079 ms
+(13 rows)
+
+Time: 3.320 ms
+                                                                               QUERY PLAN                                                                               
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=58.19..125.73 rows=2 width=37) (actual time=3.503..3.513 rows=3 loops=1)
+   Buffers: shared hit=52, local hit=1
+   InitPlan 1
+     ->  Seq Scan on registry_performance  (cost=0.00..18.80 rows=880 width=16) (actual time=0.004..0.004 rows=1 loops=1)
+           Buffers: local hit=1
+   ->  Index Scan using unit_resident_tenant_id_unit_id_person_id_key on unit_resident r  (cost=23.58..35.41 rows=3 width=48) (actual time=1.881..1.883 rows=3 loops=1)
+         Index Cond: ((tenant_id = '10000000-0000-0000-0000-000000000001'::uuid) AND (unit_id = (InitPlan 1).col1))
+         Filter: ((ANY (tenant_id = (hashed SubPlan 2).col1)) OR (ANY (unit_id = (hashed SubPlan 3).col1)) OR (ANY (person_id = (hashed SubPlan 4).col1)))
+         Buffers: shared hit=23, local hit=1
+         SubPlan 2
+           ->  ProjectSet  (cost=0.00..5.27 rows=1000 width=16) (actual time=1.860..1.865 rows=1 loops=1)
+                 Buffers: shared hit=20
+                 ->  Result  (cost=0.00..0.01 rows=1 width=0) (actual time=0.000..0.000 rows=1 loops=1)
+         SubPlan 3
+           ->  ProjectSet  (cost=0.00..5.27 rows=1000 width=16) (never executed)
+                 ->  Result  (cost=0.00..0.01 rows=1 width=0) (never executed)
+         SubPlan 4
+           ->  ProjectSet  (cost=0.00..5.27 rows=1000 width=16) (never executed)
+                 ->  Result  (cost=0.00..0.01 rows=1 width=0) (never executed)
+   ->  Index Scan using person_tenant_id_person_id_key on person p  (cost=15.81..23.84 rows=1 width=53) (actual time=0.542..0.542 rows=1 loops=3)
+         Index Cond: ((tenant_id = '10000000-0000-0000-0000-000000000001'::uuid) AND (person_id = r.person_id))
+         Filter: ((ANY (tenant_id = (hashed SubPlan 5).col1)) OR (ANY (person_id = (hashed SubPlan 6).col1)))
+         Buffers: shared hit=29
+         SubPlan 5
+           ->  ProjectSet  (cost=0.00..5.27 rows=1000 width=16) (actual time=1.608..1.611 rows=1 loops=1)
+                 Buffers: shared hit=20
+                 ->  Result  (cost=0.00..0.01 rows=1 width=0) (actual time=0.000..0.000 rows=1 loops=1)
+         SubPlan 6
+           ->  ProjectSet  (cost=0.00..5.27 rows=1000 width=16) (never executed)
+                 ->  Result  (cost=0.00..0.01 rows=1 width=0) (never executed)
+ Planning:
+   Buffers: shared hit=9
+ Planning Time: 0.143 ms
+ Execution Time: 3.546 ms
+(34 rows)
+
+Time: 3.963 ms
+ROLLBACK
+Time: 0.534 ms

@@ -211,11 +211,11 @@ select throws_ok($$select public.update_tenant_platform_settings('10000000-0000-
   '42501','MFA platform administrator required','Support cannot execute platform RPCs');
 reset role;
 select is((select audit_event_actor_user_id from public.audit_event where audit_event_table_name='person'
-  and audit_event_diff->'person_first_name'->>'new'='Supported'),'20000000-0000-0000-0000-000000000001'::uuid,'Audit actor is impersonator');
+  and audit_event_row_id='30000000-0000-0000-0000-000000000003' and audit_event_action='update' and support_session_id=(select support_session_id from support_fixture)),'20000000-0000-0000-0000-000000000001'::uuid,'Audit actor is impersonator');
 select is((select audit_event_on_behalf_of_user_id from public.audit_event where audit_event_table_name='person'
-  and audit_event_diff->'person_first_name'->>'new'='Supported'),'20000000-0000-0000-0000-000000000002'::uuid,'Audit records target on behalf of');
+  and audit_event_row_id='30000000-0000-0000-0000-000000000003' and audit_event_action='update' and support_session_id=(select support_session_id from support_fixture)),'20000000-0000-0000-0000-000000000002'::uuid,'Audit records target on behalf of');
 select is((select support_session_id from public.audit_event where audit_event_table_name='person'
-  and audit_event_diff->'person_first_name'->>'new'='Supported'),(select support_session_id from support_fixture),'Audit links support session');
+  and audit_event_row_id='30000000-0000-0000-0000-000000000003' and audit_event_action='update' and support_session_id=(select support_session_id from support_fixture)),(select support_session_id from support_fixture),'Audit links support session');
 set local role authenticated;
 insert into support_claims values(current_setting('request.jwt.claims')::jsonb);
 select set_config('request.jwt.claims',((select claims from support_claims)||jsonb_build_object('support_tenant_id','10000000-0000-0000-0000-000000000002'))::text,true);

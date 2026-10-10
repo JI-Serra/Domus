@@ -85,6 +85,58 @@ values('10000000-0000-0000-0000-000000000002','member.tipas@domus.local',
   encode(extensions.digest(repeat('b',64),'sha256'),'hex'),now()+interval '7 days','accepted',
   '20000000-0000-0000-0000-000000000006','20000000-0000-0000-0000-000000000009',now(),
   '60000000-0000-0000-0000-000000000002');
+-- M02: 40 fictional units per tenant; historical H0 identities remain stable for existing integration fixtures.
+insert into public.unit(unit_id,tenant_id,unit_code,unit_block_code,unit_lot_number,unit_contact_phone,unit_backup_phone)
+select (case when t=1 then 'a1000000' else 'a2000000' end||'-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,
+  ('10000000-0000-0000-0000-'||lpad(t::text,12,'0'))::uuid,
+  'Mz '||((n-1)/10+1)::text||' Lote '||((n-1)%10+1)::text,((n-1)/10+1)::text,((n-1)%10+1)::text,
+  '+54 381 555 '||lpad((t*100+n)::text,4,'0'),'+54 381 555 '||lpad((t*200+n)::text,4,'0')
+from generate_series(1,2) t cross join generate_series(1,40) n;
+
+insert into public.person(person_id,tenant_id,person_first_name,person_last_name,person_document_type,person_document_number,person_email)
+select (case when t=1 then 'b1000000' else 'b2000000' end||'-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,
+  ('10000000-0000-0000-0000-'||lpad(t::text,12,'0'))::uuid,
+  (array['Mariana','Pablo','Lucia','Martin','Sofia','Nicolas'])[1+(n%6)],
+  (array['Lopez','Garcia','Perez','Ruiz','Diaz','Gomez'])[1+(n%6)],'dni',(70000000+t*1000+n)::text,
+  'resident.'||t::text||'.'||n::text||'@domus.local'
+from generate_series(1,2) t cross join generate_series(3,28) n;
+
+insert into public.unit_resident(tenant_id,unit_id,person_id,unit_resident_relationship,unit_resident_is_holder,unit_resident_valid_from_at)
+select p.tenant_id,('a'||case when right(p.tenant_id::text,1)='1' then '1' else '2' end||'000000-0000-0000-0000-'||right(p.person_id::text,12))::uuid,
+  p.person_id,'owner',true,'2020-01-01' from public.person p where p.person_id::text like 'b%';
+
+with links(person_number,tenant_number,unit_number,is_holder) as(values
+  (4,1,1,true),(5,1,1,false),(8,2,1,true),(9,2,1,false),(10,1,2,true),(11,2,2,true))
+insert into public.unit_resident(tenant_id,unit_id,person_id,unit_resident_relationship,unit_resident_is_holder,unit_resident_valid_from_at)
+select ('10000000-0000-0000-0000-'||lpad(tenant_number::text,12,'0'))::uuid,
+  (case when tenant_number=1 then 'a1000000' else 'a2000000' end||'-0000-0000-0000-'||lpad(unit_number::text,12,'0'))::uuid,
+  ('30000000-0000-0000-0000-'||lpad(person_number::text,12,'0'))::uuid,
+  case when is_holder then 'owner'::public.unit_resident_relationship else 'family' end,is_holder,'2020-01-01' from links;
+update public.membership m set unit_id=r.unit_id from public.unit_resident r
+  where (r.tenant_id,r.person_id)=(m.tenant_id,m.person_id) and m.membership_role in('unit_holder','household_member');
+insert into public.membership_household_permission(tenant_id,membership_id,membership_household_permission_permission)
+  select tenant_id,membership_id,'manage_access_authorizations' from public.membership where membership_role='household_member';
+update public.unit set unit_status=case when right(unit_id::text,12)::integer<=28 then 'occupied'::public.unit_status
+  when right(unit_id::text,12)::integer<=35 then 'under_construction'::public.unit_status else 'vacant'::public.unit_status end;
+update public.invitation set unit_id='a2000000-0000-0000-0000-000000000001' where client_event_id='60000000-0000-0000-0000-000000000002';
+
+insert into public.vehicle(tenant_id,unit_id,vehicle_plate_code,vehicle_make_name,vehicle_model_name,vehicle_color_name)
+select tenant_id,unit_id,'AA'||lpad((right(unit_id::text,12)::integer+case when right(tenant_id::text,1)='1' then 100 else 200 end)::text,3,'0')||'BB',
+  (array['Toyota','Renault','Volkswagen'])[1+(right(unit_id::text,12)::integer%3)],'Fictional model',
+  (array['Blanco','Gris','Azul'])[1+(right(unit_id::text,12)::integer%3)] from public.unit where unit_status='occupied';
+insert into public.pet(tenant_id,unit_id,pet_name,pet_species_name,pet_breed_name)
+  select tenant_id,unit_id,(array['Luna','Mora','Toby','Coco'])[1+(right(unit_id::text,12)::integer%4)],
+    case when right(unit_id::text,12)::integer%3=0 then 'cat' else 'dog' end,'Mixed breed'
+  from public.unit where unit_status='occupied' and right(unit_id::text,12)::integer%2=0;
+insert into public.gate(gate_id,tenant_id,gate_name,gate_kind)
+  select (case when right(tenant_id::text,1)='1' then 'd1000000' else 'd2000000' end||'-0000-0000-0000-000000000001')::uuid,
+    tenant_id,'Acceso principal','vehicular' from public.tenant;
+insert into public.gate_guard(tenant_id,gate_id,membership_id)
+  select m.tenant_id,g.gate_id,m.membership_id from public.membership m join public.gate g using(tenant_id) where m.membership_role='guard';
+insert into public.device(device_id,tenant_id,gate_id,device_name,device_credential_hash,device_paired_by_user_id)
+  select (case when right(g.tenant_id::text,1)='1' then 'e1000000' else 'e2000000' end||'-0000-0000-0000-000000000001')::uuid,
+    g.tenant_id,g.gate_id,'Tablet principal',encode(extensions.digest(encode(extensions.gen_random_bytes(32),'hex'),'sha256'),'hex'),p.user_id
+  from public.gate g join public.person p using(tenant_id) join public.membership m using(tenant_id,person_id) where m.membership_role='guard';
 insert into public.support_session(tenant_id,support_session_actor_user_id,support_session_target_user_id,
   support_session_reason,support_session_started_at,support_session_expires_at,support_session_ended_at,
   support_session_status,support_session_ended_by_user_id,client_event_id)

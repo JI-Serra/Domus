@@ -27,7 +27,7 @@ select throws_ok('insert into public.audit_event(audit_event_db_role,audit_event
 select throws_ok('update public.audit_event set audit_event_diff=''{}'' where tenant_id=''10000000-0000-0000-0000-000000000002''','42501',null,'A cannot update B audit_event');
 select throws_ok('delete from public.audit_event where tenant_id=''10000000-0000-0000-0000-000000000002''','42501',null,'A cannot delete B audit_event');
 select is((select count(*) from public.tenant),1::bigint,'Admin reads own tenant');
-select is((select count(*) from public.person),6::bigint,'Registry reads own people');
+select is((select count(*) from public.person),32::bigint,'Registry reads own people');
 select is((select count(*) from public.membership_permission),11::bigint,'Registry reads own permissions');
 select ok((select count(*)>0 from public.audit_event),'Audit admin reads tenant events');
 select throws_ok('select public.grant_admin_permission(''40000000-0000-0000-0000-000000000006'',''finance'')','42501',null,'Management admin A cannot grant missing permission in B');
@@ -160,7 +160,7 @@ set local role authenticated;
 select ok((select app_private.has_tenant_role('10000000-0000-0000-0000-000000000001',array['guard']::public.membership_role[])),'Mixed membership retains active guard');
 select ok((select not app_private.has_admin_permission('10000000-0000-0000-0000-000000000001','registry')),'Suspended admin permissions do not combine with active guard');
 reset role;
-update public.membership set membership_role='tenant_admin' where membership_id='40000000-0000-0000-0000-000000000010';
+update public.membership set membership_role='tenant_admin',unit_id=null where membership_id='40000000-0000-0000-0000-000000000010';
 insert into public.membership_permission(tenant_id,membership_id,membership_permission_admin_permission) values('10000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000010','registry');
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000010","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
@@ -299,7 +299,7 @@ select throws_ok('select * from public.audit_event','42501',null,'Anonymous cann
 reset role;
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000003","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
-select is((select count(*) from public.person),6::bigint,'Actor 3 has required positive person reads');
+select is((select count(*) from public.person),1::bigint,'Guard reads only own profile through person; D24 operational projection is separate');
 select is((select count(*) from public.membership),2::bigint,'Actor 3 has required positive own membership reads');
 reset role;
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000004","role":"authenticated","aal":"aal1"}',true);

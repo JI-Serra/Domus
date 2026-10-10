@@ -302,6 +302,363 @@ before(async () => {
   }
 });
 
+describe('M02 registry over HTTP', () => {
+  const tenant = '10000000-0000-0000-0000-000000000001';
+  const foreignTenant = '10000000-0000-0000-0000-000000000002';
+  const unit = 'a1000000-0000-0000-0000-000000000001';
+  const gate = 'd1000000-0000-0000-0000-000000000001';
+  const registry = {};
+  before(async () => {
+    for (const [role, email] of [
+      ['admin', 'admin.ceibos@domus.local'],
+      ['holder', 'holder.ceibos@domus.local'],
+      ['guard', 'guard.ceibos@domus.local'],
+    ]) {
+      registry[role] = ok(
+        await call('/auth/v1/token?grant_type=password', {
+          method: 'POST',
+          body: { email, password: 'DomusLocal123!' },
+        }),
+        'seed registry sign-in',
+      ).access_token;
+    }
+  });
+  it('enforces tenant isolation, RPC-only writes and the minimized guard projection', async () => {
+    const projection = ok(
+      await rpc('guard_registry', { target_tenant_id: tenant }, registry.guard),
+      'guard projection',
+    );
+    assert.ok(projection.length >= 28);
+    for (const row of projection)
+      assert.deepEqual(Object.keys(row).sort(), [
+        'person_id',
+        'resident_display_name',
+        'unit_code',
+        'unit_id',
+        'unit_resident_is_holder',
+        'unit_resident_is_minor',
+      ]);
+    assert.equal(
+      (await rows('person?select=person_id', registry.guard)).length,
+      1,
+    );
+    assert.equal(
+      (
+        await rpc(
+          'guard_registry',
+          { target_tenant_id: foreignTenant },
+          registry.guard,
+        )
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await rpc(
+          'search_registry',
+          { target_tenant_id: foreignTenant, search: 'Mz' },
+          registry.admin,
+        )
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await call('/rest/v1/vehicle', {
+          method: 'POST',
+          token: registry.holder,
+          body: {
+            tenant_id: tenant,
+            unit_id: unit,
+            vehicle_plate_code: 'XX000YY',
+          },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await call('/rest/v1/device?select=device_credential_hash', {
+          token: registry.admin,
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await rpc(
+          'billable_unit_count',
+          { target_tenant_id: tenant },
+          registry.admin,
+        )
+      ).body,
+      40,
+    );
+  });
+  it('pairs once with a guard, keeps operator identity separate and revokes immediately', async () => {
+    const pairing = ok(
+      await rpc(
+        'create_device_pairing',
+        {
+          target_tenant_id: tenant,
+          target_gate_id: gate,
+          client_event_id: randomUUID(),
+        },
+        registry.admin,
+      ),
+      'create pairing',
+    )[0];
+    const redemption = {
+      target_tenant_id: tenant,
+      pairing_code: pairing.pairing_code,
+      device_name: 'HTTP test tablet',
+    };
+    assert.deepEqual(
+      ok(
+        await rpc('redeem_device_pairing', redemption, registry.holder),
+        'resident pairing denial',
+      ),
+      { status: 'unavailable' },
+    );
+    const device = ok(
+      await rpc('redeem_device_pairing', redemption, registry.guard),
+      'guard pairing',
+    );
+    assert.equal(device.status, 'paired');
+    assert.deepEqual(
+      ok(
+        await rpc('redeem_device_pairing', redemption, registry.guard),
+        'pairing replay',
+      ),
+      { status: 'unavailable' },
+    );
+    const sync = {
+      target_tenant_id: tenant,
+      target_device_id: device.device_id,
+      device_token: device.device_token,
+    };
+    assert.equal(
+      ok(await rpc('sync_device', sync, registry.guard), 'device sync').status,
+      'active',
+    );
+    assert.deepEqual(
+      ok(
+        await rpc('sync_device', sync, registry.holder),
+        'operator role denial',
+      ),
+      { status: 'unavailable' },
+    );
+    ok(
+      await rpc(
+        'revoke_device',
+        {
+          target_tenant_id: tenant,
+          target_device_id: device.device_id,
+          client_event_id: randomUUID(),
+        },
+        registry.admin,
+      ),
+      'revoke device',
+    );
+    assert.deepEqual(
+      ok(await rpc('sync_device', sync, registry.guard), 'revoked device sync'),
+      { status: 'unavailable' },
+    );
+  });
+  it('requires pending join approval and an actual email-link session before household access', async () => {
+    const email = `probe.registry.join.${run}@domus.local`;
+    await createConfirmedUser(email);
+    const caller = await passwordToken(email);
+    const code = ok(
+      await rpc(
+        'rotate_unit_join_code',
+        { target_tenant_id: tenant, target_unit_id: unit },
+        registry.holder,
+      ),
+      'rotate join code',
+    );
+    const request = ok(
+      await rpc(
+        'submit_unit_join_request',
+        {
+          target_tenant_id: tenant,
+          join_code: code.toLowerCase(),
+          person_data: {
+            person_first_name: 'HTTP',
+            person_last_name: 'Applicant',
+          },
+          client_event_id: randomUUID(),
+        },
+        caller,
+      ),
+      'join request',
+    );
+    assert.equal(request.status, 'pending');
+    assert.equal(
+      (
+        await rpc(
+          'unit_sheet',
+          { target_tenant_id: tenant, target_unit_id: unit },
+          caller,
+        )
+      ).status,
+      403,
+    );
+    const approved = ok(
+      await rpc(
+        'decide_unit_join_request',
+        {
+          target_tenant_id: tenant,
+          target_unit_id: unit,
+          target_request_id: request.unit_join_request_id,
+          approve: true,
+          client_event_id: randomUUID(),
+        },
+        registry.holder,
+      ),
+      'approve join',
+    );
+    assert.equal(approved.status, 'approved');
+    assert.equal(
+      (
+        await rows(
+          `membership?select=membership_id&tenant_id=eq.${tenant}`,
+          caller,
+        )
+      ).length,
+      0,
+    );
+    const previous = (await mailbox(email)).length;
+    ok(
+      await invoke(
+        'send-invitation',
+        {
+          target_tenant_id: tenant,
+          target_unit_id: unit,
+          target_person_id: approved.person_id,
+          invited_email: email,
+          target_role: 'household_member',
+          client_event_id: approved.invitation_client_event_id,
+        },
+        registry.holder,
+      ),
+      'send household email',
+    );
+    const link = await newestVerificationLink(email, previous);
+    assert.equal(
+      (
+        await rpc(
+          'accept_invitation',
+          { token: invitationSecretOf(link) },
+          caller,
+        )
+      ).status,
+      403,
+    );
+    const verified = await followVerificationLink(link);
+    ok(
+      await rpc(
+        'accept_invitation',
+        { token: invitationSecretOf(link) },
+        verified,
+      ),
+      'accept household invitation',
+    );
+    assert.deepEqual(
+      ok(
+        await rpc(
+          'current_household_permissions',
+          { target_tenant_id: tenant, target_unit_id: unit },
+          verified,
+        ),
+        'default household permissions',
+      ),
+      ['manage_access_authorizations'],
+    );
+    const sheet = ok(
+      await rpc(
+        'unit_sheet',
+        { target_tenant_id: tenant, target_unit_id: unit },
+        verified,
+      ),
+      'member sheet',
+    );
+    assert.equal('balance' in sheet, false);
+    assert.equal(sheet.pending_invitations.length, 0);
+    assert.equal(
+      (
+        await rpc(
+          'accept_invitation',
+          { token: invitationSecretOf(link) },
+          verified,
+        )
+      ).status,
+      403,
+    );
+  });
+  it('persists HTTP guessing limits with uniform failures', async () => {
+    const email = `probe.registry.guessing.${run}@domus.local`;
+    await createConfirmedUser(email);
+    const caller = await passwordToken(email);
+    const code = ok(
+      await rpc(
+        'rotate_unit_join_code',
+        { target_tenant_id: tenant, target_unit_id: unit },
+        registry.holder,
+      ),
+      'rotate for guessing probe',
+    );
+    for (let attempt = 0; attempt < 5; attempt++)
+      assert.deepEqual(
+        ok(
+          await rpc(
+            'submit_unit_join_request',
+            {
+              target_tenant_id: tenant,
+              join_code: 'AAAA-AAAA-AAAA',
+              person_data: {
+                person_first_name: 'HTTP',
+                person_last_name: 'Guess',
+              },
+              client_event_id: randomUUID(),
+            },
+            caller,
+          ),
+          'wrong join attempt',
+        ),
+        { status: 'unavailable' },
+      );
+    assert.deepEqual(
+      ok(
+        await rpc(
+          'submit_unit_join_request',
+          {
+            target_tenant_id: tenant,
+            join_code: code,
+            person_data: {
+              person_first_name: 'HTTP',
+              person_last_name: 'Guess',
+            },
+            client_event_id: randomUUID(),
+          },
+          caller,
+        ),
+        'throttled valid code',
+      ),
+      { status: 'unavailable' },
+    );
+    assert.equal(
+      (
+        await rows(
+          `membership?select=membership_id&tenant_id=eq.${tenant}`,
+          caller,
+        )
+      ).length,
+      0,
+    );
+  });
+});
+
 async function startSupport() {
   return ok(
     await invoke(

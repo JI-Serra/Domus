@@ -23,7 +23,7 @@ select lives_ok($$insert into public.person (person_id,tenant_id,person_first_na
   values ('30000000-0000-0000-0000-000000000099','10000000-0000-0000-0000-000000000001','Test','Person','dni','12345678','+54 381 555 0100','1990-05-01')$$,'Registry can insert an unbound person');
 select is((select count(*) from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099'),1::bigint,'Person insert produces one atomic event');
 select is((select audit_event_diff from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099'),
-  (select to_jsonb(p)||'{"person_document_number":{"changed":true},"person_phone":{"changed":true},"person_birth_date":{"changed":true}}'::jsonb from public.person p where person_id='30000000-0000-0000-0000-000000000099'),'Insert preserves the full row except declared redactions');
+  (select to_jsonb(p)||'{"person_first_name":{"changed":true},"person_last_name":{"changed":true},"person_email":{"changed":true},"person_document_number":{"changed":true},"person_phone":{"changed":true},"person_birth_date":{"changed":true}}'::jsonb from public.person p where person_id='30000000-0000-0000-0000-000000000099'),'Insert preserves the full row except declared redactions');
 select is((select audit_event_actor_user_id from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099'),'20000000-0000-0000-0000-000000000002'::uuid,'Actor user comes from signed claims');
 select is((select audit_event_actor_person_id from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099'),'30000000-0000-0000-0000-000000000002'::uuid,'Actor person is resolved within the tenant');
 select is((select audit_event_db_role from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099'),'authenticated','Audit retains originating role instead of audit_writer');
@@ -35,7 +35,7 @@ select throws_ok($$update public.person set person_created_at='2000-01-01',perso
 select lives_ok($$update public.person set person_first_name='Updated' where person_id='30000000-0000-0000-0000-000000000099'$$,'Registry can update a person');
 select is((select person_created_at from public.person where person_id='30000000-0000-0000-0000-000000000099'),now(),'Created timestamp is maintained');
 select is((select person_updated_at from public.person where person_id='30000000-0000-0000-0000-000000000099'),now(),'Updated timestamp is maintained');
-select is((select audit_event_diff from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099' and audit_event_action='update'),'{"person_first_name":{"old":"Test","new":"Updated"}}'::jsonb,'Update retains only changed unredacted values');
+select is((select audit_event_diff from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099' and audit_event_action='update'),'{"person_first_name":{"changed":true}}'::jsonb,'Update redacts changed personal names');
 select lives_ok($$update public.person set person_document_number='87654321',person_phone='+54 381 555 0200',person_birth_date='1991-06-01' where person_id='30000000-0000-0000-0000-000000000099'$$,'Sensitive fields can be rectified');
 select is((select audit_event_diff from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099' and audit_event_diff ? 'person_phone' and audit_event_action='update'),
   '{"person_document_number":{"changed":true},"person_phone":{"changed":true},"person_birth_date":{"changed":true}}'::jsonb,'Sensitive update records markers without old or new PII');
@@ -49,7 +49,7 @@ select lives_ok($$select public.update_membership((select membership_id from tes
 select lives_ok($$select public.delete_membership((select membership_id from test_membership_id))$$,'Management RPC deletes another admin');
 select is((select count(*) from public.audit_event where audit_event_table_name='membership' and audit_event_row_id=(select membership_id from test_membership_id)),3::bigint,'Membership RPC CRUD produces three audit events');
 select lives_ok($$delete from public.person where person_id='30000000-0000-0000-0000-000000000099'$$,'Registry deletes an unreferenced person');
-select is((select audit_event_diff->>'person_first_name' from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099' and audit_event_action='delete'),'Updated','Delete audit retains unredacted row values');
+select is((select audit_event_diff->'person_first_name' from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099' and audit_event_action='delete'),'{"changed":true}'::jsonb,'Delete audit redacts personal names');
 select is((select audit_event_diff->'person_phone' from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099' and audit_event_action='delete'),'{"changed":true}'::jsonb,'Delete audit redacts sensitive values');
 select is((select count(*) from public.audit_event where audit_event_row_id='30000000-0000-0000-0000-000000000099'),4::bigint,'Historical events survive source deletion');
 select throws_ok($$update public.audit_event set audit_event_diff='{}'$$,'42501',null,'Client audit UPDATE is denied');

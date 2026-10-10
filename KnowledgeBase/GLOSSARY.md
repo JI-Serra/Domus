@@ -114,3 +114,27 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Permisos a otorgar al aceptar | `invitation_admin_permissions` (`admin_permission[]`) | D17 validated at creation and acceptance; first platform-invited admin receives all ten. |
 | Entrega de invitación registrada | `invitation_delivered_at` | Set by `mark_invitation_delivered` after the email went out; a retry with the same `client_event_id` then never mails again. |
 | Motivo de revocación de soporte | `support_session_revocation_reason` | Required when a platform administrator revokes a live support session (`revoke_support_session`); redacted in audit. |
+
+## M02 registry additions
+
+| Spec (es) | Table / attribute / code name | Notes |
+|---|---|---|
+| Relación del habitante | `unit_resident_relationship`: `owner`, `tenant`, `family`, `other` | Propietario / inquilino / familiar / otro. |
+| Permiso delegado al miembro | `membership_household_permission`; `household_permission`: `view_unit_finance`, `book_amenities`, `manage_access_authorizations` | D23; default only access authorizations. |
+| Código de unidad | `unit_join_code` | D22; 12 unambiguous base32 characters, hash only, rotatable. |
+| Solicitud de incorporación | `unit_join_request`; `unit_join_request_status`: `pending`, `approved`, `rejected` | Approval issues email consent; no automatic membership. |
+| Asignación de guardia a puesto | `gate_guard` | Guard membership ↔ gate, scoped by tenant. |
+| Tipo de puesto | `gate_kind`: `vehicular`, `pedestrian` | Vehicular / peatonal. |
+| Estado de dispositivo | `device_status`: `active`, `revoked` | Device identity is independent of operator identity. |
+| Vinculación de dispositivo | `device_pairing` | 10-minute, single-use pairing code; SHA256 only. |
+| Importación del padrón | `registry_import`; `registry_import_status`: `preview`, `confirmed` | Atomic staged import; row/error/unit/resident counts. |
+| Fila de importación | `registry_import_row` | Canonical JSON data, row number and field/code validation errors. |
+| Comprobante de reintento | Private `registry_operation` | Actor/tenant/operation-bound client_event_id; input digest and safe result. |
+| Contador de intentos | Private `registry_attempt` | Global per-user and failed tenant-code counters; no raw code or PII. |
+| Email en el padrón | `person_email` | Tenant-scoped natural import key; separate from Auth email. |
+| Facturable por excepción | Nullable `unit_is_billable` | NULL inherits `tenant_billable_unit_statuses`; archive always excludes. |
+| Baja lógica | `unit_archived_at`, `vehicle_archived_at`, `pet_archived_at` | Preserves history; units cannot be hard deleted. |
+| Contactos de unidad | `unit_contact_phone`, `unit_backup_phone` | Backup exposed to guard only through audited fallback action. |
+| Foto de mascota | `pet_photo_path`, private bucket `pet-photo` | `<tenant UUID>/<unit UUID>/<filename>`; never public. |
+| Consulta operativa de contacto | `registry_contact_lookup` audit event | `operation_code=approval_phone_fallback`; phone omitted from audit. |
+| Vigencia del habitante | `unit_resident_valid_from_at`, `unit_resident_valid_to_at` | UTC timestamps; end is exclusive. Occupied units have continuous adult holder coverage. |
