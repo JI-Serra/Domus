@@ -1,21 +1,5 @@
--- M01-F04: preserve the dedicated audit writer and explicit redaction registry.
-create or replace function app_private.current_actor_user_id() returns uuid
-language sql stable security definer set search_path = '' as $$
-  select case when app_private.current_identity_is_valid() then
-    case when app_private.is_impersonating() then ((select auth.jwt())->>'impersonator_user_id')::uuid
-      else app_private.current_user_id() end end;
-$$;
-create or replace function app_private.audit_redacted_columns(target_table text) returns text[]
-language sql immutable set search_path = '' as $$
-  select case target_table
-    when 'person' then array['person_document_number','person_phone','person_birth_date']::text[]
-    when 'tenant' then array[]::text[] when 'platform_admin' then array[]::text[]
-    when 'membership' then array[]::text[] when 'membership_permission' then array[]::text[]
-    when 'invitation' then array['invitation_email','invitation_first_name','invitation_last_name','invitation_token_hash']::text[]
-    when 'support_session' then array['support_session_reason']::text[] else null::text[] end;
-$$;
-grant execute on function app_private.current_identity_is_valid(),app_private.current_user_id(),
-  app_private.current_support_session_id(),app_private.is_impersonating(),app_private.can_invite(uuid,public.membership_role,public.admin_permission[]) to audit_writer;
+-- M01-F04: audit capture for the platform tables, attributed support writes and consent events. The dedicated
+-- audit_writer owns every function that appends to audit_event; each is written here as a complete definition.
 grant create on schema app_private to audit_writer;
 set role audit_writer;
 create or replace function app_private.audit_row_change() returns trigger
@@ -85,13 +69,14 @@ begin
     lower(tg_op)::public.audit_event_action, tg_table_name, (row_data ->> (tg_table_name || '_id'))::uuid, changes,
     left(nullif(btrim(split_part(headers ->> 'x-forwarded-for', ',', 1)), ''), 256),
     left(headers ->> 'x-device-id', 256),
-    case when app_private.is_impersonating() then app_private.current_user_id() end, app_private.current_support_session_id()
+    case when tg_table_name='support_session' then (row_data->>'support_session_target_user_id')::uuid when app_private.is_impersonating() then app_private.current_user_id() end, case when tg_table_name='support_session' then (row_data->>'support_session_id')::uuid else app_private.current_support_session_id() end
   );
   return coalesce(new, old);
 end;
 $$;
 reset role;
 revoke create on schema app_private from audit_writer;
+
 create function app_private.audit_invitation_acceptance() returns trigger
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -149,47 +134,73 @@ revoke create on schema app_private from audit_writer;
 set role audit_writer;
 grant execute on function app_private.audit_invitation_acceptance() to postgres;
 reset role;
+
+-- Audit entry point for the support target lookup. Callable only by the owner of the public RPC. The search TERM is
+-- never stored, only its length.
+create function app_private.record_support_target_lookup(
+  actor_user_id uuid, lookup_tenant_id uuid, search_length integer, result_count integer) returns void
+language plpgsql security definer set search_path = '' as $$
+declare headers jsonb;
+begin
+  begin
+    headers := nullif(current_setting('request.headers', true), '')::jsonb;
+  exception when invalid_text_representation then headers := null;
+  end;
+  insert into public.audit_event (
+    tenant_id, audit_event_actor_user_id, audit_event_db_role, audit_event_action, audit_event_table_name,
+    audit_event_row_id, audit_event_diff, audit_event_request_ip, audit_event_request_device
+  ) values (
+    lookup_tenant_id, actor_user_id, 'authenticated', 'insert', 'support_target_lookup', gen_random_uuid(),
+    jsonb_build_object('support_target_lookup_search_length', search_length,
+      'support_target_lookup_result_count', result_count),
+    left(nullif(btrim(split_part(headers ->> 'x-forwarded-for', ',', 1)), ''), 256),
+    left(headers ->> 'x-device-id', 256));
+end;
+$$;
+revoke all on function app_private.record_support_target_lookup(uuid, uuid, integer, integer)
+  from public, anon, authenticated, service_role;
+grant create on schema app_private to audit_writer;
+alter function app_private.record_support_target_lookup(uuid, uuid, integer, integer) owner to audit_writer;
+revoke create on schema app_private from audit_writer;
+set role audit_writer;
+grant execute on function app_private.record_support_target_lookup(uuid, uuid, integer, integer) to postgres;
+reset role;
+
 -- Conditional triggers transfer the audited consent capability without granting
 -- INSERT on audit_event or impersonating a privileged database request role.
-do $$ declare table_name text; begin
-  foreach table_name in array array['person','membership','membership_permission'] loop
-    execute format('drop trigger audit_row_change on public.%I',table_name);
-    execute format('create trigger audit_row_change after insert or update or delete on public.%I for each row when (current_user <> ''invitation_acceptor'') execute function app_private.audit_row_change()',table_name);
-    execute format('create trigger audit_invitation_acceptance after insert or update or delete on public.%I for each row when (current_user = ''invitation_acceptor'') execute function app_private.audit_invitation_acceptance()',table_name);
-    execute format('alter table public.%I enable always trigger audit_row_change',table_name);
-    execute format('alter table public.%I enable always trigger audit_invitation_acceptance',table_name);
-  end loop;
-end $$;
+drop trigger audit_row_change on public.person;
+drop trigger audit_row_change on public.membership;
+drop trigger audit_row_change on public.membership_permission;
+create trigger audit_row_change after insert or update or delete on public.person
+  for each row when (current_user <> 'invitation_acceptor') execute function app_private.audit_row_change();
+create trigger audit_row_change after insert or update or delete on public.membership
+  for each row when (current_user <> 'invitation_acceptor') execute function app_private.audit_row_change();
+create trigger audit_row_change after insert or update or delete on public.membership_permission
+  for each row when (current_user <> 'invitation_acceptor') execute function app_private.audit_row_change();
 create trigger audit_row_change after insert or update or delete on public.invitation
   for each row when (current_user <> 'invitation_acceptor') execute function app_private.audit_row_change();
+create trigger audit_invitation_acceptance after insert or update or delete on public.person
+  for each row when (current_user = 'invitation_acceptor') execute function app_private.audit_invitation_acceptance();
+create trigger audit_invitation_acceptance after insert or update or delete on public.membership
+  for each row when (current_user = 'invitation_acceptor') execute function app_private.audit_invitation_acceptance();
+create trigger audit_invitation_acceptance after insert or update or delete on public.membership_permission
+  for each row when (current_user = 'invitation_acceptor') execute function app_private.audit_invitation_acceptance();
 create trigger audit_invitation_acceptance after insert or update or delete on public.invitation
   for each row when (current_user = 'invitation_acceptor') execute function app_private.audit_invitation_acceptance();
 -- Capture end attribution while the prior session is still live; rollback remains atomic.
 create trigger audit_row_change before insert or update or delete on public.support_session
   for each row execute function app_private.audit_row_change();
+alter table public.person enable always trigger audit_row_change;
+alter table public.membership enable always trigger audit_row_change;
+alter table public.membership_permission enable always trigger audit_row_change;
 alter table public.invitation enable always trigger audit_row_change;
-alter table public.invitation enable always trigger audit_invitation_acceptance;
 alter table public.support_session enable always trigger audit_row_change;
+alter table public.person enable always trigger audit_invitation_acceptance;
+alter table public.membership enable always trigger audit_invitation_acceptance;
+alter table public.membership_permission enable always trigger audit_invitation_acceptance;
+alter table public.invitation enable always trigger audit_invitation_acceptance;
+
 create trigger maintain_row_metadata before insert or update on public.invitation for each row execute function app_private.maintain_row_metadata();
 create trigger maintain_row_metadata before insert or update on public.support_session for each row execute function app_private.maintain_row_metadata();
 alter table public.invitation enable always trigger maintain_row_metadata;
 alter table public.support_session enable always trigger maintain_row_metadata;
-revoke truncate,trigger,references on public.invitation,public.support_session from service_role;
-
-create function app_private.writable_permission_tenant_ids(target_permission public.admin_permission) returns setof uuid
-language sql stable security definer set search_path = '' as $$
-  select t from app_private.permission_tenant_ids(target_permission) t where t in (select app_private.writable_tenant_ids());
-$$;
--- Upgrade the frozen H0 management RPCs in a new migration: reject read-only
--- callers before target lookups/locks, retaining D17 target and grantor checks.
-do $$ declare fn record; body text; begin
-  for fn in select p.oid::regprocedure signature from pg_proc p where
-    (p.pronamespace='public'::regnamespace and p.proname in ('create_membership','update_membership','revoke_membership','delete_membership','grant_admin_permission','revoke_admin_permission'))
-    or p.oid='app_private.lock_managed_membership(uuid,boolean,public.membership_role)'::regprocedure loop
-    body:=pg_get_functiondef(fn.signature);
-    body:=replace(body,'app_private.permission_tenant_ids(', 'app_private.writable_permission_tenant_ids(');
-    body:=replace(body,'(select auth.uid())','app_private.current_user_id()');
-    execute body;
-  end loop;
-end $$;
-revoke all on function app_private.writable_permission_tenant_ids(public.admin_permission) from public,anon,authenticated;

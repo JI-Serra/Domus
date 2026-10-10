@@ -1,0 +1,119 @@
+-- M01: platform onboarding, invitation consent and exceptional support access — tables, constraints and roles.
+-- Every M01 function is written in later migrations as a complete definition; no migration rewrites function source.
+create type public.unit_status as enum ('occupied', 'under_construction', 'vacant');
+create type public.invitation_status as enum ('pending', 'accepted', 'revoked', 'expired');
+create type public.support_session_status as enum ('active', 'ended', 'revoked', 'expired');
+
+alter table public.tenant add column tenant_billable_unit_statuses public.unit_status[]
+  not null default array['occupied','under_construction','vacant']::public.unit_status[];
+alter table public.tenant add constraint tenant_billable_unit_statuses_check check (
+  cardinality(tenant_billable_unit_statuses) between 1 and 3
+  and array_position(tenant_billable_unit_statuses, null) is null);
+-- Duplicate billing statuses have no semantic meaning; keep the array a set.
+alter table public.tenant add constraint tenant_billable_unit_statuses_unique_check check (
+  cardinality(array_positions(tenant_billable_unit_statuses,'occupied'))<=1
+  and cardinality(array_positions(tenant_billable_unit_statuses,'under_construction'))<=1
+  and cardinality(array_positions(tenant_billable_unit_statuses,'vacant'))<=1);
+grant update (tenant_billable_unit_statuses) on public.tenant to authenticated;
+-- Onboarding retry key; the tenant UUID is the onboarding event UUID.
+alter table public.tenant add column client_event_id uuid not null default gen_random_uuid();
+alter table public.tenant add constraint tenant_client_event_id_key unique(client_event_id);
+
+-- One identity per tenant: a user binds to at most one person in each tenant.
+drop index public.person_tenant_id_user_id_key;
+alter table public.person add constraint person_tenant_id_user_id_key unique(tenant_id,user_id);
+
+create table public.invitation (
+  invitation_id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenant(tenant_id),
+  invitation_email text not null,
+  person_id uuid,
+  invitation_first_name text,
+  invitation_last_name text,
+  invitation_membership_role public.membership_role not null,
+  invitation_admin_permissions public.admin_permission[] not null default '{}',
+  invitation_token_hash text not null constraint invitation_invitation_token_hash_key unique,
+  invitation_expires_at timestamptz not null,
+  invitation_status public.invitation_status not null default 'pending',
+  invitation_created_by_user_id uuid not null references auth.users(id),
+  invitation_accepted_by_user_id uuid references auth.users(id),
+  invitation_accepted_at timestamptz,
+  client_event_id uuid not null constraint invitation_client_event_id_key unique,
+  invitation_created_at timestamptz not null default now(),
+  invitation_updated_at timestamptz not null default now(),
+  constraint invitation_tenant_id_person_id_fkey foreign key (tenant_id, person_id)
+    references public.person(tenant_id, person_id),
+  constraint invitation_target_check check (person_id is not null or
+    (length(btrim(invitation_first_name)) > 0 and length(btrim(invitation_last_name)) > 0)),
+  constraint invitation_email_check check (invitation_email = lower(btrim(invitation_email)) and invitation_email like '%@%'),
+  constraint invitation_token_hash_check check (invitation_token_hash ~ '^[a-f0-9]{64}$'),
+  constraint invitation_permissions_check check (
+    (invitation_membership_role = 'tenant_admin' or cardinality(invitation_admin_permissions) = 0)
+    and array_position(invitation_admin_permissions, null) is null),
+  constraint invitation_acceptance_check check ((invitation_status = 'accepted') =
+    (invitation_accepted_at is not null and invitation_accepted_by_user_id is not null))
+);
+create index invitation_tenant_id_person_id_idx on public.invitation(tenant_id, person_id);
+create index invitation_person_id_idx on public.invitation(person_id);
+create index invitation_created_by_user_id_idx on public.invitation(invitation_created_by_user_id);
+create index invitation_accepted_by_user_id_idx on public.invitation(invitation_accepted_by_user_id);
+comment on table public.invitation is 'Audit redaction: invitation_email, invitation_first_name, invitation_last_name, invitation_token_hash. Raw tokens are never persisted.';
+
+create table public.support_session (
+  support_session_id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenant(tenant_id),
+  support_session_actor_user_id uuid not null references auth.users(id),
+  support_session_target_user_id uuid not null references auth.users(id),
+  support_session_reason text not null,
+  support_session_duration_minutes_count integer not null default 30,
+  support_session_started_at timestamptz not null default now(),
+  support_session_expires_at timestamptz not null,
+  support_session_ended_at timestamptz,
+  support_session_status public.support_session_status not null default 'active',
+  support_session_ended_by_user_id uuid references auth.users(id),
+  client_event_id uuid not null constraint support_session_client_event_id_key unique,
+  support_session_created_at timestamptz not null default now(),
+  support_session_updated_at timestamptz not null default now(),
+  constraint support_session_reason_check check (length(btrim(support_session_reason)) between 1 and 500),
+  constraint support_session_duration_check check (support_session_duration_minutes_count between 1 and 60
+    and support_session_expires_at > support_session_started_at
+    and support_session_expires_at <= support_session_started_at + interval '60 minutes'),
+  constraint support_session_actor_target_check check (support_session_actor_user_id <> support_session_target_user_id),
+  constraint support_session_ended_check check ((support_session_status = 'active') = (support_session_ended_at is null))
+);
+create unique index support_session_active_actor_key on public.support_session(support_session_actor_user_id)
+  where support_session_status = 'active';
+create index support_session_tenant_id_idx on public.support_session(tenant_id);
+create index support_session_actor_user_id_idx on public.support_session(support_session_actor_user_id);
+create index support_session_target_user_id_idx on public.support_session(support_session_target_user_id);
+create index support_session_ended_by_user_id_idx on public.support_session(support_session_ended_by_user_id);
+-- A support target must be a person of the session's own tenant.
+alter table public.support_session add constraint support_session_tenant_id_target_user_id_fkey
+  foreign key(tenant_id,support_session_target_user_id) references public.person(tenant_id,user_id);
+create index support_session_tenant_id_target_user_id_idx on public.support_session(tenant_id,support_session_target_user_id);
+comment on table public.support_session is 'Audit redaction: support_session_reason. Session IDs never correspond to auth.sessions: Auth mutation endpoints must reject support JWTs.';
+
+alter table public.audit_event add column audit_event_on_behalf_of_user_id uuid;
+alter table public.audit_event add column support_session_id uuid;
+create index audit_event_support_session_id_idx on public.audit_event(support_session_id);
+
+alter table public.invitation enable row level security;
+alter table public.support_session enable row level security;
+revoke all on public.invitation,public.support_session from public,anon,authenticated,service_role;
+-- Email/hash/profile data is returned only to invitation managers, never to invitees.
+grant select on public.invitation,public.support_session to authenticated;
+revoke truncate,trigger,references on public.invitation,public.support_session from service_role;
+
+-- Invitation consent is an isolated capability, never a client/server role. It is reachable only through the
+-- consent RPC it owns. The invoker permission-validation trigger locks admin memberships, and PostgreSQL requires
+-- UPDATE capability and a matching policy even for SELECT FOR UPDATE.
+do $$ begin
+  if not exists(select 1 from pg_roles where rolname='invitation_acceptor') then create role invitation_acceptor nologin noinherit; end if;
+end $$;
+grant invitation_acceptor to postgres with inherit false, set true;
+grant usage on schema public, app_private, extensions to invitation_acceptor;
+grant select on public.tenant,public.person,public.membership,public.membership_permission,public.invitation to invitation_acceptor;
+grant insert on public.person,public.membership,public.membership_permission to invitation_acceptor;
+grant update(user_id) on public.person to invitation_acceptor;
+grant update(membership_role) on public.membership to invitation_acceptor;
+grant update(person_id,invitation_status,invitation_accepted_at,invitation_accepted_by_user_id) on public.invitation to invitation_acceptor;
