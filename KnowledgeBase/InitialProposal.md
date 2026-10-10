@@ -5,7 +5,7 @@
 | Campo | Valor |
 |---|---|
 | Producto | Domus — SaaS multitenant para la gestión integral de barrios privados |
-| Versión del documento | 1.2 |
+| Versión del documento | 1.3 |
 | Fecha | 2026-10-09 |
 | Estado | Aprobado para iniciar desarrollo (sujeto a revisiones por hito) |
 | Mercado inicial | Tucumán, Argentina (Yerba Buena y alrededores), con expansión posterior |
@@ -931,6 +931,9 @@ Umbrales orientativos, que se acuerdan con el barrio sobre una línea base relev
 | D14 | 2026-10-09 | **Supabase local (Docker) para desarrollo; proyecto en la nube `Domus` como `staging`**. Solo el orquestador aplica migraciones a `staging` | Agentes en paralelo sin pisarse; `staging` refleja solo código integrado. |
 | D15 | 2026-10-09 | **Sin Sentry por ahora**: reporte de errores detrás de un módulo propio con adaptadores | El fundador no tiene cuenta; se conecta un proveedor más adelante sin tocar el código de negocio. |
 | D17 | 2026-10-09 | **Nuevo permiso `gestion_administradores`** (`admin_management`); sin auto-modificación de permisos; solo se otorga lo que uno tiene | La revisión de seguridad T6 detectó que `padron` permitía auto-escalar a todos los permisos; §6.3 no definía quién otorga permisos. |
+| D18 | 2026-10-10 | **M01-F04 = impersonación completa**: el super-admin (con MFA) actúa como un usuario concreto, con motivo y duración obligatorios, banner visible, cada escritura auditada con el impersonador como actor real, y la sesión visible para el admin del barrio | Decisión del fundador: soporte real sobre lo que ve y hace el usuario. |
+| D19 | 2026-10-10 | **Staging diferido**: H1 se revisa en local; Vercel + Supabase staging se arman en un hito posterior | Decisión del fundador. |
+| D20 | 2026-10-10 | **M01-F03 (unidades facturables) se completa en H2**: en H1 se guardan los criterios por tenant; el conteo se construye con la tabla `unit` de M02 | Dependencia de datos: las unidades llegan en M02. |
 | D16 | 2026-10-09 | **Desarrollo orquestado**: el fundador y Claude (orquestador) diseñan y revisan; el desarrollo se delega a agentes Codex/Claude vía Orca, en worktrees por tarea | Paralelismo y control de costo por tarea. |
 
 ### 17.2 Preguntas abiertas
@@ -971,5 +974,6 @@ Umbrales orientativos, que se acuerdan con el barrio sobre una línea base relev
 | Versión | Fecha | Autor | Cambios |
 |---|---|---|---|
 | 1.0 | 2026-10-09 | Fundador + Claude | Versión inicial: alcance del MVP, arquitectura, modelo de dominio, módulos M00–M13, hitos de revisión humana. |
+| 1.3 | 2026-10-10 | Fundador + Claude | HR-00 aprobado. D18–D20: impersonación completa, staging diferido, M01-F03 en H2. |
 | 1.2 | 2026-10-09 | Fundador + Claude | D17: permiso `gestion_administradores` y reglas de otorgamiento de permisos (§6.3). |
 | 1.1 | 2026-10-09 | Fundador + Claude | Decisiones D11–D16: código en inglés + glosario, nomenclatura GeneXus en snake_case, Node 25, Supabase local + staging en la nube (us-west-2), Sentry diferido, desarrollo orquestado. |
