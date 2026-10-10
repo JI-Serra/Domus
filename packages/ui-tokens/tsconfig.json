@@ -1,0 +1,1 @@
+{ "extends": "@domus/config/tsconfig/library", "include": ["src"] }

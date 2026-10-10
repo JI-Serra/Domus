@@ -1,0 +1,21 @@
+{
+  "name": "@domus/config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/base": "./tsconfig.base.json",
+    "./tsconfig/library": "./tsconfig.library.json",
+    "./tsconfig/next": "./tsconfig.next.json",
+    "./eslint": "./eslint.config.mjs",
+    "./prettier": "./prettier.config.mjs"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@domus/domain",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tenant/subscription-status": "./src/tenant/subscription-status.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@domus/config": "workspace:*",
+    "@vitest/coverage-v8": "4.1.11",
+    "vitest": "4.1.11",
+    "vite": "8.3.4",
+    "typescript": "6.0.3",
+    "eslint": "9.39.5"
+  }
+}

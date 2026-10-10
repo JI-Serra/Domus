@@ -1,0 +1,11 @@
+{
+  "name": "@domus/mobile",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node -e \"process.exit(0)\""
+  },
+  "devDependencies": {
+    "@domus/config": "workspace:*"
+  }
+}

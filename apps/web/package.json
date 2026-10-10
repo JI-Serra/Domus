@@ -1,0 +1,38 @@
+{
+  "name": "@domus/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@domus/domain": "workspace:*",
+    "@domus/ui-tokens": "workspace:*",
+    "@domus/supabase": "workspace:*",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@domus/config": "workspace:*",
+    "@tailwindcss/postcss": "4.3.3",
+    "tailwindcss": "4.3.3",
+    "postcss": "8.5.29",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.0",
+    "typescript": "6.0.3",
+    "@types/node": "25.9.9",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "vitest": "4.1.11",
+    "vite": "8.3.4",
+    "jsdom": "29.1.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1"
+  }
+}

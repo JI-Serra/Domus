@@ -1,0 +1,29 @@
+{
+  "name": "@domus/supabase",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./browser": "./src/browser.ts",
+    "./server": "./src/server.ts",
+    "./env": "./src/env.ts",
+    "./database.types": "./src/database.types.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.117.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@domus/config": "workspace:*",
+    "@types/node": "25.9.9",
+    "typescript": "6.0.3",
+    "eslint": "9.39.5",
+    "vitest": "4.1.11",
+    "vite": "8.3.4"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules
+.next
+.turbo
+dist
+coverage
+apps/web/next-env.d.ts
+pnpm-lock.yaml
+KnowledgeBase
+AGENTS.md
+CLAUDE.md
+packages/supabase/src/database.types.ts
+supabase/config.toml

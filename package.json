@@ -1,0 +1,26 @@
+{
+  "name": "domus",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.11.0",
+  "engines": {
+    "node": ">=25"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:db": "supabase test db",
+    "format": "prettier --write .",
+    "supabase": "supabase",
+    "gen:types": "node scripts/generate-database-types.mjs"
+  },
+  "devDependencies": {
+    "@domus/config": "workspace:*",
+    "prettier": "3.9.9",
+    "supabase": "2.120.0",
+    "turbo": "2.11.7"
+  }
+}

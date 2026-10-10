@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+/* Shared design tokens are implemented in M00-F02. */
+@theme {
+  --font-sans: Arial, Helvetica, sans-serif;
+}

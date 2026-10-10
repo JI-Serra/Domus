@@ -1,0 +1,5 @@
+{
+  "extends": "@domus/config/tsconfig/library",
+  "compilerOptions": { "types": ["node"] },
+  "include": ["src"]
+}
