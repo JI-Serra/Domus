@@ -4,7 +4,7 @@ import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { writeFileSync } from 'node:fs';
+import { prepareFunctionEnv } from '../../scripts/prepare-function-env.mjs';
 
 const rootRequire = createRequire(
   new URL('../../package.json', import.meta.url),
@@ -26,16 +26,7 @@ assert.equal(statusResult.status, 0, 'Local stack must be running');
 const status = JSON.parse(statusResult.stdout);
 assert.equal(status.API_URL, 'http://127.0.0.1:54321', 'Demo is local-only');
 if (process.argv.includes('--prepare')) {
-  writeFileSync(
-    new URL('../.env.local', import.meta.url),
-    [
-      'DOMUS_ENVIRONMENT=local',
-      `DOMUS_LOCAL_JWT_SECRET=${status.JWT_SECRET}`,
-      'DOMUS_APP_URL=http://127.0.0.1:3000',
-      '',
-    ].join('\n'),
-  );
-  console.log('Local-only function environment prepared (gitignored).');
+  for (const line of prepareFunctionEnv(status)) console.log(line);
   process.exit(0);
 }
 const client = (token) =>

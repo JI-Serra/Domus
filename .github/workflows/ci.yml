@@ -25,18 +25,18 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
       DOMUS_ENVIRONMENT: local
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Version comes from "packageManager" in package.json.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - name: Cache Turborepo
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.sha }}
@@ -55,11 +55,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -88,11 +88,11 @@ jobs:
     env:
       DOMUS_ENVIRONMENT: local
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -102,18 +102,32 @@ jobs:
       - name: Install Chromium for Playwright
         run: pnpm --filter @domus/web exec playwright install --with-deps chromium
 
-      # Auth, API gateway, Postgres and the mail catcher are enough for the e2e suite; migrations and the seed
-      # (two fictional tenants and the test users) are applied on start.
+      # Auth, API gateway, Postgres, Storage (logo upload), the Edge runtime (invitations, support sessions) and
+      # the mail catcher are needed by the e2e suite; migrations and the seed (two fictional tenants and the test
+      # users) are applied on start.
       - name: Start local Supabase
         run: >
           pnpm supabase start
-          -x realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor,postgres-meta
+          -x realtime,imgproxy,studio,logflare,vector,supavisor,postgres-meta
 
       - name: Export the public Supabase variables
         run: |
           eval "$(pnpm -s supabase status -o env)"
           echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+
+      # Writes the gitignored supabase/.env.local (function secrets generated now, never committed).
+      - name: Prepare the Edge Function environment
+        run: node scripts/prepare-function-env.mjs
+
+      - name: Serve Edge Functions
+        run: |
+          nohup pnpm supabase functions serve --env-file supabase/.env.local > functions.log 2>&1 &
+          echo "FUNCTIONS_SERVE_PID=$!" >> "$GITHUB_ENV"
+
+      # Fails the job (instead of letting tests skip or time out) when Storage, a function or Mailpit is missing.
+      - name: Wait for Storage, Edge Functions and Mailpit
+        run: node scripts/e2e-preflight.mjs --wait
 
       - name: Build
         run: pnpm build
@@ -124,14 +138,17 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: |
             apps/web/playwright-report/
             apps/web/test-results/
+            functions.log
           retention-days: 7
 
       - name: Stop local Supabase
         if: always()
-        run: pnpm supabase stop --no-backup
+        run: |
+          kill "$FUNCTIONS_SERVE_PID" 2>/dev/null || true
+          pnpm supabase stop --no-backup
