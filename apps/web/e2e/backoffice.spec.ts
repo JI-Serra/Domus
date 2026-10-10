@@ -1,8 +1,12 @@
 import { expect, test } from '@playwright/test';
-import type { Browser, BrowserContext, Page, TestInfo } from '@playwright/test';
+import type { BrowserContext, Page, TestInfo } from '@playwright/test';
+import { ACCOUNTS, TENANT_IDS } from './support/accounts';
 import {
+  addMembership,
   auditEventsForSession,
   cleanUp,
+  createTenant,
+  makePlatformAdmin,
   tenantIdByName,
   userIdByEmail,
 } from './support/database';
@@ -10,6 +14,9 @@ import {
   contextSelector,
   enrollTotp,
   expectNoHorizontalOverflow,
+  PNG,
+  loginWithPassword,
+  newContext,
   signIn,
 } from './support/flows';
 import { extractAuthLink, waitForEmailText } from './support/mailpit';
@@ -20,34 +27,9 @@ import {
   jwtClaims,
 } from './support/supabase';
 
-// 1x1 transparent PNG: a real, valid image for the logo upload.
-const PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-  'base64',
-);
-
 const stamp = `${Date.now()}`.slice(-9);
 const ADMIN_FIRST = 'Marta';
 const ADMIN_LAST = 'Soporte';
-
-/** A fresh browser context with the same device settings as the project under test. */
-async function newContext(
-  browser: Browser,
-  testInfo: TestInfo,
-): Promise<BrowserContext> {
-  const { baseURL, viewport, isMobile, hasTouch, userAgent } =
-    testInfo.project.use;
-  return browser.newContext({
-    baseURL,
-    viewport,
-    isMobile,
-    hasTouch,
-    userAgent,
-    locale: 'es-AR',
-    timezoneId: 'America/Argentina/Tucuman',
-    colorScheme: 'light',
-  });
-}
 
 const isMobile = (testInfo: TestInfo) => testInfo.project.name === 'mobile-360';
 
@@ -75,7 +57,6 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
     inviteeEmail = `e2e.admin.${project(testInfo)}.${stamp}@domus.local`;
     const platformAdmin = await createDisposableUser();
     adminEmail = platformAdmin.email;
-    const { makePlatformAdmin } = await import('./support/database');
     await makePlatformAdmin(platformAdmin.userId);
 
     adminContext = await newContext(browser, testInfo);
@@ -656,5 +637,111 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
       page.getByText('Esta invitación no está disponible', { exact: true }),
     ).toBeVisible();
     await context.close();
+  });
+});
+
+test.describe('access to the backoffice (M01-F05, S8)', () => {
+  const PLATFORM_ROUTES = [
+    '/platform',
+    '/platform/tenants',
+    '/platform/tenants/new',
+    `/platform/tenants/${TENANT_IDS.ceibos}`,
+    '/platform/support',
+  ];
+
+  test('a platform admin without a second factor reaches none of it, and the database refuses them too', async ({
+    page,
+  }) => {
+    const admin = await createDisposableUser();
+    try {
+      await makePlatformAdmin(admin.userId);
+      await signIn(page, admin.email, admin.password);
+      for (const path of PLATFORM_ROUTES) {
+        await page.goto(path);
+        await expect(page).toHaveURL(/\/account\/security\?next=%2Fplatform/);
+        await expect(
+          page.getByRole('button', { name: 'Activar verificación' }),
+        ).toBeVisible();
+      }
+
+      // Even with their own valid (aal1) token, the platform operations are denied by the database.
+      const client = clientWithToken(
+        await accessTokenFromCookies(await page.context().cookies()),
+      );
+      const created = await client.rpc('create_tenant', {
+        tenant_name: 'No debería existir',
+        tenant_slug: `no-${stamp}`,
+      });
+      expect(created.error?.code).toBe('42501');
+      const targets = await client.rpc('list_support_targets', {
+        target_tenant_id: TENANT_IDS.ceibos,
+      });
+      expect(targets.error?.code).toBe('42501');
+      const support = await client.rpc('start_support_session', {
+        target_tenant_id: TENANT_IDS.ceibos,
+        target_user_id: await userIdByEmail(ACCOUNTS.adminCeibos),
+        reason: 'sin MFA',
+        client_event_id: crypto.randomUUID(),
+      });
+      expect(support.error?.code).toBe('42501');
+      const tenants = await client.from('tenant').select('tenant_id');
+      expect(tenants.data ?? []).toHaveLength(0);
+    } finally {
+      await cleanUp({ emails: [admin.email] });
+    }
+  });
+
+  test('a tenant administrator is sent away from every platform route', async ({
+    page,
+  }) => {
+    await loginWithPassword(page, ACCOUNTS.adminCeibos);
+    for (const path of PLATFORM_ROUTES) {
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/$/);
+    }
+    await expect(contextSelector(page)).not.toContainText('Plataforma');
+  });
+
+  test('a visitor is sent to sign in first', async ({ page }) => {
+    for (const path of ['/platform/tenants/new', '/platform/support']) {
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/login\?next=%2Fplatform/);
+    }
+    await page.goto('/settings/support');
+    await expect(page).toHaveURL(/\/login\?next=%2Fsettings%2Fsupport$/);
+  });
+
+  test('support accesses are for administrators with the access-audit permission only', async ({
+    page,
+  }) => {
+    const { tenantId } = await createTenant(
+      `Barrio Permisos ${stamp}`,
+      'active',
+    );
+    const admin = await createDisposableUser();
+    const holder = await createDisposableUser();
+    try {
+      // A tenant admin without permissions: told what is missing, not shown an empty list.
+      await addMembership(admin.userId, tenantId, 'tenant_admin');
+      await signIn(page, admin.email, admin.password);
+      await page.goto('/settings/support');
+      await expect(
+        page.getByText(
+          'Necesitás el permiso de auditoría de accesos para ver esta página',
+        ),
+      ).toBeVisible();
+
+      // A resident has no such page at all.
+      await page.context().clearCookies();
+      await addMembership(holder.userId, tenantId, 'unit_holder');
+      await signIn(page, holder.email, holder.password);
+      const response = await page.goto('/settings/support');
+      expect(response?.status()).toBe(404);
+    } finally {
+      await cleanUp({
+        tenantIds: [tenantId],
+        emails: [admin.email, holder.email],
+      });
+    }
   });
 });

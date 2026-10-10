@@ -72,14 +72,22 @@ export async function addMembership(
   userId: string,
   tenantId: string,
   role: 'tenant_admin' | 'guard' | 'unit_holder' | 'household_member',
+  name: { first: string; last: string } = { first: 'Prueba', last: 'E2E' },
 ): Promise<void> {
   await withDatabase(async (db) => {
     const personId = randomUUID();
     await db.query(
       `insert into public.person (person_id, tenant_id, user_id, person_first_name, person_last_name,
          person_document_type, person_document_number)
-       values ($1, $2, $3, 'Prueba', 'E2E', 'dni', $4)`,
-      [personId, tenantId, userId, String(Date.now()).slice(-8)],
+       values ($1, $2, $3, $5, $6, 'dni', $4)`,
+      [
+        personId,
+        tenantId,
+        userId,
+        String(Date.now()).slice(-8),
+        name.first,
+        name.last,
+      ],
     );
     await db.query(
       `insert into public.membership (tenant_id, person_id, membership_role, membership_valid_from)
@@ -190,4 +198,21 @@ export async function cleanUp(options: {
       throw error;
     }
   });
+}
+
+/** Gives the user's active membership in the tenant an administrative permission (e.g. `access_audit`). */
+export async function grantPermission(
+  userId: string,
+  tenantId: string,
+  permission: string,
+): Promise<void> {
+  await withDatabase((db) =>
+    db.query(
+      `insert into public.membership_permission (tenant_id, membership_id, membership_permission_admin_permission)
+       select m.tenant_id, m.membership_id, $3::public.admin_permission
+         from public.membership m join public.person p using (tenant_id, person_id)
+        where m.tenant_id = $1 and p.user_id = $2`,
+      [tenantId, userId, permission],
+    ),
+  );
 }

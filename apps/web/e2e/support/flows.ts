@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Browser, BrowserContext, Page, TestInfo } from '@playwright/test';
 import { PASSWORD } from './accounts';
 import { totpCode } from './totp';
 
@@ -84,3 +84,29 @@ export async function signIn(
   await submitLogin(page, email, password);
   await page.waitForURL((url) => url.pathname !== '/login');
 }
+
+/** A fresh browser context (its own cookies) with the same device settings as the project under test. */
+export async function newContext(
+  browser: Browser,
+  testInfo: TestInfo,
+  colorScheme: 'light' | 'dark' = 'light',
+): Promise<BrowserContext> {
+  const { baseURL, viewport, isMobile, hasTouch, userAgent } =
+    testInfo.project.use;
+  return browser.newContext({
+    baseURL,
+    viewport,
+    isMobile,
+    hasTouch,
+    userAgent,
+    locale: 'es-AR',
+    timezoneId: 'America/Argentina/Tucuman',
+    colorScheme,
+  });
+}
+
+/** 1x1 transparent PNG: a real, valid image for logo uploads. */
+export const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
