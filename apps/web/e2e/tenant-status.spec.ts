@@ -89,22 +89,27 @@ test.describe('subscription status in the shell (M01-F02)', () => {
     });
   }
 
-  test('a cancelled barrio is closed at the database: its members see no barrio and no data, only the way out and their account', async ({
+  test('a cancelled barrio is closed at the database: its members see that the barrio was cancelled, no data, only the way out and their account', async ({
     page,
   }) => {
-    // `member_tenant_ids()` leaves cancelled barrios out, so the user's RLS client cannot even read the tenant row
-    // and the membership does not resolve: the shell never opens (the blocking page is defense in depth).
+    // `member_tenant_ids()` leaves cancelled barrios out, so the user's RLS client cannot even read the tenant row and
+    // the shell never opens; `current_user_cancelled_tenants()` is what lets the page say what happened.
     await setTenantStatus(tenantId, 'cancelled');
     await page.context().clearCookies();
     await signIn(page, email, password);
-    const noBarrio = page.getByRole('heading', {
-      name: 'Todavía no tenés un barrio asignado',
+    const cancelled = page.getByRole('heading', {
+      name: 'Tu barrio fue dado de baja',
     });
-    await expect(noBarrio).toBeVisible();
-    await expect(page.getByText(tenantName)).toHaveCount(0);
+    await expect(cancelled).toBeVisible();
+    await expect(page.getByText(tenantName)).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        name: 'Todavía no tenés un barrio asignado',
+      }),
+    ).toHaveCount(0);
 
     await page.goto('/registry');
-    await expect(noBarrio).toBeVisible();
+    await expect(cancelled).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Cerrar sesión' }),
     ).toBeVisible();
@@ -115,6 +120,21 @@ test.describe('subscription status in the shell (M01-F02)', () => {
       page.getByRole('heading', { name: 'Seguridad', level: 1 }),
     ).toBeVisible();
     await expectNoHorizontalOverflow(page);
+  });
+
+  test('a user with no barrio at all still sees the generic page, not the cancelled one', async ({
+    page,
+  }) => {
+    const nobody = await createDisposableUser();
+    await signIn(page, nobody.email, nobody.password);
+    await expect(
+      page.getByRole('heading', {
+        name: 'Todavía no tenés un barrio asignado',
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Tu barrio fue dado de baja' }),
+    ).toHaveCount(0);
   });
 
   test.afterAll(async () => {

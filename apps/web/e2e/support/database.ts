@@ -88,3 +88,106 @@ export async function addMembership(
     );
   });
 }
+
+/** Id of the auth user with this email (test setup only). */
+export async function userIdByEmail(email: string): Promise<string> {
+  const { rows } = await withDatabase((db) =>
+    db.query<{ id: string }>('select id from auth.users where email = $1', [
+      email,
+    ]),
+  );
+  const id = rows[0]?.id;
+  if (!id) throw new Error(`No user with email ${email}`);
+  return id;
+}
+
+/** The tenant created through the UI, found by name. */
+export async function tenantIdByName(name: string): Promise<string> {
+  const { rows } = await withDatabase((db) =>
+    db.query<{ tenant_id: string }>(
+      'select tenant_id from public.tenant where tenant_name = $1',
+      [name],
+    ),
+  );
+  const id = rows[0]?.tenant_id;
+  if (!id) throw new Error(`No tenant named ${name}`);
+  return id;
+}
+
+export interface AuditRow {
+  audit_event_actor_user_id: string | null;
+  audit_event_on_behalf_of_user_id: string | null;
+  support_session_id: string | null;
+  audit_event_table_name: string;
+  audit_event_action: string;
+  tenant_id: string | null;
+}
+
+/** Audit events of a support session, for the test that must prove the platform admin is the real actor. */
+export async function auditEventsForSession(
+  sessionId: string,
+): Promise<AuditRow[]> {
+  const { rows } = await withDatabase((db) =>
+    db.query<AuditRow>(
+      `select audit_event_actor_user_id, audit_event_on_behalf_of_user_id, support_session_id,
+              audit_event_table_name, audit_event_action, tenant_id
+         from public.audit_event where support_session_id = $1 order by audit_event_occurred_at`,
+      [sessionId],
+    ),
+  );
+  return rows;
+}
+
+/**
+ * Removes what a test created: the barrios (with their invitations, support sessions, people and memberships) and
+ * the disposable accounts. Audit events are append-only by design and stay; logo objects are removed through the
+ * Storage API by the test that uploaded them.
+ */
+export async function cleanUp(options: {
+  tenantIds?: readonly string[];
+  emails?: readonly string[];
+}): Promise<void> {
+  const tenantIds = [...(options.tenantIds ?? [])];
+  const emails = [...(options.emails ?? [])];
+  await withDatabase(async (db) => {
+    const { rows } = await db.query<{ id: string }>(
+      'select id from auth.users where email = any($1)',
+      [emails],
+    );
+    const userIds = rows.map((row) => row.id);
+    await db.query('begin');
+    try {
+      await db.query(
+        'delete from public.support_session where tenant_id = any($1) or support_session_actor_user_id = any($2)',
+        [tenantIds, userIds],
+      );
+      await db.query(
+        'delete from public.invitation where tenant_id = any($1)',
+        [tenantIds],
+      );
+      await db.query(
+        'delete from public.membership_permission where tenant_id = any($1)',
+        [tenantIds],
+      );
+      await db.query(
+        'delete from public.membership where tenant_id = any($1)',
+        [tenantIds],
+      );
+      await db.query('delete from public.person where tenant_id = any($1)', [
+        tenantIds,
+      ]);
+      await db.query('delete from public.tenant where tenant_id = any($1)', [
+        tenantIds,
+      ]);
+      await db.query(
+        'delete from public.platform_admin where user_id = any($1)',
+        [userIds],
+      );
+      await db.query('delete from auth.users where id = any($1)', [userIds]);
+      await db.query('commit');
+    } catch (error) {
+      await db.query('rollback');
+      throw error;
+    }
+  });
+}

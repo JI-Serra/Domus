@@ -43,3 +43,40 @@ export async function createDisposableUser(): Promise<{
     throw new Error(`Could not create ${email}: ${error?.message}`);
   return { email, password, userId: data.user.id };
 }
+
+/** The access token of the session in the browser's auth cookies (the cookies are not httpOnly by design). */
+export async function accessTokenFromCookies(
+  cookies: readonly { name: string; value: string }[],
+): Promise<string> {
+  const chunks = cookies
+    .filter((cookie) => /^sb-.*-auth-token(\.\d+)?$/.test(cookie.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (chunks.length === 0) throw new Error('No Supabase auth cookie');
+  const joined = chunks.map((cookie) => cookie.value).join('');
+  const json = joined.startsWith('base64-')
+    ? Buffer.from(joined.slice('base64-'.length), 'base64url').toString('utf8')
+    : decodeURIComponent(joined);
+  const session = JSON.parse(json) as { access_token: string };
+  return session.access_token;
+}
+
+/** A client that sends this JWT (a user's access token, or a support token) with every request. */
+export function clientWithToken(token: string): SupabaseClient {
+  return createClient(
+    required('NEXT_PUBLIC_SUPABASE_URL'),
+    required('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    {
+      accessToken: async () => token,
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  );
+}
+
+/** Claims of a JWT (no verification: the tests only read what the server issued). */
+export function jwtClaims(token: string): Record<string, unknown> {
+  const payload = token.split('.')[1];
+  if (!payload) throw new Error('Not a JWT');
+  return JSON.parse(
+    Buffer.from(payload, 'base64url').toString('utf8'),
+  ) as Record<string, unknown>;
+}

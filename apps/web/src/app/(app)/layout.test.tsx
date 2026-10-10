@@ -6,6 +6,7 @@ import { navigatesTo, notFound, redirect } from '@/test/server-mocks';
 
 const getRequestContext = vi.fn();
 const getTenantSubscriptionStatus = vi.fn();
+const loadCancelledTenants = vi.fn();
 vi.mock('next/navigation', () => ({
   redirect: (url: string) => redirect(url),
   notFound: () => notFound(),
@@ -15,6 +16,15 @@ vi.mock('@/lib/context/request-context', () => ({
 }));
 vi.mock('@/lib/tenant/status', () => ({
   getTenantSubscriptionStatus: (id: string) => getTenantSubscriptionStatus(id),
+}));
+vi.mock('@/lib/supabase/request-client', () => ({
+  createRequestClient: () => Promise.resolve({}),
+}));
+vi.mock('@/lib/tenant/cancelled', () => ({
+  loadCancelledTenants: () => loadCancelledTenants(),
+}));
+vi.mock('@/components/shell/cancelled-tenants', () => ({
+  CancelledTenants: () => null,
 }));
 vi.mock('@/components/shell/server-shell', () => ({ ServerShell: () => null }));
 vi.mock('@/components/shell/no-memberships', () => ({
@@ -27,6 +37,8 @@ vi.mock('@/components/tenant/tenant-cancelled', () => ({
 const { default: AppLayout } = await import('./layout');
 const { ServerShell } = await import('@/components/shell/server-shell');
 const { NoMemberships } = await import('@/components/shell/no-memberships');
+const { CancelledTenants } =
+  await import('@/components/shell/cancelled-tenants');
 const { TenantCancelled } =
   await import('@/components/tenant/tenant-cancelled');
 
@@ -58,6 +70,7 @@ async function render() {
 beforeEach(() => {
   vi.clearAllMocks();
   getTenantSubscriptionStatus.mockResolvedValue('active');
+  loadCancelledTenants.mockResolvedValue([]);
 });
 
 describe('tenant area layout', () => {
@@ -100,6 +113,25 @@ describe('tenant area layout', () => {
       resolved({ active: null, options: [] }),
     );
     expect((await render()).type).toBe(NoMemberships);
+  });
+
+  it('tells a user whose only barrios were cancelled, naming them', async () => {
+    const cancelled = [{ tenant_id: 't9', tenant_name: 'Barrio Viejo' }];
+    loadCancelledTenants.mockResolvedValue(cancelled);
+    getRequestContext.mockResolvedValue(
+      resolved({ active: null, options: [] }),
+    );
+    const tree = await render();
+    expect(tree.type).toBe(CancelledTenants);
+    expect((tree.props as unknown as { tenants: unknown }).tenants).toBe(
+      cancelled,
+    );
+  });
+
+  it('does not look for cancelled barrios when the user can act somewhere', async () => {
+    getRequestContext.mockResolvedValue(resolved({}));
+    await render();
+    expect(loadCancelledTenants).not.toHaveBeenCalled();
   });
 
   it('leads a platform admin below aal2 (no memberships) to the platform area, which asks for the factor', async () => {

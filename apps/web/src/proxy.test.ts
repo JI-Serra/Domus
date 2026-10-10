@@ -28,11 +28,18 @@ vi.mock('@domus/supabase/server', () => ({
 vi.mock('@domus/supabase/session', () => ({
   getSessionIdentity: () => identity(),
 }));
+vi.mock('@domus/supabase/env', () => ({
+  getSupabaseEnvironment: () => ({
+    NEXT_PUBLIC_SUPABASE_URL: 'http://api.test',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon',
+  }),
+}));
 vi.mock('@/lib/context/load', () => ({
   loadResolvedContext: (input: unknown) => loadResolvedContext(input),
 }));
 
 const { proxy } = await import('./proxy');
+const { supportToken } = await import('@/test/support-token');
 
 const ORIGIN = 'http://127.0.0.1:3000';
 const request = (path: string, headers: Record<string, string> = {}) =>
@@ -76,6 +83,7 @@ describe('proxy: route protection', () => {
     '/reset-password',
     '/auth/callback',
     '/design',
+    '/invitations/accept',
   ])('lets a visitor open the public route %s', async (path) => {
     identity.mockResolvedValue(null);
     const response = await proxy(request(path));
@@ -102,6 +110,38 @@ describe('proxy: route protection', () => {
     const response = await proxy(request('/access'));
     expect(response.cookies.get('sb-auth')?.value).toBe('rotated');
     expect(response.headers.get('cache-control')).toBe('private, no-store');
+  });
+});
+
+describe('proxy: support (impersonation) sessions', () => {
+  const withSupport = (path: string, token: string) =>
+    request(path, { cookie: `domus-support=${token}` });
+
+  it('acts as the target and never consults the admin session while a support token is live', async () => {
+    loadResolvedContext.mockResolvedValue(ACTIVE);
+    const response = await proxy(withSupport('/registry', supportToken()));
+    expect(response.status).toBe(200);
+    expect(identity).not.toHaveBeenCalled();
+    expect(forwarded(response, 'x-domus-tenant-id')).toBe('tenant-1');
+  });
+
+  it('closes the security area during a support session', async () => {
+    const response = await proxy(
+      withSupport('/account/security', supportToken()),
+    );
+    expect(response.headers.get('location')).toBe(`${ORIGIN}/support-blocked`);
+    expect(identity).not.toHaveBeenCalled();
+  });
+
+  it('clears an expired or malformed support cookie and carries on as the signed-in admin', async () => {
+    identity.mockResolvedValue(null);
+    for (const token of [supportToken({}, -30), 'nonsense']) {
+      const response = await proxy(withSupport('/access', token));
+      expect(response.headers.get('location')).toBe(
+        `${ORIGIN}/login?next=%2Faccess`,
+      );
+      expect(response.headers.get('set-cookie')).toContain('domus-support=;');
+    }
   });
 });
 
