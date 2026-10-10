@@ -1,9 +1,8 @@
 // Prepares the gitignored local environment files for the running Supabase stack:
-//   supabase/.env.local   function secrets (DOMUS_LOCAL_JWT_SECRET, DOMUS_INVITATION_TOKEN_KEY, ...)
+//   supabase/.env.local   function secrets (DOMUS_LOCAL_JWT_SECRET, ...)
 //   apps/web/.env.local   public Supabase variables for the web app (only created when missing)
 // Values are generated at run time and never committed. Nothing secret is printed.
 // Usage: node scripts/prepare-function-env.mjs [--force]
-import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,12 +35,6 @@ export function prepareFunctionEnv(status, { force = false } = {}) {
   const next = new Map([
     ['DOMUS_ENVIRONMENT', 'local'],
     ['DOMUS_LOCAL_JWT_SECRET', status.JWT_SECRET],
-    // Kept across runs so pending invitations stay valid; regenerated only with --force.
-    [
-      'DOMUS_INVITATION_TOKEN_KEY',
-      (!force && previous.get('DOMUS_INVITATION_TOKEN_KEY')) ||
-        randomBytes(32).toString('hex'),
-    ],
     ['DOMUS_APP_URL', 'http://127.0.0.1:3000'],
   ]);
   const unchanged =

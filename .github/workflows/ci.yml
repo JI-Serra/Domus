@@ -136,6 +136,13 @@ jobs:
       - name: Run Playwright
         run: pnpm --filter @domus/web test:e2e
 
+      # Independent real-HTTP security probes (support tokens vs PostgREST/Auth/RPCs/functions, invitation consent).
+      # They run after Playwright so their fictional fixtures never affect it, and even when Playwright failed.
+      # Keys come from `supabase status`; the served functions and Mailpit are already up.
+      - name: HTTP security probes
+        if: ${{ !cancelled() }}
+        run: node --test supabase/probes/http-security.test.mjs
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
