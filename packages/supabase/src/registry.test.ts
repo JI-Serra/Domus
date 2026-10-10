@@ -10,9 +10,17 @@ import {
   myUnitJoinRequests,
   cancelUnitJoinRequest,
   registryPendingVerification,
+  endHouseholdMembership,
 } from './registry';
 const id = '10000000-0000-0000-0000-000000000001';
 describe('registry typed caller-bound wrappers', () => {
+  it('ends a household membership with the caller retry event', () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as DomusSupabaseClient;
+    const input = { target_membership_id: id, client_event_id: id };
+    endHouseholdMembership(client, input);
+    expect(rpc).toHaveBeenCalledWith('end_household_membership', input);
+  });
   it('passes the tenant to the registry-only verification queue', () => {
     const rpc = vi.fn();
     const client = { rpc } as unknown as DomusSupabaseClient;

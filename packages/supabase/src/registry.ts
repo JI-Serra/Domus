@@ -59,6 +59,10 @@ export const setHouseholdPermissions = (
   client: DomusSupabaseClient,
   input: Args<'set_household_permissions'>,
 ) => client.rpc('set_household_permissions', input);
+export const endHouseholdMembership = (
+  client: DomusSupabaseClient,
+  input: Args<'end_household_membership'>,
+) => client.rpc('end_household_membership', input);
 export const currentHouseholdPermissions = (
   client: DomusSupabaseClient,
   input: Args<'current_household_permissions'>,

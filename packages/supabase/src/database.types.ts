@@ -1357,6 +1357,10 @@ export type Database = {
         Args: { target_platform_admin_id: string };
         Returns: undefined;
       };
+      end_household_membership: {
+        Args: { client_event_id: string; target_membership_id: string };
+        Returns: undefined;
+      };
       end_support_session: {
         Args: { target_support_session_id: string };
         Returns: undefined;
