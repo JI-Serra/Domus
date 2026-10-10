@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "brand:build": "node scripts/build-brand-assets.mjs"
   },
   "dependencies": {
     "@domus/domain": "workspace:*",
@@ -30,12 +31,18 @@
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/node": "25.9.9",
+    "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.0",
     "jsdom": "29.1.1",
+    "otpauth": "9.5.2",
+    "pg": "8.23.1",
     "postcss": "8.5.29",
+    "potrace": "2.1.8",
+    "sharp": "0.35.5",
+    "svgo": "4.1.0",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
     "vite": "8.3.4",

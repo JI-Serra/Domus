@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { ThemeControls } from '@/components/theme/theme-controls';
 import { InfoButton } from '@/components/ui/info-button';
+import { BrandSection } from './_sections/brand-section';
 import {
   BadgesSection,
   ButtonsSection,
@@ -21,6 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const sections = [
+  'brand',
   'colors',
   'typography',
   'shape',
@@ -77,6 +79,7 @@ export default async function DesignPage() {
       </nav>
 
       <main id="content">
+        <BrandSection />
         <ColorsSection />
         <TypographySection />
         <ShapeSection />
