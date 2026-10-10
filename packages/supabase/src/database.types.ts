@@ -495,6 +495,13 @@ export type Database = {
         };
         Returns: string;
       };
+      current_user_cancelled_tenants: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          tenant_id: string;
+          tenant_name: string;
+        }[];
+      };
       current_user_is_platform_admin: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
@@ -517,6 +524,15 @@ export type Database = {
           target_permission: Database['public']['Enums']['admin_permission'];
         };
         Returns: undefined;
+      };
+      list_support_targets: {
+        Args: { search?: string; target_tenant_id: string };
+        Returns: {
+          membership_role: Database['public']['Enums']['membership_role'];
+          person_first_name: string;
+          person_last_name: string;
+          user_id: string;
+        }[];
       };
       revoke_admin_permission: {
         Args: {
