@@ -44,6 +44,8 @@ const PUBLIC_EXACT = new Set([
   '/login',
   '/forgot-password',
   '/reset-password',
+  // Landing page of the invitation email: it may arrive without a session and with the session in the URL fragment.
+  '/invitations/accept',
   '/api/debug/error',
 ]);
 const PUBLIC_SECTIONS = ['/auth', '/design'];

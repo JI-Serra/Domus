@@ -207,6 +207,9 @@
     "cancelled": {
       "title": "El servicio de este barrio está dado de baja",
       "description": "Si creés que es un error, escribile a la administración de tu barrio."
+    },
+    "cancelledUser": {
+      "title": "Tu barrio fue dado de baja"
     }
   },
   "placeholder": {
@@ -394,5 +397,280 @@
     "title": "Algo salió mal",
     "description": "Ocurrió un error inesperado. Ya fue registrado.",
     "retry": "Reintentar"
+  },
+  "support": {
+    "banner": {
+      "label": "Sesión de soporte",
+      "message": "Soporte: estás viendo Domus como {name}",
+      "someone": "un usuario",
+      "remaining": "Quedan {time}",
+      "timerLabel": "Tiempo restante de la sesión de soporte",
+      "end": "Terminar",
+      "ending": "Terminando…"
+    },
+    "blocked": {
+      "metaTitle": "No disponible · Domus",
+      "title": "No disponible durante el soporte",
+      "description": "Esta sección cambia datos de la cuenta y no se puede usar mientras ves Domus como otra persona.",
+      "backHome": "Volver al inicio"
+    }
+  },
+  "unitStatus": {
+    "occupied": "Ocupada",
+    "under_construction": "En obra",
+    "vacant": "Vacía"
+  },
+  "platform": {
+    "tenants": {
+      "metaTitle": "Barrios · Domus",
+      "title": "Barrios",
+      "create": "Crear barrio",
+      "searchLabel": "Buscar barrio",
+      "searchPlaceholder": "Nombre o identificador",
+      "searchSubmit": "Buscar",
+      "searchClear": "Limpiar búsqueda",
+      "emptyTitle": "Todavía no hay barrios",
+      "emptySearchTitle": "No encontramos barrios con esa búsqueda",
+      "listLabel": "Lista de barrios",
+      "open": "Abrir {name}",
+      "table": {
+        "name": "Barrio",
+        "status": "Suscripción",
+        "created": "Alta"
+      },
+      "status": {
+        "pilot": "Piloto",
+        "active": "Activo",
+        "suspended": "Suspendido",
+        "cancelled": "Baja"
+      },
+      "new": {
+        "metaTitle": "Nuevo barrio · Domus",
+        "title": "Nuevo barrio"
+      },
+      "detail": {
+        "metaTitle": "Barrio · Domus",
+        "back": "Volver a barrios",
+        "dataTitle": "Datos del barrio",
+        "slugLabel": "Identificador",
+        "createdOn": "Alta el {date}"
+      },
+      "form": {
+        "name": "Nombre",
+        "slug": "Identificador",
+        "slugInfoLabel": "Más información sobre el identificador",
+        "slugInfo": "Va en las direcciones internas del barrio. Solo minúsculas, números y guiones; no se puede repetir.",
+        "address": "Dirección",
+        "timeZone": "Zona horaria",
+        "status": "Suscripción",
+        "logo": "Logo",
+        "logoInfoLabel": "Más información sobre el logo",
+        "logoInfo": "PNG, JPG o WebP de hasta 2 MB. Se guarda en un espacio privado del barrio.",
+        "logoAlt": "Logo de {name}",
+        "logoNone": "Sin logo",
+        "create": "Crear barrio",
+        "creating": "Creando…",
+        "save": "Guardar cambios",
+        "saving": "Guardando…"
+      },
+      "subscription": {
+        "title": "Suscripción",
+        "current": "Estado actual",
+        "next": "Nuevo estado",
+        "change": "Cambiar estado",
+        "changing": "Cambiando…",
+        "confirmTitle": "¿Pasar el barrio a {status}?",
+        "confirm": "Confirmar cambio",
+        "cancel": "Cancelar",
+        "effects": {
+          "pilot": "El barrio funciona con normalidad durante la etapa de piloto.",
+          "active": "El barrio funciona con normalidad.",
+          "suspended": "El barrio queda en solo lectura: sus usuarios pueden consultar la información pero no cambiarla. La garita sigue validando accesos.",
+          "cancelled": "Los usuarios del barrio dejan de tener acceso. Los datos se conservan."
+        }
+      },
+      "billable": {
+        "title": "Unidades facturables",
+        "infoLabel": "Más información sobre las unidades facturables",
+        "info": "Elegí qué estados de unidad se cuentan para facturar. Por ahora solo se guarda el criterio: el conteo está disponible en H2.",
+        "legend": "Estados que se facturan",
+        "save": "Guardar criterios",
+        "saving": "Guardando…"
+      },
+      "invitations": {
+        "title": "Primer administrador",
+        "infoLabel": "Más información sobre la invitación",
+        "info": "La persona recibe un email con un enlace para entrar al barrio como administradora, con todos los permisos. El enlace sirve una sola vez y vence a los 7 días.",
+        "email": "Email",
+        "firstName": "Nombre",
+        "lastName": "Apellido",
+        "send": "Enviar invitación",
+        "sending": "Enviando…",
+        "listTitle": "Invitaciones",
+        "listLabel": "Invitaciones del barrio",
+        "empty": "Todavía no enviaste invitaciones",
+        "person": "Persona",
+        "status": "Estado",
+        "expires": "Vence",
+        "revoke": "Revocar",
+        "revokeLabel": "Revocar la invitación de {email}",
+        "revoking": "Revocando…",
+        "statuses": {
+          "pending": "Pendiente",
+          "accepted": "Aceptada",
+          "revoked": "Revocada",
+          "expired": "Vencida"
+        }
+      },
+      "notices": {
+        "saved": "Cambios guardados.",
+        "statusChanged": "Suscripción actualizada.",
+        "invited": "Invitación enviada.",
+        "revoked": "Invitación revocada.",
+        "logoFailed": "Creamos el barrio, pero no pudimos subir el logo. Subilo desde acá."
+      },
+      "errors": {
+        "nameRequired": "Escribí el nombre.",
+        "nameTooLong": "El nombre es demasiado largo.",
+        "slugRequired": "Escribí un identificador.",
+        "slugInvalid": "Usá solo minúsculas, números y guiones, por ejemplo los-ceibos.",
+        "slugTaken": "Ya hay un barrio con ese identificador. Elegí otro.",
+        "addressTooLong": "La dirección puede tener hasta 500 caracteres.",
+        "timeZoneInvalid": "Elegí una zona horaria de la lista.",
+        "logoType": "El logo tiene que ser PNG, JPG o WebP.",
+        "logoSize": "El logo tiene que pesar hasta 2 MB.",
+        "logoUploadFailed": "Guardamos los datos, pero no pudimos subir el logo. Volvé a intentar.",
+        "denied": "No tenés permiso para hacer este cambio. Volvé a ingresar con la verificación en dos pasos.",
+        "invalid": "Revisá los datos y volvé a intentar.",
+        "unknown": "Algo salió mal de nuestro lado. Volvé a intentar en unos minutos.",
+        "billableRequired": "Elegí al menos un estado de unidad.",
+        "emailRequired": "Escribí el email.",
+        "emailInvalid": "Revisá el email: tiene que ser como nombre@dominio.com.",
+        "firstNameRequired": "Escribí el nombre.",
+        "lastNameRequired": "Escribí el apellido.",
+        "deliveryFailed": "No pudimos enviar el email. Volvé a intentar: la invitación no se duplica."
+      }
+    },
+    "support": {
+      "metaTitle": "Soporte · Domus",
+      "title": "Soporte",
+      "start": {
+        "title": "Iniciar sesión de soporte",
+        "infoLabel": "Más información sobre el soporte",
+        "info": "Vas a ver y usar Domus como la persona elegida, con sus permisos. Cada acción queda registrada a tu nombre y el administrador del barrio ve la sesión con su motivo.",
+        "tenant": "Barrio",
+        "tenantPlaceholder": "Elegí un barrio",
+        "search": "Buscar persona",
+        "searchPlaceholder": "Nombre o apellido",
+        "user": "Persona",
+        "userPlaceholder": "Elegí una persona",
+        "loading": "Cargando…",
+        "noTargets": "No hay personas para mostrar",
+        "reason": "Motivo",
+        "duration": "Duración (minutos)",
+        "durationInfoLabel": "Más información sobre la duración",
+        "durationInfo": "Hasta 60 minutos. La sesión termina sola al vencer.",
+        "submit": "Iniciar sesión",
+        "submitting": "Iniciando…"
+      },
+      "active": {
+        "title": "Sesión activa",
+        "summary": "{tenant} · vence a las {time}",
+        "end": "Terminar sesión",
+        "ending": "Terminando…"
+      },
+      "history": {
+        "title": "Sesiones",
+        "listLabel": "Sesiones de soporte",
+        "empty": "Todavía no hubo sesiones",
+        "tenant": "Barrio",
+        "user": "Usuario",
+        "actor": "Quién",
+        "reason": "Motivo",
+        "status": "Estado",
+        "started": "Inicio",
+        "duration": "Duración",
+        "minutes": "{minutes} min"
+      },
+      "actor": {
+        "you": "Vos",
+        "other": "Otro super-admin"
+      },
+      "statuses": {
+        "active": "Activa",
+        "ended": "Finalizada",
+        "revoked": "Revocada",
+        "expired": "Vencida"
+      },
+      "errors": {
+        "tenantRequired": "Elegí un barrio.",
+        "userRequired": "Elegí una persona.",
+        "reasonRequired": "Escribí el motivo.",
+        "reasonTooLong": "El motivo puede tener hasta 500 caracteres.",
+        "durationInvalid": "Escribí una duración entre 1 y 60 minutos.",
+        "denied": "No tenés permiso para iniciar esta sesión. Volvé a ingresar con la verificación en dos pasos.",
+        "sessionActive": "Ya tenés una sesión de soporte activa. Terminala antes de iniciar otra.",
+        "unavailable": "El soporte no está disponible por ahora. Avisale al equipo técnico.",
+        "invalid": "Revisá los datos y volvé a intentar.",
+        "lookupFailed": "No pudimos cargar las personas. Volvé a intentar.",
+        "unknown": "Algo salió mal de nuestro lado. Volvé a intentar en unos minutos."
+      }
+    }
+  },
+  "settingsSupport": {
+    "metaTitle": "Accesos de soporte · Domus",
+    "title": "Accesos de soporte",
+    "infoLabel": "Más información sobre los accesos de soporte",
+    "info": "Cuando el equipo de Domus necesita ver el barrio como uno de sus usuarios, el acceso queda registrado acá con su motivo y su duración.",
+    "listLabel": "Accesos de soporte al barrio",
+    "empty": "No hubo accesos de soporte",
+    "noPermission": "Necesitás el permiso de auditoría de accesos para ver esta página",
+    "who": "Quién",
+    "whoValue": "Equipo de Domus",
+    "as": "Como",
+    "asUnknown": "Un usuario del barrio",
+    "when": "Cuándo",
+    "reason": "Motivo",
+    "duration": "Duración",
+    "minutes": "{minutes} min",
+    "status": "Estado",
+    "statuses": {
+      "active": "Activa",
+      "ended": "Finalizada",
+      "revoked": "Revocada",
+      "expired": "Vencida"
+    }
+  },
+  "invitations": {
+    "accept": {
+      "metaTitle": "Invitación · Domus",
+      "title": "Invitación a un barrio",
+      "verifying": "Verificando tu invitación…",
+      "signIn": {
+        "title": "Ingresá para aceptar la invitación",
+        "action": "Ingresar"
+      },
+      "summary": {
+        "tenant": "Barrio",
+        "role": "Rol"
+      },
+      "password": "Contraseña (opcional)",
+      "passwordInfoLabel": "Más información sobre la contraseña",
+      "passwordInfo": "Si es tu primera vez, elegí una contraseña para ingresar la próxima vez. Al menos 8 caracteres.",
+      "confirmPassword": "Repetí la contraseña",
+      "accept": "Aceptar invitación",
+      "accepting": "Aceptando…",
+      "unavailable": {
+        "title": "Esta invitación no está disponible",
+        "description": "Puede haber vencido, haberse usado o ser para otra cuenta. Pedí una nueva a quien te invitó.",
+        "otherAccount": "Ingresar con otra cuenta",
+        "home": "Ir al inicio"
+      },
+      "errors": {
+        "unavailable": "Esta invitación no está disponible. Puede haber vencido, haberse usado o ser para otra cuenta.",
+        "unknown": "Algo salió mal de nuestro lado. Volvé a intentar en unos minutos.",
+        "sessionExpired": "El enlace venció. Pedí una invitación nueva a quien te invitó."
+      }
+    }
   }
 }

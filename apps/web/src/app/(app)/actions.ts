@@ -5,7 +5,9 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getRequestContext } from '@/lib/context/request-context';
 import { getSiteUrl } from '@/lib/auth/site-url';
-import { createRequestClient } from '@/lib/supabase/request-client';
+import { createActorRequestClient } from '@/lib/supabase/request-client';
+import { endSupportAction } from '@/lib/support/actions';
+import { getSupportSession } from '@/lib/context/request-context';
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -39,7 +41,9 @@ export async function switchContextAction(
 
 /** Ends this device's session and forgets the chosen context. */
 export async function signOutAction(): Promise<void> {
-  const client = await createRequestClient();
+  // During a support session "sign out" means "leave the support session": the admin's own session stays untouched.
+  if (await getSupportSession()) return endSupportAction();
+  const client = await createActorRequestClient();
   await client.auth.signOut({ scope: 'local' });
   (await cookies()).delete(CONTEXT_COOKIE_NAME);
   redirect('/login');

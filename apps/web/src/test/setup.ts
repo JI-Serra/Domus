@@ -22,4 +22,18 @@ if (typeof globalThis.localStorage?.clear !== 'function') {
   });
 }
 
+// jsdom has no modal <dialog> behavior: model the part the app relies on (the `open` attribute and the close event).
+if (
+  typeof HTMLDialogElement !== 'undefined' &&
+  typeof HTMLDialogElement.prototype.showModal !== 'function'
+) {
+  HTMLDialogElement.prototype.showModal = function showModal() {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function close() {
+    this.removeAttribute('open');
+    this.dispatchEvent(new Event('close'));
+  };
+}
+
 afterEach(cleanup);

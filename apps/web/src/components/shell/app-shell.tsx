@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { SupportBanner } from '@/components/support/support-banner';
 import { TenantStatusBanner } from '@/components/tenant/tenant-status-banner';
 import { Sidebar } from './sidebar';
 import { TabBar } from './tab-bar';
@@ -22,8 +23,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
       <Sidebar />
       <div className="flex min-w-0 flex-col">
-        {/* Stuck together, so the read-only notice stays in view while the page scrolls. */}
+        {/* Stuck together, so the support banner and the read-only notice stay in view while the page scrolls. */}
         <div className="sticky top-0 z-30">
+          <SupportBanner />
           <TopBar />
           <TenantStatusBanner />
         </div>

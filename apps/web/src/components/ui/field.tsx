@@ -93,6 +93,19 @@ export function Input({ className, type = 'text', ...props }: InputProps) {
   );
 }
 
+export type TextareaProps = ComponentProps<'textarea'>;
+
+export function Textarea({ className, rows = 3, ...props }: TextareaProps) {
+  return (
+    <textarea
+      rows={rows}
+      className={cn(control, 'resize-y', className)}
+      {...useFieldProps()}
+      {...props}
+    />
+  );
+}
+
 export type SelectProps = ComponentProps<'select'>;
 
 export function Select({ className, children, ...props }: SelectProps) {
