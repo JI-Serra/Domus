@@ -70,3 +70,25 @@ where m.membership_id in ('40000000-0000-0000-0000-000000000002', '40000000-0000
 
 insert into public.membership_permission (tenant_id, membership_id, membership_permission_admin_permission)
 values ('10000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000012', 'registry');
+
+-- M01: fictional invitation and completed support examples.
+insert into public.invitation(tenant_id,invitation_email,invitation_first_name,invitation_last_name,
+  invitation_membership_role,invitation_token_hash,invitation_expires_at,invitation_created_by_user_id,client_event_id)
+values('10000000-0000-0000-0000-000000000001','invite.ceibos@domus.local','Lucia','Invitada',
+  'guard',encode(extensions.digest(repeat('a',64),'sha256'),'hex'),now()+interval '7 days',
+  '20000000-0000-0000-0000-000000000002','60000000-0000-0000-0000-000000000001');
+insert into public.invitation(tenant_id,invitation_email,person_id,invitation_membership_role,
+  invitation_token_hash,invitation_expires_at,invitation_status,invitation_created_by_user_id,
+  invitation_accepted_by_user_id,invitation_accepted_at,client_event_id)
+values('10000000-0000-0000-0000-000000000002','member.tipas@domus.local',
+  '30000000-0000-0000-0000-000000000009','household_member',
+  encode(extensions.digest(repeat('b',64),'sha256'),'hex'),now()+interval '7 days','accepted',
+  '20000000-0000-0000-0000-000000000006','20000000-0000-0000-0000-000000000009',now(),
+  '60000000-0000-0000-0000-000000000002');
+insert into public.support_session(tenant_id,support_session_actor_user_id,support_session_target_user_id,
+  support_session_reason,support_session_started_at,support_session_expires_at,support_session_ended_at,
+  support_session_status,support_session_ended_by_user_id,client_event_id)
+values('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000002','Fictional support example',now()-interval '1 hour',
+  now()-interval '30 minutes',now()-interval '45 minutes','ended','20000000-0000-0000-0000-000000000001',
+  '70000000-0000-0000-0000-000000000001');

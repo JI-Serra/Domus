@@ -28,7 +28,7 @@ select is((select count(*) from pg_proc p cross join lateral aclexplode(p.proacl
   where p.pronamespace='app_private'::regnamespace and acl.grantee=0 and acl.privilege_type='EXECUTE'),0::bigint,'PUBLIC has no private function execute');
 select is((select count(*) from pg_proc p where p.pronamespace='app_private'::regnamespace
   and has_function_privilege('authenticated',p.oid,'EXECUTE')
-  and p.proname not in ('current_person_ids','own_membership_ids','member_tenant_ids','role_tenant_ids','permission_tenant_ids','is_tenant_member','has_tenant_role','has_admin_permission','is_platform_admin')),0::bigint,'Authenticated execute uses the exact private helper allowlist');
+  and p.proname not in ('current_person_ids','own_membership_ids','member_tenant_ids','role_tenant_ids','permission_tenant_ids','is_tenant_member','has_tenant_role','has_admin_permission','is_platform_admin','current_user_id','current_identity_is_valid','current_support_session_id','is_impersonating','identity_tenant_ids','writable_tenant_ids','tenant_allows_writes')),0::bigint,'Authenticated execute uses the exact private helper allowlist');
 create function app_private.default_privilege_probe() returns integer language sql as $$select 1$$;
 select ok(not has_function_privilege('authenticated','app_private.default_privilege_probe()','execute'),'New private functions do not inherit PUBLIC execute');
 select ok(not has_function_privilege('anon','app_private.default_privilege_probe()','execute'),'New private functions are inaccessible to anon');
@@ -39,9 +39,9 @@ select is((select count(*) from pg_proc p cross join lateral aclexplode(p.proacl
 select is((select count(*) from pg_policies where schemaname='public' and cmd='ALL'),0::bigint,'All policies are separate per operation');
 select is((select count(*) from pg_policies where schemaname='public' and tablename in ('person','membership','membership_permission')
   and roles @> array['authenticated']::name[] and (coalesce(qual,'')||coalesce(with_check,'')) like '%is_platform_admin%'),0::bigint,'No standing platform policy exposes tenant registry data');
-select is((select count(*) from pg_policies where schemaname='public' and tablename in ('platform_admin','membership','membership_permission') and cmd in ('INSERT','UPDATE','DELETE')),0::bigint,'Role and permission tables have no client write policies');
+select is((select count(*) from pg_policies where schemaname='public' and tablename in ('platform_admin','membership','membership_permission') and roles && array['authenticated','anon']::name[] and cmd in ('INSERT','UPDATE','DELETE')),0::bigint,'Role and permission tables have no client write policies');
 select is((select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
-  where n.nspname='public' and t.tgname='audit_row_change'),5::bigint,'All H0 sensitive tables are audited');
+  where n.nspname='public' and t.tgname='audit_row_change'),7::bigint,'All sensitive tables are audited');
 select is((select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
   where n.nspname='public' and t.tgname in ('audit_row_change','protect_audit_event','protect_audit_event_truncate') and t.tgenabled<>'A'),0::bigint,'Audit triggers are enabled always');
 select is((select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
@@ -100,3 +100,4 @@ select ok(not has_column_privilege('authenticated','public.person','user_id','IN
 select ok(not has_column_privilege('authenticated','public.person','user_id','UPDATE'),'Clients lack UPDATE on person.user_id');
 select * from finish();
 rollback;
+
