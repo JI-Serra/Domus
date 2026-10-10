@@ -5,7 +5,7 @@
 | Campo | Valor |
 |---|---|
 | Producto | Domus — SaaS multitenant para la gestión integral de barrios privados |
-| Versión del documento | 1.1 |
+| Versión del documento | 1.2 |
 | Fecha | 2026-10-09 |
 | Estado | Aprobado para iniciar desarrollo (sujeto a revisiones por hito) |
 | Mercado inicial | Tucumán, Argentina (Yerba Buena y alrededores), con expansión posterior |
@@ -203,7 +203,9 @@ La interfaz DEBE mostrar siempre el **contexto activo** (barrio + rol + unidad) 
 
 ### 6.3 Permisos granulares del administrador
 
-El administrador del barrio tiene permisos activables por persona: `padron`, `accesos_config`, `accesos_auditoria`, `comunicacion`, `reclamos`, `amenities`, `finanzas`, `guardias`, `configuracion_tenant`. El primer administrador de cada tenant los tiene todos.
+El administrador del barrio tiene permisos activables por persona: `padron`, `accesos_config`, `accesos_auditoria`, `comunicacion`, `reclamos`, `amenities`, `finanzas`, `guardias`, `configuracion_tenant`, `gestion_administradores`. El primer administrador de cada tenant los tiene todos.
+
+**Gestión de administradores (D17):** solo un administrador con `gestion_administradores` puede crear, modificar o revocar administradores y otorgar o quitar permisos. Nadie puede modificar sus propias membresías ni sus propios permisos, y solo se puede otorgar un permiso que uno mismo tiene. `padron` gestiona personas y membresías no administrativas (guardias, titulares, miembros).
 
 ### 6.4 Matriz resumida
 
@@ -928,6 +930,7 @@ Umbrales orientativos, que se acuerdan con el barrio sobre una línea base relev
 | D13 | 2026-10-09 | **Node 25** como runtime de desarrollo | Decisión del fundador. Riesgo a vigilar: compatibilidad de Expo en H11. |
 | D14 | 2026-10-09 | **Supabase local (Docker) para desarrollo; proyecto en la nube `Domus` como `staging`**. Solo el orquestador aplica migraciones a `staging` | Agentes en paralelo sin pisarse; `staging` refleja solo código integrado. |
 | D15 | 2026-10-09 | **Sin Sentry por ahora**: reporte de errores detrás de un módulo propio con adaptadores | El fundador no tiene cuenta; se conecta un proveedor más adelante sin tocar el código de negocio. |
+| D17 | 2026-10-09 | **Nuevo permiso `gestion_administradores`** (`admin_management`); sin auto-modificación de permisos; solo se otorga lo que uno tiene | La revisión de seguridad T6 detectó que `padron` permitía auto-escalar a todos los permisos; §6.3 no definía quién otorga permisos. |
 | D16 | 2026-10-09 | **Desarrollo orquestado**: el fundador y Claude (orquestador) diseñan y revisan; el desarrollo se delega a agentes Codex/Claude vía Orca, en worktrees por tarea | Paralelismo y control de costo por tarea. |
 
 ### 17.2 Preguntas abiertas
@@ -968,4 +971,5 @@ Umbrales orientativos, que se acuerdan con el barrio sobre una línea base relev
 | Versión | Fecha | Autor | Cambios |
 |---|---|---|---|
 | 1.0 | 2026-10-09 | Fundador + Claude | Versión inicial: alcance del MVP, arquitectura, modelo de dominio, módulos M00–M13, hitos de revisión humana. |
+| 1.2 | 2026-10-09 | Fundador + Claude | D17: permiso `gestion_administradores` y reglas de otorgamiento de permisos (§6.3). |
 | 1.1 | 2026-10-09 | Fundador + Claude | Decisiones D11–D16: código en inglés + glosario, nomenclatura GeneXus en snake_case, Node 25, Supabase local + staging en la nube (us-west-2), Sentry diferido, desarrollo orquestado. |
