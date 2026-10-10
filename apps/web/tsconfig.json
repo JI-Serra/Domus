@@ -1,6 +1,12 @@
 {
   "extends": "@domus/config/tsconfig/next",
-  "compilerOptions": { "types": ["node", "react", "react-dom"] },
+  "compilerOptions": {
+    "types": ["node", "react", "react-dom"],
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
   "include": [
     "next-env.d.ts",
     "**/*.ts",

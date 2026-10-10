@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@domus/domain": "workspace:*",
-    "@domus/ui-tokens": "workspace:*",
     "@domus/supabase": "workspace:*",
+    "@domus/ui-tokens": "workspace:*",
+    "lucide-react": "1.52.0",
     "next": "16.4.0",
+    "next-intl": "4.14.9",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
