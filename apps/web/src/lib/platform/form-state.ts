@@ -4,7 +4,12 @@
  */
 export type PlatformFormState =
   | { status: 'idle' }
-  | { status: 'success'; notice?: string }
+  | {
+      status: 'success';
+      notice?: string;
+      /** A value the answer carries once (e.g. a freshly generated unit code); never persisted by the form. */
+      value?: string;
+    }
   | {
       status: 'error';
       /** Field name → message key. */

@@ -6,6 +6,7 @@ import { acceptInvitationAction } from '@/app/(auth)/invitations/accept/actions'
 import type { InvitationActionState } from '@/app/(auth)/invitations/accept/actions';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { Button } from '@/components/ui/button';
+import { PrivacyNotice } from '@/components/privacy/privacy-notice';
 import { Field, Input } from '@/components/ui/field';
 import { MIN_PASSWORD_LENGTH } from '@/lib/auth/validation';
 
@@ -16,10 +17,13 @@ export function AcceptInvitationForm({
   token,
   tenantName,
   roleLabel,
+  role,
 }: {
   token: string;
   tenantName: string;
   roleLabel: string;
+  /** Role of the invitation; residents get the privacy notice and land in their unit. */
+  role?: string;
 }) {
   const t = useTranslations('invitations.accept');
   const invitationErrors = useTranslations('invitations.accept.errors');
@@ -41,6 +45,7 @@ export function AcceptInvitationForm({
   return (
     <form action={action} noValidate className="flex flex-col gap-5">
       <input type="hidden" name="token" value={token} />
+      {role ? <input type="hidden" name="role" value={role} /> : null}
       <dl className="flex flex-col gap-3 rounded-card-dense bg-surface-0 p-4">
         <div className="flex flex-col">
           <dt className="text-app-caption text-text-secondary">
@@ -57,6 +62,10 @@ export function AcceptInvitationForm({
       </dl>
 
       {formError ? <AuthNotice tone="error">{formError}</AuthNotice> : null}
+
+      {role === 'unit_holder' || role === 'household_member' ? (
+        <PrivacyNotice />
+      ) : null}
 
       <Field
         label={t('password')}

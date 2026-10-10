@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { mapAuthError } from '@/lib/auth/errors';
 import { loginUrlFor } from '@/lib/auth/redirect';
 import { getSiteUrl } from '@/lib/auth/site-url';
+import { invitationLandingPath } from '@/lib/invitations/landing';
 import { readText, validateNewPassword } from '@/lib/auth/validation';
 import { getRequestIdentity } from '@/lib/context/request-context';
 import {
@@ -119,7 +120,8 @@ export async function acceptInvitationAction(
     path: '/',
     maxAge: ONE_YEAR_SECONDS,
   });
-  redirect('/');
+  // Residents land in their unit; everybody else in the barrio's home.
+  redirect(invitationLandingPath(readText(formData, 'role')));
 }
 
 /** "Ingresar con otra cuenta": ends this device's session and returns to sign-in, then back to the invitation. */

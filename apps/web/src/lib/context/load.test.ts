@@ -65,6 +65,8 @@ const row = (overrides: Record<string, unknown> = {}) => ({
   membership_status: 'active',
   membership_valid_from: '2026-01-01T00:00:00+00:00',
   membership_valid_to: null,
+  unit_id: 'u1',
+  unit: { unit_code: 'Mz 1 Lote 1' },
   tenant: {
     tenant_id: 't1',
     tenant_name: 'Barrio Los Ceibos',
@@ -87,6 +89,8 @@ describe('loadMemberships', () => {
         membership_status: 'active',
         membership_valid_from: '2026-01-01T00:00:00+00:00',
         membership_valid_to: null,
+        unit_id: 'u1',
+        unit_code: 'Mz 1 Lote 1',
         tenant_id: 't1',
         tenant_name: 'Barrio Los Ceibos',
         tenant_time_zone: 'America/Argentina/Tucuman',

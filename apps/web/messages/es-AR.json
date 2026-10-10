@@ -143,7 +143,8 @@
     },
     "empty": {
       "title": "Todavía no tenés un barrio asignado",
-      "description": "Cuando la administración de tu barrio te dé acceso, lo vas a ver acá. Si creés que es un error, escribile a tu administración."
+      "description": "Cuando la administración de tu barrio te dé acceso, lo vas a ver acá. Si creés que es un error, escribile a tu administración.",
+      "joinAction": "Tengo un código de unidad"
     }
   },
   "theme": {
@@ -170,7 +171,8 @@
       "guardLog": "Libro de guardia",
       "packages": "Paquetería",
       "tenants": "Barrios",
-      "support": "Soporte"
+      "support": "Soporte",
+      "household": "Mi hogar"
     },
     "tabs": {
       "home": "Inicio",
@@ -185,7 +187,8 @@
       "guardLog": "Libro",
       "packages": "Paquetes",
       "tenants": "Barrios",
-      "support": "Soporte"
+      "support": "Soporte",
+      "household": "Mi hogar"
     }
   },
   "home": {
@@ -196,7 +199,269 @@
     "role": "Rol",
     "unit": "Unidad",
     "noUnit": "Sin unidad",
-    "designLink": "Ver el sistema de diseño"
+    "designLink": "Ver el sistema de diseño",
+    "joinLink": "Unirme con un código"
+  },
+  "household": {
+    "title": "Mi hogar",
+    "unitLabel": "Unidad {unit}",
+    "sections": {
+      "members": "Miembros",
+      "vehicles": "Vehículos",
+      "pets": "Mascotas",
+      "requests": "Solicitudes de ingreso",
+      "code": "Código de unidad",
+      "yourData": "Tus datos",
+      "delegated": "Habilitado para vos"
+    },
+    "standing": {
+      "holder": "Titular",
+      "minor": "Menor",
+      "member": "Con cuenta",
+      "invited": "Invitado",
+      "unregistered": "Sin cuenta"
+    },
+    "relationship": {
+      "owner": "Propietario",
+      "tenant": "Inquilino",
+      "family": "Familiar",
+      "other": "Otro"
+    },
+    "you": "Vos",
+    "close": "Cerrar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "fields": {
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Email",
+      "phone": "Teléfono",
+      "birthDate": "Fecha de nacimiento",
+      "relationship": "Relación",
+      "minor": "Es menor de edad"
+    },
+    "members": {
+      "empty": "Todavía no hay miembros",
+      "add": "Agregar miembro",
+      "addTitle": "Agregar miembro",
+      "addInfoLabel": "Más información sobre agregar miembros",
+      "addInfo": "Le enviamos un email con un enlace de un solo uso para crear su cuenta. Los menores se registran sin cuenta.",
+      "send": "Enviar invitación",
+      "sending": "Enviando…",
+      "edit": "Editar",
+      "editLabel": "Editar a {name}",
+      "editTitle": "Editar miembro",
+      "invite": "Invitar",
+      "inviteLabel": "Invitar a {name}",
+      "inviteTitle": "Invitar a {name}",
+      "resend": "Reenviar",
+      "resendLabel": "Reenviar la invitación a {name}",
+      "revoke": "Revocar",
+      "revokeLabel": "Revocar la invitación de {name}",
+      "expires": "Vence {date}",
+      "end": "Quitar",
+      "endLabel": "Quitar a {name} del hogar",
+      "endTitle": "Quitar a {name} del hogar",
+      "endBody": "Pierde el acceso a la unidad. Si más adelante vuelve, la podés invitar de nuevo.",
+      "endConfirm": "Quitar del hogar",
+      "ending": "Quitando…",
+      "listLabel": "Miembros del hogar",
+      "emailLocked": "El email no se puede cambiar mientras tenga cuenta.",
+      "emailInfoLabel": "Más información sobre el email"
+    },
+    "delegations": {
+      "title": "Permisos de {name}",
+      "infoLabel": "Más información sobre los permisos",
+      "info": "Elegí qué puede hacer cada miembro con una cuenta. Los menores no tienen permisos.",
+      "permissions": {
+        "view_unit_finance": "Ver finanzas de la unidad",
+        "book_amenities": "Reservar amenities",
+        "manage_access_authorizations": "Gestionar autorizaciones y pases"
+      },
+      "saving": "Guardando permisos…"
+    },
+    "vehicles": {
+      "empty": "Sin vehículos",
+      "add": "Agregar vehículo",
+      "addTitle": "Agregar vehículo",
+      "editTitle": "Editar vehículo",
+      "editLabel": "Editar el vehículo {plate}",
+      "listLabel": "Vehículos del hogar",
+      "plate": "Patente",
+      "plateInfoLabel": "Más información sobre el formato de la patente",
+      "plateInfo": "Autos: AB 123 CD (desde 2016) o ABC 123 (anterior). Motos: A 123 BCD o 123 ABC. También se aceptan patentes extranjeras.",
+      "make": "Marca",
+      "model": "Modelo",
+      "color": "Color",
+      "remove": "Eliminar",
+      "removeLabel": "Eliminar el vehículo {plate}",
+      "removeTitle": "Eliminar el vehículo {plate}",
+      "removeBody": "Se quita del registro de la unidad.",
+      "removeConfirm": "Eliminar vehículo",
+      "removing": "Eliminando…",
+      "formats": {
+        "car_mercosur": "Auto, formato Mercosur",
+        "car_legacy": "Auto, formato anterior",
+        "motorcycle_mercosur": "Moto, formato Mercosur",
+        "motorcycle_legacy": "Moto, formato anterior"
+      }
+    },
+    "pets": {
+      "empty": "Sin mascotas",
+      "add": "Agregar mascota",
+      "addTitle": "Agregar mascota",
+      "editTitle": "Editar mascota",
+      "editLabel": "Editar a {name}",
+      "listLabel": "Mascotas del hogar",
+      "name": "Nombre",
+      "species": "Especie",
+      "breed": "Raza",
+      "photo": "Foto",
+      "photoInfoLabel": "Más información sobre la foto",
+      "photoInfo": "PNG, JPG o WebP de hasta 2 MB. Solo la ve tu hogar.",
+      "choosePhoto": "Elegir foto",
+      "noPhoto": "Sin foto",
+      "removePhoto": "Quitar la foto",
+      "photoAlt": "Foto de {name}",
+      "remove": "Eliminar",
+      "removeLabel": "Eliminar a {name}",
+      "removeTitle": "Eliminar a {name}",
+      "removeBody": "Se quita del registro de la unidad.",
+      "removeConfirm": "Eliminar mascota",
+      "removing": "Eliminando…",
+      "uploading": "Subiendo la foto…"
+    },
+    "requests": {
+      "empty": "Sin solicitudes pendientes",
+      "listLabel": "Solicitudes de ingreso pendientes",
+      "infoLabel": "Más información sobre las solicitudes",
+      "info": "Quien ingresa el código de la unidad pide sumarse. Si aprobás, recibe una invitación por email; hasta que la acepte no tiene acceso.",
+      "approve": "Aprobar",
+      "approveLabel": "Aprobar la solicitud de {name}",
+      "reject": "Rechazar",
+      "rejectLabel": "Rechazar la solicitud de {name}",
+      "working": "Procesando…",
+      "sentAt": "Pedida el {date}"
+    },
+    "code": {
+      "generate": "Generar código",
+      "rotate": "Generar código nuevo",
+      "generating": "Generando…",
+      "infoLabel": "Más información sobre el código de unidad",
+      "info": "Compartilo solo con quien quieras sumar al hogar. Cada solicitud necesita tu aprobación. Al generar uno nuevo, el anterior deja de funcionar, y el nuevo se muestra una sola vez.",
+      "newCode": "Código nuevo",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "confirmTitle": "Generar un código nuevo",
+      "confirmBody": "El código anterior deja de funcionar.",
+      "confirm": "Generar código"
+    },
+    "delegated": {
+      "empty": "Todavía no tenés nada habilitado",
+      "soon": "Disponible pronto",
+      "view_unit_finance": "Finanzas de la unidad",
+      "book_amenities": "Reservas de amenities",
+      "manage_access_authorizations": "Autorizaciones y pases"
+    },
+    "notices": {
+      "invited": "Invitación enviada.",
+      "minorAdded": "Menor agregado al hogar.",
+      "saved": "Cambios guardados.",
+      "ended": "Quitaste a la persona del hogar.",
+      "revoked": "Invitación revocada.",
+      "resent": "Invitación reenviada.",
+      "permissionsSaved": "Permisos guardados.",
+      "removed": "Eliminado.",
+      "approved": "Solicitud aprobada. Enviamos la invitación por email.",
+      "rejected": "Solicitud rechazada.",
+      "rotated": "Código nuevo generado."
+    },
+    "errors": {
+      "firstNameRequired": "Escribí el nombre.",
+      "lastNameRequired": "Escribí el apellido.",
+      "emailRequired": "Escribí el email.",
+      "emailInvalid": "Revisá el email.",
+      "nameTooLong": "Es demasiado largo.",
+      "phoneInvalid": "Revisá el teléfono.",
+      "birthDateInvalid": "Elegí una fecha válida.",
+      "relationshipInvalid": "Elegí una relación.",
+      "plateInvalid": "Revisá la patente: usá entre 3 y 12 letras o números.",
+      "plateTaken": "Esa patente ya está registrada en el barrio.",
+      "petNameRequired": "Escribí el nombre.",
+      "petSpeciesRequired": "Escribí la especie.",
+      "photoType": "La foto tiene que ser PNG, JPG o WebP.",
+      "photoSize": "La foto pesa más de 2 MB.",
+      "photoUploadFailed": "No pudimos subir la foto. Probá de nuevo.",
+      "denied": "No tenés permiso para hacer esto.",
+      "readOnly": "El barrio está en solo lectura y no admite cambios.",
+      "invalid": "Revisá los datos y volvé a intentar.",
+      "holderRequired": "La unidad necesita al menos un titular.",
+      "duplicate": "Ya existe un registro igual.",
+      "deliveryFailed": "Guardamos los datos, pero no pudimos enviar el email. Probá de nuevo.",
+      "unknown": "Algo salió mal de nuestro lado. Volvé a intentar en unos minutos."
+    }
+  },
+  "join": {
+    "metaTitle": "Unirme a una unidad · Domus",
+    "title": "Unirme a una unidad",
+    "code": "Código de unidad",
+    "codeInfoLabel": "Más información sobre el código",
+    "codeInfo": "Te lo da el titular de la unidad: 12 caracteres, en grupos de 4. Podés pegarlo con o sin guiones, en mayúsculas o minúsculas.",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "documentType": "Tipo de documento",
+    "documentNumber": "Número de documento",
+    "documentInfoLabel": "Más información sobre el documento",
+    "documentInfo": "Es opcional. Ayuda al titular a reconocerte; no guardamos fotos del documento.",
+    "documentTypes": {
+      "none": "Sin documento",
+      "dni": "DNI",
+      "passport": "Pasaporte",
+      "other": "Otro"
+    },
+    "submit": "Enviar solicitud",
+    "submitting": "Enviando…",
+    "sent": {
+      "title": "Solicitud enviada",
+      "status": "Pendiente de aprobación",
+      "another": "Enviar otra solicitud"
+    },
+    "requests": {
+      "title": "Tus solicitudes",
+      "listLabel": "Tus solicitudes de ingreso",
+      "cancel": "Cancelar",
+      "cancelLabel": "Cancelar la solicitud a {unit}",
+      "cancelTitle": "Cancelar la solicitud",
+      "cancelBody": "La solicitud deja de estar pendiente. Si cambiás de idea, vas a necesitar el código otra vez.",
+      "cancelConfirm": "Cancelar solicitud",
+      "keep": "Mantener",
+      "cancelling": "Cancelando…",
+      "statuses": {
+        "pending": "Pendiente",
+        "approved": "Aprobada",
+        "rejected": "Rechazada"
+      },
+      "approvedHint": "Revisá tu email: te enviamos la invitación.",
+      "sentAt": "Pedida el {date}"
+    },
+    "errors": {
+      "codeUnavailable": "No pudimos usar ese código. Revisalo y volvé a intentar en unos minutos.",
+      "firstNameRequired": "Escribí tu nombre.",
+      "lastNameRequired": "Escribí tu apellido.",
+      "nameTooLong": "Es demasiado largo.",
+      "documentIncomplete": "Completá el tipo y el número de documento, o dejá los dos vacíos.",
+      "documentInvalid": "Revisá el número de documento.",
+      "unknown": "Algo salió mal de nuestro lado. Volvé a intentar en unos minutos.",
+      "cancelFailed": "No pudimos cancelar la solicitud. Volvé a intentar."
+    },
+    "back": "Volver al inicio"
+  },
+  "privacy": {
+    "notice": "Tus datos se usan solo para la gestión de tu barrio.",
+    "infoLabel": "Más información sobre la privacidad",
+    "title": "Aviso de privacidad",
+    "full": "Tu barrio es el responsable del tratamiento de tus datos y Domus es el proveedor que los aloja y procesa por su cuenta. Se usan para gestionar los accesos, el padrón y la convivencia del barrio. Pedimos solo lo necesario: no guardamos fotos de documentos ni datos biométricos. Podés pedir ver, corregir o dar de baja tus datos a la administración de tu barrio (Ley 25.326 de Protección de Datos Personales)."
   },
   "tenantStatus": {
     "suspended": {
