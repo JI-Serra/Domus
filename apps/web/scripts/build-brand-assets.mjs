@@ -43,7 +43,10 @@ const masterTranslate = /matrix\(1,0,0,1,(-?[\d.]+),(-?[\d.]+)\)/.exec(
 );
 if (!masterPath || !masterTranslate)
   throw new Error('Unexpected emblem master structure');
-const [shiftX, shiftY] = [Number(masterTranslate[1]), Number(masterTranslate[2])];
+const [shiftX, shiftY] = [
+  Number(masterTranslate[1]),
+  Number(masterTranslate[2]),
+];
 
 /** Rewrites every absolute coordinate of a path made of M/L/C/Z with `map(x, y)`. */
 function mapPath(d, map, digits = 3) {
@@ -52,7 +55,11 @@ function mapPath(d, map, digits = 3) {
     const numbers = args.match(/-?\d*\.?\d+(?:e-?\d+)?/gi)?.map(Number) ?? [];
     const pairs = [];
     for (let i = 0; i < numbers.length; i += 2)
-      pairs.push(map(numbers[i], numbers[i + 1]).map(round).join(' '));
+      pairs.push(
+        map(numbers[i], numbers[i + 1])
+          .map(round)
+          .join(' '),
+      );
     return command + pairs.join(' ');
   });
 }
@@ -261,7 +268,9 @@ const sizes = [16, 32, 48];
 const images = await Promise.all(
   sizes.map((size) =>
     sharp(
-      Buffer.from(iconSvg({ size, inset: 0.04, fill: INK, background: '#ffffff' })),
+      Buffer.from(
+        iconSvg({ size, inset: 0.04, fill: INK, background: '#ffffff' }),
+      ),
       { density: 600 },
     )
       .resize(size, size)
@@ -283,7 +292,10 @@ images.forEach((image, index) => {
   header.writeUInt32LE(offset, entry + 12);
   offset += image.length;
 });
-writeFileSync(out('src', 'app', 'favicon.ico'), Buffer.concat([header, ...images]));
+writeFileSync(
+  out('src', 'app', 'favicon.ico'),
+  Buffer.concat([header, ...images]),
+);
 
 // --- Comparison image: original raster | rebuilt SVG | difference ---------------------------------------------------
 
@@ -329,7 +341,13 @@ for (let i = 0; i < original.data.length; i++) {
   if (a !== b) differing++;
   // grey where both are ink, red where only the raster has ink, blue where only the SVG has ink.
   const [r, g, bl] =
-    a && b ? [60, 60, 60] : a ? [220, 40, 40] : b ? [40, 90, 220] : [255, 255, 255];
+    a && b
+      ? [60, 60, 60]
+      : a
+        ? [220, 40, 40]
+        : b
+          ? [40, 90, 220]
+          : [255, 255, 255];
   diff[i * 3] = r;
   diff[i * 3 + 1] = g;
   diff[i * 3 + 2] = bl;
@@ -358,7 +376,13 @@ const comparison = await sharp({
   ])
   .png()
   .toBuffer();
-const comparisonPath = resolve(ROOT, 'docs', 'screenshots', 'h1', 'brand-wordmark-comparison.png');
+const comparisonPath = resolve(
+  ROOT,
+  'docs',
+  'screenshots',
+  'h1',
+  'brand-wordmark-comparison.png',
+);
 mkdirSync(dirname(comparisonPath), { recursive: true });
 writeFileSync(comparisonPath, comparison);
 

@@ -97,7 +97,7 @@
         "info": "Además de tu contraseña, ingresás un código de 6 dígitos que genera una app de autenticación en tu celular, como Google Authenticator, Authy o 1Password.",
         "statusOn": "Activada",
         "statusOff": "Desactivada",
-        "start": "Activar verificación en dos pasos",
+        "start": "Activar verificación",
         "startAnother": "Agregar otro método",
         "starting": "Preparando…",
         "qrAlt": "Código QR para agregar Domus a tu app de autenticación",

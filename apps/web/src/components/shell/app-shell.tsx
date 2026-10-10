@@ -22,8 +22,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
       <Sidebar />
       <div className="flex min-w-0 flex-col">
-        <TopBar />
-        <TenantStatusBanner />
+        {/* Stuck together, so the read-only notice stays in view while the page scrolls. */}
+        <div className="sticky top-0 z-30">
+          <TopBar />
+          <TenantStatusBanner />
+        </div>
         <main
           id="main"
           className="w-full max-w-(--container-content) flex-1 px-4 pt-6 pb-[calc(max(var(--tab-bar-height),var(--control-height))+env(safe-area-inset-bottom)+2rem)] lg:px-6 lg:pb-12"

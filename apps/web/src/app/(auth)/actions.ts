@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { mapAuthError, revealsAccountExistence } from '@/lib/auth/errors';
+import { challengeUrlFor, sessionHasVerifiedFactor } from '@/lib/auth/mfa';
 import { safeNextPath } from '@/lib/auth/redirect';
 import { getSiteUrl } from '@/lib/auth/site-url';
 import type { AuthFormState } from '@/lib/auth/state';
@@ -43,7 +44,11 @@ export async function signInWithPasswordAction(
       field: 'form',
       email,
     };
-  redirect(safeNextPath(readText(formData, 'next')));
+  const next = safeNextPath(readText(formData, 'next'));
+  // A user with a second factor answers it before anything else (the proxy enforces this on every route too;
+  // going there directly keeps the address bar honest, because a redirect from the proxy would not update it).
+  if (await sessionHasVerifiedFactor(client)) redirect(challengeUrlFor(next));
+  redirect(next);
 }
 
 /**

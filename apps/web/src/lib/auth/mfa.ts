@@ -30,15 +30,17 @@ export async function loadVerifiedFactors(
 }
 
 /**
- * Cheap "does this session have a second factor waiting?" for the proxy: reads the assurance levels the auth client
- * derives from the session, with no round trip. Only used to *route* (challenge page); authorization never depends
- * on it, because the database checks the `aal` claim of the JWT itself.
+ * "Does this user have a verified second factor?", for routing a first-factor session (challenge page, platform
+ * area). It asks the auth server (`GET /user`): the cookie-stored session does not carry the user's factors, so the
+ * client-side assurance levels cannot tell. Only used to *route*; authorization never depends on it, because the
+ * database checks the `aal` claim of the JWT itself.
  */
 export async function sessionHasVerifiedFactor(
   client: Pick<Client, 'auth'>,
 ): Promise<boolean> {
-  const { data } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-  return data?.nextLevel === 'aal2';
+  const { data, error } = await client.auth.mfa.listFactors();
+  if (error) throw new Error(`Could not list MFA factors (${error.code})`);
+  return data.totp.length > 0;
 }
 
 /** True when this aal1 session must go through the challenge before anything else (see `loginMfaStep`). */

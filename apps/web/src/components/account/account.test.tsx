@@ -42,7 +42,7 @@ describe('TotpEnrollment', () => {
   it('starts with a single primary action', () => {
     renderWithIntl(<TotpEnrollment hasFactor={false} next="" />);
     expect(
-      screen.getByRole('button', { name: 'Activar verificación en dos pasos' }),
+      screen.getByRole('button', { name: 'Activar verificación' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeNull();
   });
@@ -58,7 +58,7 @@ describe('TotpEnrollment', () => {
     start.mockResolvedValue(STARTED);
     renderWithIntl(<TotpEnrollment hasFactor={false} next="" />);
     fireEvent.click(
-      screen.getByRole('button', { name: 'Activar verificación en dos pasos' }),
+      screen.getByRole('button', { name: 'Activar verificación' }),
     );
 
     const qr = await screen.findByRole('img', {
@@ -84,7 +84,7 @@ describe('TotpEnrollment', () => {
     verify.mockResolvedValue({ status: 'done' });
     renderWithIntl(<TotpEnrollment hasFactor={false} next="/platform" />);
     fireEvent.click(
-      screen.getByRole('button', { name: 'Activar verificación en dos pasos' }),
+      screen.getByRole('button', { name: 'Activar verificación' }),
     );
     await screen.findByLabelText('Código de 6 dígitos');
     fireEvent.change(screen.getByLabelText('Código de 6 dígitos'), {
@@ -113,7 +113,7 @@ describe('TotpEnrollment', () => {
     });
     renderWithIntl(<TotpEnrollment hasFactor={false} next="" />);
     fireEvent.click(
-      screen.getByRole('button', { name: 'Activar verificación en dos pasos' }),
+      screen.getByRole('button', { name: 'Activar verificación' }),
     );
     await screen.findByLabelText('Código de 6 dígitos');
     fireEvent.click(
@@ -129,13 +129,13 @@ describe('TotpEnrollment', () => {
     start.mockResolvedValue(STARTED);
     renderWithIntl(<TotpEnrollment hasFactor={false} next="" />);
     fireEvent.click(
-      screen.getByRole('button', { name: 'Activar verificación en dos pasos' }),
+      screen.getByRole('button', { name: 'Activar verificación' }),
     );
     await screen.findByLabelText('Código de 6 dígitos');
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(cancel).toHaveBeenCalledWith('factor-new');
     expect(
-      screen.getByRole('button', { name: 'Activar verificación en dos pasos' }),
+      screen.getByRole('button', { name: 'Activar verificación' }),
     ).toBeInTheDocument();
   });
 
@@ -143,7 +143,7 @@ describe('TotpEnrollment', () => {
     start.mockResolvedValue({ ok: false, error: 'mfaUnavailable' });
     renderWithIntl(<TotpEnrollment hasFactor={false} next="" />);
     fireEvent.click(
-      screen.getByRole('button', { name: 'Activar verificación en dos pasos' }),
+      screen.getByRole('button', { name: 'Activar verificación' }),
     );
     expect(
       await screen.findByText(/no está disponible por ahora/),

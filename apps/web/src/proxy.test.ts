@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const identity = vi.fn();
 const loadResolvedContext = vi.fn();
-/** `nextLevel` the auth client reports; `aal2` means the user has a verified factor. */
-let nextLevel = 'aal1';
+/** Whether the user has a verified factor (what `listFactors` reports). */
+let hasFactor = false;
 let cookieWriter: ((items: unknown[], headers: unknown) => void) | undefined;
 
 vi.mock('@domus/supabase/server', () => ({
@@ -15,8 +15,11 @@ vi.mock('@domus/supabase/server', () => ({
       kind: 'client',
       auth: {
         mfa: {
-          getAuthenticatorAssuranceLevel: () =>
-            Promise.resolve({ data: { nextLevel }, error: null }),
+          listFactors: () =>
+            Promise.resolve({
+              data: { totp: hasFactor ? [{ id: 'f1' }] : [] },
+              error: null,
+            }),
         },
       },
     };
@@ -53,7 +56,7 @@ const ACTIVE = {
 beforeEach(() => {
   vi.clearAllMocks();
   cookieWriter = undefined;
-  nextLevel = 'aal1';
+  hasFactor = false;
 });
 
 describe('proxy: route protection', () => {
@@ -171,7 +174,7 @@ describe('proxy: second factor (M01-F05)', () => {
 
   it('sends an aal1 session with a verified factor to the challenge, keeping the return path', async () => {
     identity.mockResolvedValue(aal1);
-    nextLevel = 'aal2';
+    hasFactor = true;
     const response = await proxy(request('/access?x=1'));
     expect(response.headers.get('location')).toBe(
       `${ORIGIN}/login/mfa?next=%2Faccess%3Fx%3D1`,
@@ -181,7 +184,7 @@ describe('proxy: second factor (M01-F05)', () => {
 
   it('lets the challenge page itself through without resolving a context', async () => {
     identity.mockResolvedValue(aal1);
-    nextLevel = 'aal2';
+    hasFactor = true;
     const response = await proxy(request('/login/mfa?next=%2F'));
     expect(response.status).toBe(200);
     expect(loadResolvedContext).not.toHaveBeenCalled();
@@ -192,7 +195,7 @@ describe('proxy: second factor (M01-F05)', () => {
     identity.mockResolvedValue(aal2);
     expect((await proxy(request('/access'))).status).toBe(200);
     identity.mockResolvedValue(aal1);
-    nextLevel = 'aal1';
+    hasFactor = false;
     expect((await proxy(request('/access'))).status).toBe(200);
   });
 });

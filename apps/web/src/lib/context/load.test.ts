@@ -14,7 +14,7 @@ type Result = { data: unknown; error: unknown };
 /** Minimal chainable stand-in for the PostgREST query builder: records calls, resolves to the table's result. */
 function fakeClient(
   results: Record<string, Result>,
-  options: { platformAdmin?: Result; nextLevel?: string } = {},
+  options: { platformAdmin?: Result; hasFactor?: boolean } = {},
 ) {
   const calls: Record<string, Call[]> = {};
   const client = {
@@ -26,12 +26,9 @@ function fakeClient(
     },
     auth: {
       mfa: {
-        getAuthenticatorAssuranceLevel: () =>
+        listFactors: () =>
           Promise.resolve({
-            data: {
-              currentLevel: 'aal1',
-              nextLevel: options.nextLevel ?? 'aal1',
-            },
+            data: { totp: options.hasFactor ? [{ id: 'f1' }] : [] },
             error: null,
           }),
       },
@@ -254,7 +251,7 @@ describe('loadPlatformAccess', () => {
   it('sends an aal1 platform admin without a factor to enrollment', async () => {
     const { client } = fakeClient(
       {},
-      { platformAdmin: { data: true, error: null }, nextLevel: 'aal1' },
+      { platformAdmin: { data: true, error: null }, hasFactor: false },
     );
     await expect(loadPlatformAccess(client, aal1)).resolves.toEqual({
       aal2: false,
@@ -265,7 +262,7 @@ describe('loadPlatformAccess', () => {
   it('sends an aal1 platform admin with a factor to the challenge (reading the factor only when unknown)', async () => {
     const { client } = fakeClient(
       {},
-      { platformAdmin: { data: true, error: null }, nextLevel: 'aal2' },
+      { platformAdmin: { data: true, error: null }, hasFactor: true },
     );
     await expect(loadPlatformAccess(client, aal1)).resolves.toEqual({
       aal2: false,
@@ -273,7 +270,7 @@ describe('loadPlatformAccess', () => {
     });
     const known = fakeClient(
       {},
-      { platformAdmin: { data: true, error: null }, nextLevel: 'aal1' },
+      { platformAdmin: { data: true, error: null }, hasFactor: false },
     );
     await expect(
       loadPlatformAccess(known.client, aal1, true),
@@ -295,7 +292,7 @@ describe('loadResolvedContext at aal1', () => {
   it('reports the pending MFA step of a platform admin instead of hiding the platform option', async () => {
     const { client } = fakeClient(
       { membership: { data: [row()], error: null } },
-      { platformAdmin: { data: true, error: null }, nextLevel: 'aal1' },
+      { platformAdmin: { data: true, error: null }, hasFactor: false },
     );
     const result = await loadResolvedContext({
       client,

@@ -12,7 +12,9 @@ import { getTenantSubscriptionStatus } from '@/lib/tenant/status';
  * visitors; this re-checks on the server so the group stays protected if the proxy matcher ever changes.
  *
  * Tenant pages are replaced by a blocking page once the tenant's subscription is cancelled (M01-F02); the shell
- * stays so the user can switch to another barrio. The platform context lives in `/platform`, not here.
+ * stays so the user can switch to another barrio. (Today the database already leaves cancelled barrios out of
+ * `member_tenant_ids()`, so such a membership does not resolve and the user lands on the no-barrio page; this guard
+ * keeps the block if that policy ever changes.) The platform context lives in `/platform`, not here.
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const request = await getRequestContext();

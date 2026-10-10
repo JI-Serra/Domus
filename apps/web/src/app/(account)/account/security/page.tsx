@@ -52,7 +52,7 @@ export default async function SecurityPage({
           <AuthNotice tone="info">{t('requiredForPlatform')}</AuthNotice>
         ) : null}
         {recommend && !mustEnrollForPlatform ? <MfaRecommendation /> : null}
-        <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-2">
           <Card>
             <div className="mb-5 flex flex-wrap items-center gap-2">
               <h2 className="text-app-heading">{t('mfa.title')}</h2>
