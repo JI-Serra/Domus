@@ -56,6 +56,13 @@ test.describe('/design', () => {
     await button.click();
     await expect(help).toBeVisible();
     await expect(button).toHaveAttribute('aria-expanded', 'true');
+    // The popover stays on screen even when the button sits near the right edge.
+    const helpBox = await help.boundingBox();
+    const viewport = page.viewportSize();
+    expect(helpBox?.x).toBeGreaterThanOrEqual(0);
+    expect((helpBox?.x ?? 0) + (helpBox?.width ?? 0)).toBeLessThanOrEqual(
+      viewport?.width ?? 0,
+    );
 
     await page.keyboard.press('Escape');
     await expect(help).toBeHidden();
