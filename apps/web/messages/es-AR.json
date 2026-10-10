@@ -440,7 +440,8 @@
       "statuses": {
         "pending": "Pendiente",
         "approved": "Aprobada",
-        "rejected": "Rechazada"
+        "rejected": "Rechazada",
+        "cancelled": "Cancelada"
       },
       "approvedHint": "Revisá tu email: te enviamos la invitación.",
       "sentAt": "Pedida el {date}"

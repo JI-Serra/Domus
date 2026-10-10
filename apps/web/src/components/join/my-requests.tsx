@@ -36,7 +36,7 @@ function RequestRow({ request }: { request: MyJoinRequest }) {
         ) : status === 'approved' ? (
           <StatusBadge status="success">{t('statuses.approved')}</StatusBadge>
         ) : (
-          <Badge>{t('statuses.rejected')}</Badge>
+          <Badge>{t(`statuses.${status}`)}</Badge>
         )}
       </div>
       {status === 'approved' ? (

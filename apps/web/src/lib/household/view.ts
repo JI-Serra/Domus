@@ -6,12 +6,10 @@ import type {
 import type { UnitSheet } from '@domus/supabase/registry';
 
 /**
- * The unit sheet plus what T18 adds for unit managers: the delegated permissions of every member
- * (`reports/M02-db.md`, coordinator contract). Empty for everybody who cannot manage the household.
+ * The unit sheet. `member_permissions` carries the delegated permissions of every household membership for the
+ * unit's holders (and registry admins); it is an empty object for everybody else.
  */
-export type HouseholdSheet = UnitSheet & {
-  member_permissions?: Record<string, HouseholdPermission[]>;
-};
+export type HouseholdSheet = UnitSheet;
 
 type Relationship =
   UnitSheet['residents'][number]['unit_resident_relationship'];
