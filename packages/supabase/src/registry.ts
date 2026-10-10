@@ -9,7 +9,9 @@ export type UnitSheet = {
   unit: RegistryRow<'unit'>;
   residents: (RegistryRow<'unit_resident'> &
     Partial<Omit<RegistryRow<'person'>, 'user_id'>>)[];
-  vehicles: RegistryRow<'vehicle'>[];
+  vehicles: (Omit<RegistryRow<'vehicle'>, 'vehicle_is_verified'> & {
+    vehicle_is_verified?: boolean;
+  })[];
   pets: RegistryRow<'pet'>[];
   memberships: RegistryRow<'membership'>[];
   pending_invitations: Omit<
@@ -17,6 +19,10 @@ export type UnitSheet = {
     'invitation_token_hash'
   >[];
   pending_join_requests: RegistryRow<'unit_join_request'>[];
+  member_permissions: Record<
+    string,
+    Database['public']['Enums']['household_permission'][]
+  >;
   permissions: Database['public']['Enums']['household_permission'][];
   movements: unknown[];
   authorizations?: unknown[];
@@ -39,6 +45,10 @@ export const saveResident = (
   client: DomusSupabaseClient,
   input: Args<'save_resident'>,
 ) => client.rpc('save_resident', input);
+export const registryPendingVerification = (
+  client: DomusSupabaseClient,
+  input: Args<'registry_pending_verification'>,
+) => client.rpc('registry_pending_verification', input);
 export const saveVehicle = (
   client: DomusSupabaseClient,
   input: Args<'save_vehicle'>,
@@ -49,6 +59,10 @@ export const setHouseholdPermissions = (
   client: DomusSupabaseClient,
   input: Args<'set_household_permissions'>,
 ) => client.rpc('set_household_permissions', input);
+export const endHouseholdMembership = (
+  client: DomusSupabaseClient,
+  input: Args<'end_household_membership'>,
+) => client.rpc('end_household_membership', input);
 export const currentHouseholdPermissions = (
   client: DomusSupabaseClient,
   input: Args<'current_household_permissions'>,
@@ -72,6 +86,12 @@ export const submitUnitJoinRequest = (
   client: DomusSupabaseClient,
   input: Args<'submit_unit_join_request'>,
 ) => client.rpc('submit_unit_join_request', input);
+export const myUnitJoinRequests = (client: DomusSupabaseClient) =>
+  client.rpc('my_unit_join_requests');
+export const cancelUnitJoinRequest = (
+  client: DomusSupabaseClient,
+  input: Args<'cancel_unit_join_request'>,
+) => client.rpc('cancel_unit_join_request', input);
 export const decideUnitJoinRequest = (
   client: DomusSupabaseClient,
   input: Args<'decide_unit_join_request'>,

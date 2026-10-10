@@ -6,6 +6,7 @@ import {
   isBillableUnit,
   isMinorAt,
   normalizePlate,
+  neutralizeSpreadsheetFormula,
   normalizeUnitJoinCode,
   personInputSchema,
   petInputSchema,
@@ -17,6 +18,27 @@ import {
   validateImportRows,
   vehicleInputSchema,
 } from './index';
+
+describe('spreadsheet export safety', () => {
+  it.each([
+    '=HYPERLINK("https://example.test")',
+    '+1',
+    '-1',
+    '@SUM(A1)',
+    '\tdata',
+    '\rdata',
+    '\ndata',
+    '  =1',
+  ])('neutralizes executable cell %j', (value) => {
+    expect(neutralizeSpreadsheetFormula(value)).toBe(`'${value}`);
+  });
+  it.each(['Domus', '123', '', "'=1", 'email@example.test', 'a-b'])(
+    'preserves ordinary cell %j',
+    (value) => {
+      expect(neutralizeSpreadsheetFormula(value)).toBe(value);
+    },
+  );
+});
 
 describe('registry rules and canonical import rows', () => {
   it('inherits billing criteria, applies overrides, and excludes archived units', () => {

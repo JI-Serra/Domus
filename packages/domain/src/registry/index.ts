@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+/** Preserve registry values; call this only when serializing a spreadsheet cell. */
+export function neutralizeSpreadsheetFormula(value: string): string {
+  return /^[=+@\t\r\n-]/.test(value) || /^\s+[=+@-]/.test(value)
+    ? `'${value}`
+    : value;
+}
+
 export const unitStatuses = [
   'occupied',
   'under_construction',

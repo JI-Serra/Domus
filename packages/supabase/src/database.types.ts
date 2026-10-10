@@ -535,7 +535,12 @@ export type Database = {
       person: {
         Row: {
           person_birth_date: string | null;
+          person_claimed_document_number: string | null;
+          person_claimed_document_type:
+            Database['public']['Enums']['person_document_type'] | null;
+          person_claimed_email: string | null;
           person_created_at: string;
+          person_created_by_user_id: string | null;
           person_document_number: string | null;
           person_document_type:
             Database['public']['Enums']['person_document_type'] | null;
@@ -551,7 +556,12 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           person_birth_date?: string | null;
+          person_claimed_document_number?: string | null;
+          person_claimed_document_type?:
+            Database['public']['Enums']['person_document_type'] | null;
+          person_claimed_email?: string | null;
           person_created_at?: string;
+          person_created_by_user_id?: string | null;
           person_document_number?: string | null;
           person_document_type?:
             Database['public']['Enums']['person_document_type'] | null;
@@ -566,7 +576,12 @@ export type Database = {
         };
         Update: {
           person_birth_date?: string | null;
+          person_claimed_document_number?: string | null;
+          person_claimed_document_type?:
+            Database['public']['Enums']['person_document_type'] | null;
+          person_claimed_email?: string | null;
           person_created_at?: string;
+          person_created_by_user_id?: string | null;
           person_document_number?: string | null;
           person_document_type?:
             Database['public']['Enums']['person_document_type'] | null;
@@ -1147,6 +1162,7 @@ export type Database = {
           vehicle_color_name: string | null;
           vehicle_created_at: string;
           vehicle_id: string;
+          vehicle_is_verified: boolean;
           vehicle_make_name: string | null;
           vehicle_model_name: string | null;
           vehicle_plate_code: string;
@@ -1160,6 +1176,7 @@ export type Database = {
           vehicle_color_name?: string | null;
           vehicle_created_at?: string;
           vehicle_id?: string;
+          vehicle_is_verified?: boolean;
           vehicle_make_name?: string | null;
           vehicle_model_name?: string | null;
           vehicle_plate_code: string;
@@ -1172,6 +1189,7 @@ export type Database = {
           vehicle_color_name?: string | null;
           vehicle_created_at?: string;
           vehicle_id?: string;
+          vehicle_is_verified?: boolean;
           vehicle_make_name?: string | null;
           vehicle_model_name?: string | null;
           vehicle_plate_code?: string;
@@ -1221,6 +1239,10 @@ export type Database = {
       billable_unit_count: {
         Args: { target_tenant_id: string };
         Returns: number;
+      };
+      cancel_unit_join_request: {
+        Args: { client_event_id: string; target_unit_join_request_id: string };
+        Returns: Json;
       };
       confirm_registry_import: {
         Args: {
@@ -1335,6 +1357,10 @@ export type Database = {
         Args: { target_platform_admin_id: string };
         Returns: undefined;
       };
+      end_household_membership: {
+        Args: { client_event_id: string; target_membership_id: string };
+        Returns: undefined;
+      };
       end_support_session: {
         Args: { target_support_session_id: string };
         Returns: undefined;
@@ -1386,6 +1412,16 @@ export type Database = {
         };
         Returns: undefined;
       };
+      my_unit_join_requests: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          tenant_name: string;
+          unit_code: string;
+          unit_join_request_created_at: string;
+          unit_join_request_id: string;
+          unit_join_request_status: Database['public']['Enums']['unit_join_request_status'];
+        }[];
+      };
       preview_invitation: {
         Args: { token: string };
         Returns: {
@@ -1403,6 +1439,10 @@ export type Database = {
           pairing_code: string;
           target_tenant_id: string;
         };
+        Returns: Json;
+      };
+      registry_pending_verification: {
+        Args: { target_tenant_id: string };
         Returns: Json;
       };
       revoke_admin_permission: {
@@ -1552,7 +1592,7 @@ export type Database = {
           client_event_id: string;
           join_code: string;
           person_data: Json;
-          target_tenant_id: string;
+          target_tenant_id?: string;
         };
         Returns: Json;
       };
@@ -1613,11 +1653,14 @@ export type Database = {
         'tenant_admin' | 'guard' | 'unit_holder' | 'household_member';
       membership_status: 'active' | 'suspended' | 'revoked';
       person_document_type: 'dni' | 'passport' | 'other';
+      registry_contact_reason:
+        'approval_phone_fallback' | 'visit_phone_fallback';
       registry_import_status: 'preview' | 'confirmed';
       support_session_status: 'active' | 'ended' | 'revoked' | 'expired';
       tenant_subscription_status:
         'pilot' | 'active' | 'suspended' | 'cancelled';
-      unit_join_request_status: 'pending' | 'approved' | 'rejected';
+      unit_join_request_status:
+        'pending' | 'approved' | 'rejected' | 'cancelled';
       unit_resident_relationship: 'owner' | 'tenant' | 'family' | 'other';
       unit_status: 'occupied' | 'under_construction' | 'vacant';
     };
@@ -1779,10 +1822,19 @@ export const Constants = {
       ],
       membership_status: ['active', 'suspended', 'revoked'],
       person_document_type: ['dni', 'passport', 'other'],
+      registry_contact_reason: [
+        'approval_phone_fallback',
+        'visit_phone_fallback',
+      ],
       registry_import_status: ['preview', 'confirmed'],
       support_session_status: ['active', 'ended', 'revoked', 'expired'],
       tenant_subscription_status: ['pilot', 'active', 'suspended', 'cancelled'],
-      unit_join_request_status: ['pending', 'approved', 'rejected'],
+      unit_join_request_status: [
+        'pending',
+        'approved',
+        'rejected',
+        'cancelled',
+      ],
       unit_resident_relationship: ['owner', 'tenant', 'family', 'other'],
       unit_status: ['occupied', 'under_construction', 'vacant'],
     },

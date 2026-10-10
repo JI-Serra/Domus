@@ -122,7 +122,7 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Relación del habitante | `unit_resident_relationship`: `owner`, `tenant`, `family`, `other` | Propietario / inquilino / familiar / otro. |
 | Permiso delegado al miembro | `membership_household_permission`; `household_permission`: `view_unit_finance`, `book_amenities`, `manage_access_authorizations` | D23; default only access authorizations. |
 | Código de unidad | `unit_join_code` | D22; 12 unambiguous base32 characters, hash only, rotatable. |
-| Solicitud de incorporación | `unit_join_request`; `unit_join_request_status`: `pending`, `approved`, `rejected` | Approval issues email consent; no automatic membership. |
+| Solicitud de incorporación | `unit_join_request`; `unit_join_request_status`: `pending`, `approved`, `rejected`, `cancelled` | Applicant cancellation is final; approval issues email consent; no automatic membership. |
 | Asignación de guardia a puesto | `gate_guard` | Guard membership ↔ gate, scoped by tenant. |
 | Tipo de puesto | `gate_kind`: `vehicular`, `pedestrian` | Vehicular / peatonal. |
 | Estado de dispositivo | `device_status`: `active`, `revoked` | Device identity is independent of operator identity. |
@@ -138,3 +138,7 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Foto de mascota | `pet_photo_path`, private bucket `pet-photo` | `<tenant UUID>/<unit UUID>/<filename>`; never public. |
 | Consulta operativa de contacto | `registry_contact_lookup` audit event | `operation_code=approval_phone_fallback`; phone omitted from audit. |
 | Vigencia del habitante | `unit_resident_valid_from_at`, `unit_resident_valid_to_at` | UTC timestamps; end is exclusive. Occupied units have continuous adult holder coverage. |
+| Datos de identidad declarados por titular | `person_claimed_document_type`, `person_claimed_document_number`, `person_claimed_email` | Redacted claims; canonical identity is verified independently, never used as account-binding proof. |
+| Autor del alta de persona | `person_created_by_user_id` | Actor provenance; holders edit only their own created unbound members. |
+| Patente verificada | `vehicle_is_verified` | Only nonarchived verified plate claims are canonical; holder projections omit this internal flag. |
+| Motivo operativo de contacto | `registry_contact_reason`: `approval_phone_fallback`, `visit_phone_fallback` | Approval / visit phone fallback, audited; five lookups per guard per fifteen minutes until M05 context binding. |
