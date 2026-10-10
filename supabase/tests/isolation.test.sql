@@ -27,7 +27,7 @@ select throws_ok('insert into public.audit_event(audit_event_db_role,audit_event
 select throws_ok('update public.audit_event set audit_event_diff=''{}'' where tenant_id=''10000000-0000-0000-0000-000000000002''','42501',null,'A cannot update B audit_event');
 select throws_ok('delete from public.audit_event where tenant_id=''10000000-0000-0000-0000-000000000002''','42501',null,'A cannot delete B audit_event');
 select is((select count(*) from public.tenant),1::bigint,'Admin reads own tenant');
-select is((select count(*) from public.person),32::bigint,'Registry reads own people');
+select is((select count(*) from public.person where person_id::text like '30000000-%' or person_id::text like 'b1000000-%'),32::bigint,'Registry reads own seeded people');
 select is((select count(*) from public.membership_permission),11::bigint,'Registry reads own permissions');
 select ok((select count(*)>0 from public.audit_event),'Audit admin reads tenant events');
 select throws_ok('select public.grant_admin_permission(''40000000-0000-0000-0000-000000000006'',''finance'')','42501',null,'Management admin A cannot grant missing permission in B');

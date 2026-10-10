@@ -1222,6 +1222,10 @@ export type Database = {
         Args: { target_tenant_id: string };
         Returns: number;
       };
+      cancel_unit_join_request: {
+        Args: { client_event_id: string; target_unit_join_request_id: string };
+        Returns: Json;
+      };
       confirm_registry_import: {
         Args: {
           client_event_id: string;
@@ -1385,6 +1389,16 @@ export type Database = {
           target_unit_id: string;
         };
         Returns: undefined;
+      };
+      my_unit_join_requests: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          tenant_name: string;
+          unit_code: string;
+          unit_join_request_created_at: string;
+          unit_join_request_id: string;
+          unit_join_request_status: Database['public']['Enums']['unit_join_request_status'];
+        }[];
       };
       preview_invitation: {
         Args: { token: string };
@@ -1552,7 +1566,7 @@ export type Database = {
           client_event_id: string;
           join_code: string;
           person_data: Json;
-          target_tenant_id: string;
+          target_tenant_id?: string;
         };
         Returns: Json;
       };
@@ -1617,7 +1631,8 @@ export type Database = {
       support_session_status: 'active' | 'ended' | 'revoked' | 'expired';
       tenant_subscription_status:
         'pilot' | 'active' | 'suspended' | 'cancelled';
-      unit_join_request_status: 'pending' | 'approved' | 'rejected';
+      unit_join_request_status:
+        'pending' | 'approved' | 'rejected' | 'cancelled';
       unit_resident_relationship: 'owner' | 'tenant' | 'family' | 'other';
       unit_status: 'occupied' | 'under_construction' | 'vacant';
     };
@@ -1782,7 +1797,12 @@ export const Constants = {
       registry_import_status: ['preview', 'confirmed'],
       support_session_status: ['active', 'ended', 'revoked', 'expired'],
       tenant_subscription_status: ['pilot', 'active', 'suspended', 'cancelled'],
-      unit_join_request_status: ['pending', 'approved', 'rejected'],
+      unit_join_request_status: [
+        'pending',
+        'approved',
+        'rejected',
+        'cancelled',
+      ],
       unit_resident_relationship: ['owner', 'tenant', 'family', 'other'],
       unit_status: ['occupied', 'under_construction', 'vacant'],
     },

@@ -122,7 +122,7 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Relación del habitante | `unit_resident_relationship`: `owner`, `tenant`, `family`, `other` | Propietario / inquilino / familiar / otro. |
 | Permiso delegado al miembro | `membership_household_permission`; `household_permission`: `view_unit_finance`, `book_amenities`, `manage_access_authorizations` | D23; default only access authorizations. |
 | Código de unidad | `unit_join_code` | D22; 12 unambiguous base32 characters, hash only, rotatable. |
-| Solicitud de incorporación | `unit_join_request`; `unit_join_request_status`: `pending`, `approved`, `rejected` | Approval issues email consent; no automatic membership. |
+| Solicitud de incorporación | `unit_join_request`; `unit_join_request_status`: `pending`, `approved`, `rejected`, `cancelled` | Applicant cancellation is final; approval issues email consent; no automatic membership. |
 | Asignación de guardia a puesto | `gate_guard` | Guard membership ↔ gate, scoped by tenant. |
 | Tipo de puesto | `gate_kind`: `vehicular`, `pedestrian` | Vehicular / peatonal. |
 | Estado de dispositivo | `device_status`: `active`, `revoked` | Device identity is independent of operator identity. |

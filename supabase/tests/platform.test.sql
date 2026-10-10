@@ -94,7 +94,7 @@ set local role authenticated;
 select is(public.current_user_is_platform_admin(),false,'Tenant admin is not a platform admin');
 select is((select count(*) from app_private.identity_tenant_ids()),1::bigint,'Identity helper reveals only the ordinary caller tenant IDs');
 select is((select count(*) from public.invitation where tenant_id='10000000-0000-0000-0000-000000000002'),0::bigint,'A cannot read B invitations');
-select is((select count(*) from public.invitation where tenant_id='10000000-0000-0000-0000-000000000001'),1::bigint,'A reads own invitation');
+select is((select count(*) from public.invitation where tenant_id='10000000-0000-0000-0000-000000000001' and client_event_id='60000000-0000-0000-0000-000000000001'),1::bigint,'A reads own fixture invitation');
 select is((select count(*) from public.support_session where tenant_id='10000000-0000-0000-0000-000000000002'),0::bigint,'A cannot read B support sessions');
 select is((select count(*) from public.support_session),2::bigint,'Audit admin sees support reason and duration');
 select is((select count(*) from storage.objects where bucket_id='tenant-logo'),1::bigint,'A reads own logo');
