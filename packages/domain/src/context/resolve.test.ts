@@ -131,6 +131,7 @@ describe('resolveActiveContext', () => {
     expect(resolveActiveContext({ memberships: [], now: NOW })).toEqual({
       active: null,
       options: [],
+      platformMfaStep: null,
     });
   });
 
@@ -141,7 +142,42 @@ describe('resolveActiveContext', () => {
         requestedContextId: 'm-ceibos-holder',
         now: NOW,
       }),
-    ).toEqual({ active: null, options: [] });
+    ).toEqual({ active: null, options: [], platformMfaStep: null });
+  });
+
+  it('reports the MFA step instead of hiding the platform option below aal2', () => {
+    const challenge = resolveActiveContext({
+      memberships: [ceibos],
+      platformAdminAal2: false,
+      platformMfaStep: 'challenge',
+      now: NOW,
+    });
+    expect(challenge.platformMfaStep).toBe('challenge');
+    // Offering the step is not granting the context: it is not an option and a forged cookie does not select it.
+    expect(
+      challenge.options.some(
+        (option) => option.membership_role === 'platform_admin',
+      ),
+    ).toBe(false);
+    expect(
+      resolveActiveContext({
+        memberships: [ceibos],
+        requestedContextId: PLATFORM_CONTEXT_ID,
+        platformMfaStep: 'enroll',
+        now: NOW,
+      }).active?.membership_id,
+    ).toBe('m-ceibos-holder');
+  });
+
+  it('drops the MFA step once the platform context is granted', () => {
+    expect(
+      resolveActiveContext({
+        memberships: [],
+        platformAdminAal2: true,
+        platformMfaStep: 'challenge',
+        now: NOW,
+      }).platformMfaStep,
+    ).toBeNull();
   });
 
   it('filters memberships that are not active even if the database returned them', () => {

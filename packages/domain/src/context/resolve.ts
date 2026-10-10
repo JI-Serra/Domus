@@ -1,3 +1,4 @@
+import type { MfaStep } from '../auth/mfa';
 import { DEFAULT_TENANT_TIME_ZONE } from '../format';
 import { PLATFORM_CONTEXT_ID, TENANT_MEMBERSHIP_ROLES } from './types';
 import type { ActiveContext, MembershipRecord } from './types';
@@ -12,6 +13,12 @@ export interface ResolveActiveContextInput {
   requestedContextId?: string | null | undefined;
   /** True only for an active platform admin whose session is `aal2`. Offers the platform context. */
   platformAdminAal2?: boolean;
+  /**
+   * For a platform admin whose session is below `aal2`: the MFA step that unlocks the platform context (see
+   * `platformMfaStep`). The platform option is then *offered as that step* instead of being hidden silently. Ignored
+   * when `platformAdminAal2` is true.
+   */
+  platformMfaStep?: MfaStep | null;
   /** Instant used to evaluate validity windows. Defaults to the current time. */
   now?: Date;
 }
@@ -21,6 +28,8 @@ export interface ResolvedContext {
   active: ActiveContext | null;
   /** Every context the user may switch to, in a stable order (default first). Contains `active` when it is not null. */
   options: readonly ActiveContext[];
+  /** The step the platform option stands for when it is locked behind MFA; null when it is offered, or not at all. */
+  platformMfaStep: MfaStep | null;
 }
 
 const ROLE_ORDER = new Map<string, number>(
@@ -81,13 +90,15 @@ export function platformContext(): ActiveContext {
  *
  * - Only currently active memberships become options (status and validity window re-checked here).
  * - The default is the first option by tenant name (then role, then id), so the result is deterministic.
- * - The platform option is appended last, and only when `platformAdminAal2` is true.
+ * - The platform option is appended last, and only when `platformAdminAal2` is true. Below `aal2` it is reported as
+ *   `platformMfaStep` (the challenge or enrollment to complete) so the UI can offer it instead of hiding it.
  * - `requestedContextId` is honored only when it matches an option; anything else gives the default.
  */
 export function resolveActiveContext({
   memberships,
   requestedContextId,
   platformAdminAal2 = false,
+  platformMfaStep = null,
   now = new Date(),
 }: ResolveActiveContextInput): ResolvedContext {
   const seen = new Set<string>();
@@ -106,5 +117,9 @@ export function resolveActiveContext({
     (option) => option.membership_id === requestedContextId,
   );
   const active = requested ?? options[0] ?? null;
-  return { active, options };
+  return {
+    active,
+    options,
+    platformMfaStep: platformAdminAal2 ? null : platformMfaStep,
+  };
 }

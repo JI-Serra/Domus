@@ -4,12 +4,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const identity = vi.fn();
 const loadResolvedContext = vi.fn();
+/** `nextLevel` the auth client reports; `aal2` means the user has a verified factor. */
+let nextLevel = 'aal1';
 let cookieWriter: ((items: unknown[], headers: unknown) => void) | undefined;
 
 vi.mock('@domus/supabase/server', () => ({
   createServerClient: (adapter: { setAll: typeof cookieWriter }) => {
     cookieWriter = adapter.setAll;
-    return { kind: 'client' };
+    return {
+      kind: 'client',
+      auth: {
+        mfa: {
+          getAuthenticatorAssuranceLevel: () =>
+            Promise.resolve({ data: { nextLevel }, error: null }),
+        },
+      },
+    };
   },
 }));
 vi.mock('@domus/supabase/session', () => ({
@@ -29,6 +39,7 @@ const request = (path: string, headers: Record<string, string> = {}) =>
 const forwarded = (response: Response, name: string) =>
   response.headers.get(`x-middleware-request-${name}`);
 
+const PLATFORM_OPTION = { membership_id: 'platform' };
 const ACTIVE = {
   active: {
     membership_id: 'm1',
@@ -36,11 +47,13 @@ const ACTIVE = {
     membership_role: 'guard',
   },
   options: [],
+  platformMfaStep: null,
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   cookieWriter = undefined;
+  nextLevel = 'aal1';
 });
 
 describe('proxy: route protection', () => {
@@ -109,7 +122,11 @@ describe('proxy: tenant context headers', () => {
 
   it('removes spoofed headers when there is no validated context', async () => {
     identity.mockResolvedValue({ userId: 'u1', email: null, aal: 'aal1' });
-    loadResolvedContext.mockResolvedValue({ active: null, options: [] });
+    loadResolvedContext.mockResolvedValue({
+      active: null,
+      options: [],
+      platformMfaStep: null,
+    });
     const response = await proxy(
       request('/access', {
         'x-domus-tenant-id': 'spoofed-tenant',
@@ -128,9 +145,10 @@ describe('proxy: tenant context headers', () => {
         tenant_id: null,
         membership_role: 'platform_admin',
       },
-      options: [],
+      options: [PLATFORM_OPTION],
+      platformMfaStep: null,
     });
-    const response = await proxy(request('/tenants'));
+    const response = await proxy(request('/platform/tenants'));
     expect(forwarded(response, 'x-domus-tenant-id')).toBeNull();
     expect(forwarded(response, 'x-domus-membership-role')).toBe(
       'platform_admin',
@@ -144,5 +162,96 @@ describe('proxy: tenant context headers', () => {
     );
     expect(forwarded(response, 'x-domus-tenant-id')).toBeNull();
     expect(loadResolvedContext).not.toHaveBeenCalled();
+  });
+});
+
+describe('proxy: second factor (M01-F05)', () => {
+  const aal1 = { userId: 'u1', email: null, aal: 'aal1' };
+  const aal2 = { userId: 'u1', email: null, aal: 'aal2' };
+
+  it('sends an aal1 session with a verified factor to the challenge, keeping the return path', async () => {
+    identity.mockResolvedValue(aal1);
+    nextLevel = 'aal2';
+    const response = await proxy(request('/access?x=1'));
+    expect(response.headers.get('location')).toBe(
+      `${ORIGIN}/login/mfa?next=%2Faccess%3Fx%3D1`,
+    );
+    expect(loadResolvedContext).not.toHaveBeenCalled();
+  });
+
+  it('lets the challenge page itself through without resolving a context', async () => {
+    identity.mockResolvedValue(aal1);
+    nextLevel = 'aal2';
+    const response = await proxy(request('/login/mfa?next=%2F'));
+    expect(response.status).toBe(200);
+    expect(loadResolvedContext).not.toHaveBeenCalled();
+  });
+
+  it('does not challenge a session that is already aal2, nor a user without a factor', async () => {
+    loadResolvedContext.mockResolvedValue(ACTIVE);
+    identity.mockResolvedValue(aal2);
+    expect((await proxy(request('/access'))).status).toBe(200);
+    identity.mockResolvedValue(aal1);
+    nextLevel = 'aal1';
+    expect((await proxy(request('/access'))).status).toBe(200);
+  });
+});
+
+describe('proxy: platform area', () => {
+  const aal1 = { userId: 'u1', email: null, aal: 'aal1' };
+  const aal2 = { userId: 'u1', email: null, aal: 'aal2' };
+
+  it('sends a platform admin without a factor to enrollment, remembering where they were going', async () => {
+    identity.mockResolvedValue(aal1);
+    loadResolvedContext.mockResolvedValue({
+      ...ACTIVE,
+      platformMfaStep: 'enroll',
+    });
+    const response = await proxy(request('/platform/tenants'));
+    expect(response.headers.get('location')).toBe(
+      `${ORIGIN}/account/security?next=%2Fplatform%2Ftenants`,
+    );
+  });
+
+  it('sends a platform admin with a factor but aal1 to the challenge', async () => {
+    identity.mockResolvedValue(aal1);
+    loadResolvedContext.mockResolvedValue({
+      ...ACTIVE,
+      platformMfaStep: 'challenge',
+    });
+    const response = await proxy(request('/platform'));
+    expect(response.headers.get('location')).toBe(
+      `${ORIGIN}/login/mfa?next=%2Fplatform`,
+    );
+  });
+
+  it.each([
+    ['an aal1 user who is not a platform admin', aal1],
+    ['an aal2 user who is not a platform admin', aal2],
+  ])('sends %s home', async (_label, who) => {
+    identity.mockResolvedValue(who);
+    loadResolvedContext.mockResolvedValue(ACTIVE);
+    const response = await proxy(request('/platform/support'));
+    expect(response.headers.get('location')).toBe(`${ORIGIN}/`);
+  });
+
+  it('lets an aal2 platform admin in', async () => {
+    identity.mockResolvedValue(aal2);
+    loadResolvedContext.mockResolvedValue({
+      active: {
+        membership_id: 'platform',
+        tenant_id: null,
+        membership_role: 'platform_admin',
+      },
+      options: [PLATFORM_OPTION],
+      platformMfaStep: null,
+    });
+    expect((await proxy(request('/platform/tenants'))).status).toBe(200);
+  });
+
+  it('does not treat lookalike paths as the platform area', async () => {
+    identity.mockResolvedValue(aal1);
+    loadResolvedContext.mockResolvedValue(ACTIVE);
+    expect((await proxy(request('/platformer'))).status).toBe(200);
   });
 });

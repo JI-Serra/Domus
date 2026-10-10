@@ -1,5 +1,6 @@
 'use client';
 
+import type { MfaStep } from '@domus/domain/auth';
 import type { ActiveContext } from '@domus/domain/context';
 import {
   createContext,
@@ -19,6 +20,11 @@ export type { ActiveContext, MembershipRole } from '@domus/domain/context';
 export interface ActiveContextState {
   contexts: readonly ActiveContext[];
   active: ActiveContext;
+  /**
+   * Set for a platform admin whose session is below `aal2`: the platform context is not available yet, and this is
+   * the MFA step that unlocks it (the selector offers it instead of hiding it).
+   */
+  platformMfaStep: MfaStep | null;
   switchContext: (membership_id: string) => void;
 }
 
@@ -34,6 +40,8 @@ export interface ActiveContextProviderProps {
   initialMembershipId?: string;
   /** Called after the user switches context, e.g. to persist the choice server-side. */
   onSwitch?: (context: ActiveContext) => void;
+  /** See {@link ActiveContextState.platformMfaStep}. */
+  platformMfaStep?: MfaStep | null;
   children: ReactNode;
 }
 
@@ -41,6 +49,7 @@ export function ActiveContextProvider({
   contexts,
   initialMembershipId,
   onSwitch,
+  platformMfaStep = null,
   children,
 }: ActiveContextProviderProps) {
   const first = contexts[0];
@@ -77,9 +86,10 @@ export function ActiveContextProvider({
       contexts,
       active:
         contexts.find((context) => context.membership_id === activeId) ?? first,
+      platformMfaStep,
       switchContext,
     }),
-    [contexts, activeId, first, switchContext],
+    [contexts, activeId, first, platformMfaStep, switchContext],
   );
 
   return (

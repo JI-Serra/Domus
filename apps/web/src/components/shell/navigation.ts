@@ -5,6 +5,7 @@ import {
   ClipboardList,
   House,
   KeyRound,
+  LifeBuoy,
   MapPin,
   Megaphone,
   Package,
@@ -27,7 +28,8 @@ export type NavItemId =
   | 'present'
   | 'guardLog'
   | 'packages'
-  | 'tenants';
+  | 'tenants'
+  | 'support';
 
 export interface NavItem {
   id: NavItemId;
@@ -80,7 +82,11 @@ const NAVIGATION: Record<MembershipRole, readonly NavItem[]> = {
     item('guardLog', '/guard-log', BookOpen),
     item('packages', '/packages', Package),
   ],
-  platform_admin: [home, item('tenants', '/tenants', Building2)],
+  // The platform area (`/platform/**`) has its own navigation and no tenant home.
+  platform_admin: [
+    item('tenants', '/platform/tenants', Building2),
+    item('support', '/platform/support', LifeBuoy),
+  ],
 };
 
 export function getNavigation(role: MembershipRole): readonly NavItem[] {
@@ -91,14 +97,20 @@ export function getTabBarItems(role: MembershipRole): readonly NavItem[] {
   return NAVIGATION[role].filter((entry) => entry.tab);
 }
 
-/** Every non-home href across roles, used to pre-render the placeholder pages. */
+/** Every top-level tenant-area href across roles, used to pre-render the placeholder pages. */
 export function getPlaceholderSlugs(): string[] {
   const slugs = new Set<string>();
   for (const entries of Object.values(NAVIGATION)) {
     for (const entry of entries)
-      if (entry.href !== '/') slugs.add(entry.href.slice(1));
+      if (entry.href !== '/' && entry.href.split('/').length === 2)
+        slugs.add(entry.href.slice(1));
   }
   return [...slugs];
+}
+
+/** Home of the area the role works in: the tenant home, or the platform area for platform admins. */
+export function getHomeHref(role: MembershipRole): string {
+  return role === 'platform_admin' ? '/platform' : '/';
 }
 
 export function getNavItemBySlug(slug: string): NavItem | undefined {

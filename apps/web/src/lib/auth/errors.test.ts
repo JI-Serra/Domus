@@ -19,6 +19,11 @@ describe('mapAuthError', () => {
     [{ code: 'session_not_found', status: 403 }, 'sessionExpired'],
     [{ code: 'weak_password', status: 422 }, 'weakPassword'],
     [{ code: 'same_password', status: 422 }, 'samePassword'],
+    [{ code: 'mfa_verification_failed', status: 422 }, 'mfaWrongCode'],
+    [{ code: 'mfa_challenge_expired', status: 422 }, 'mfaWrongCode'],
+    [{ code: 'mfa_factor_not_found', status: 404 }, 'mfaNoFactor'],
+    [{ code: 'insufficient_aal', status: 401 }, 'mfaReauthRequired'],
+    [{ code: 'mfa_totp_verify_not_enabled', status: 400 }, 'mfaUnavailable'],
   ] as const)('maps %j to %s', (error, key) => {
     expect(mapAuthError(error)).toBe(key);
   });
