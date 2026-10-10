@@ -36,9 +36,10 @@ export type Database = {
     Tables: {
       audit_event: {
         Row: {
-          audit_event_action: string;
+          audit_event_action: Database['public']['Enums']['audit_event_action'];
           audit_event_actor_person_id: string | null;
           audit_event_actor_user_id: string | null;
+          audit_event_db_role: string;
           audit_event_diff: NonNullable<Json>;
           audit_event_id: string;
           audit_event_occurred_at: string;
@@ -50,9 +51,10 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
-          audit_event_action: string;
+          audit_event_action: Database['public']['Enums']['audit_event_action'];
           audit_event_actor_person_id?: string | null;
           audit_event_actor_user_id?: string | null;
+          audit_event_db_role: string;
           audit_event_diff: NonNullable<Json>;
           audit_event_id?: string;
           audit_event_occurred_at?: string;
@@ -63,9 +65,10 @@ export type Database = {
           tenant_id?: string | null;
         };
         Update: {
-          audit_event_action?: string;
+          audit_event_action?: Database['public']['Enums']['audit_event_action'];
           audit_event_actor_person_id?: string | null;
           audit_event_actor_user_id?: string | null;
+          audit_event_db_role?: string;
           audit_event_diff?: NonNullable<Json>;
           audit_event_id?: string;
           audit_event_occurred_at?: string;
@@ -177,7 +180,8 @@ export type Database = {
           person_birth_date: string | null;
           person_created_at: string;
           person_document_number: string | null;
-          person_document_type: string | null;
+          person_document_type:
+            Database['public']['Enums']['person_document_type'] | null;
           person_first_name: string;
           person_id: string;
           person_last_name: string;
@@ -191,7 +195,8 @@ export type Database = {
           person_birth_date?: string | null;
           person_created_at?: string;
           person_document_number?: string | null;
-          person_document_type?: string | null;
+          person_document_type?:
+            Database['public']['Enums']['person_document_type'] | null;
           person_first_name: string;
           person_id?: string;
           person_last_name: string;
@@ -204,7 +209,8 @@ export type Database = {
           person_birth_date?: string | null;
           person_created_at?: string;
           person_document_number?: string | null;
-          person_document_type?: string | null;
+          person_document_type?:
+            Database['public']['Enums']['person_document_type'] | null;
           person_first_name?: string;
           person_id?: string;
           person_last_name?: string;
@@ -293,7 +299,55 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      create_membership: {
+        Args: {
+          target_person_id: string;
+          target_role: Database['public']['Enums']['membership_role'];
+          valid_from?: string;
+          valid_to?: string;
+        };
+        Returns: string;
+      };
+      delete_membership: {
+        Args: { target_membership_id: string };
+        Returns: undefined;
+      };
+      grant_admin_permission: {
+        Args: {
+          target_membership_id: string;
+          target_permission: Database['public']['Enums']['admin_permission'];
+        };
+        Returns: undefined;
+      };
+      revoke_admin_permission: {
+        Args: {
+          target_membership_id: string;
+          target_permission: Database['public']['Enums']['admin_permission'];
+        };
+        Returns: undefined;
+      };
+      revoke_membership: {
+        Args: { target_membership_id: string };
+        Returns: undefined;
+      };
+      update_membership: {
+        Args: {
+          target_membership_id: string;
+          target_role: Database['public']['Enums']['membership_role'];
+          target_status: Database['public']['Enums']['membership_status'];
+          valid_from: string;
+          valid_to?: string;
+        };
+        Returns: undefined;
+      };
+      update_tenant_platform_settings: {
+        Args: {
+          new_slug: string;
+          new_subscription_status: Database['public']['Enums']['tenant_subscription_status'];
+          target_tenant_id: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       admin_permission:
@@ -305,10 +359,13 @@ export type Database = {
         | 'amenities'
         | 'finance'
         | 'guards'
-        | 'tenant_settings';
+        | 'tenant_settings'
+        | 'admin_management';
+      audit_event_action: 'insert' | 'update' | 'delete';
       membership_role:
         'tenant_admin' | 'guard' | 'unit_holder' | 'household_member';
       membership_status: 'active' | 'suspended' | 'revoked';
+      person_document_type: 'dni' | 'passport' | 'other';
       tenant_subscription_status:
         'pilot' | 'active' | 'suspended' | 'cancelled';
     };
@@ -451,7 +508,9 @@ export const Constants = {
         'finance',
         'guards',
         'tenant_settings',
+        'admin_management',
       ],
+      audit_event_action: ['insert', 'update', 'delete'],
       membership_role: [
         'tenant_admin',
         'guard',
@@ -459,6 +518,7 @@ export const Constants = {
         'household_member',
       ],
       membership_status: ['active', 'suspended', 'revoked'],
+      person_document_type: ['dni', 'passport', 'other'],
       tenant_subscription_status: ['pilot', 'active', 'suspended', 'cancelled'],
     },
   },
