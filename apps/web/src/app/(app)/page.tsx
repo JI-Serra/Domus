@@ -1,7 +1,22 @@
-export default function HomePage() {
+import { getTranslations } from 'next-intl/server';
+import { ContextSummary } from '@/components/shell/context-summary';
+import { PageHeader } from '@/components/shell/page-header';
+import { ButtonLink } from '@/components/ui/button';
+
+// A fixed instant keeps the page static; real pages format `*_at` columns from the database.
+const SAMPLE_INSTANT = '2026-10-09T18:30:00Z';
+
+export default async function HomePage() {
+  const t = await getTranslations('home');
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold">Domus</h1>
-    </main>
+    <>
+      <PageHeader title={t('title')} description={t('description')} />
+      <div className="flex flex-col items-start gap-6">
+        <ContextSummary sampleInstant={SAMPLE_INSTANT} />
+        <ButtonLink href="/design" variant="secondary">
+          {t('designLink')}
+        </ButtonLink>
+      </div>
+    </>
   );
 }
