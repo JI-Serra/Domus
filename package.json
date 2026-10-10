@@ -15,7 +15,8 @@
     "test:db": "supabase test db",
     "format": "prettier --write .",
     "supabase": "supabase",
-    "gen:types": "node scripts/generate-database-types.mjs"
+    "gen:types": "node scripts/generate-database-types.mjs",
+    "gen:tokens": "pnpm --filter @domus/ui-tokens gen:css"
   },
   "devDependencies": {
     "@domus/config": "workspace:*",

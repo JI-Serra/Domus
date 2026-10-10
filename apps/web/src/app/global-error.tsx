@@ -2,9 +2,11 @@
 
 import { useEffect } from 'react';
 import { reportError } from '@domus/observability';
+import messages from '../../messages/es-AR.json';
 
 // Last-resort boundary: it replaces the root layout, so it renders its own <html>.
-// The copy is intentionally minimal; i18n messages are not available at this level.
+// The next-intl provider is not available at this level, so the copy is read from the catalog directly.
+const copy = messages.globalError;
 export default function GlobalError({
   error,
   reset,
@@ -20,14 +22,14 @@ export default function GlobalError({
     <html lang="es-AR">
       <body>
         <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-          <h1>Algo salió mal</h1>
-          <p>Ocurrió un error inesperado. Ya fue registrado.</p>
+          <h1>{copy.title}</h1>
+          <p>{copy.description}</p>
           <button
             type="button"
             onClick={reset}
             style={{ minHeight: 44, minWidth: 44, padding: '0.5rem 1rem' }}
           >
-            Reintentar
+            {copy.retry}
           </button>
         </main>
       </body>

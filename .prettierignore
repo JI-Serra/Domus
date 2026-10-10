@@ -10,3 +10,4 @@ AGENTS.md
 CLAUDE.md
 packages/supabase/src/database.types.ts
 supabase/config.toml
+apps/web/src/styles/tokens.generated.css

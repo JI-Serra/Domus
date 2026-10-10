@@ -1,6 +1,48 @@
 @import 'tailwindcss';
+/* Tokens generated from packages/ui-tokens by `pnpm gen:tokens` (DESIGN.md Part A.10). */
+@import '../styles/tokens.generated.css';
 
-/* Shared design tokens are implemented in M00-F02. */
-@theme {
-  --font-sans: Arial, Helvetica, sans-serif;
+/* Tabular figures for amounts, times and plates (DESIGN.md §A.2). */
+@utility tnum {
+  font-feature-settings: 'tnum';
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-surface-0);
+    color: var(--color-text-primary);
+    font-size: var(--text-app-body);
+    line-height: var(--text-app-body--line-height);
+    font-weight: var(--text-app-body--font-weight);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Visible keyboard focus everywhere; 2 px in the regular theme, 3 px in "modo garita". */
+  :focus-visible {
+    outline: var(--ring-width) solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* "Modo garita": no decorative animation (DESIGN.md §A.7). */
+  :root[data-mode='gate'] *,
+  :root[data-mode='gate'] *::before,
+  :root[data-mode='gate'] *::after {
+    animation: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

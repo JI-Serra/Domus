@@ -1,1 +1,5 @@
-{ "extends": "@domus/config/tsconfig/library", "include": ["src"] }
+{
+  "extends": "@domus/config/tsconfig/library",
+  "compilerOptions": { "allowImportingTsExtensions": true, "types": ["node"] },
+  "include": ["src", "scripts"]
+}
