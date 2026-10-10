@@ -146,6 +146,31 @@ export async function auditEventsForSession(
   return rows;
 }
 
+/** Tenant-scoped tables a test can fill, children before parents (the audit log is append-only and stays). */
+const TENANT_TABLES = [
+  'app_private.registry_operation',
+  ...[
+    'registry_import_row',
+    'registry_import',
+    'unit_join_request',
+    'device_pairing',
+    'device',
+    'gate_guard',
+    'gate',
+    'unit_join_code',
+    'membership_household_permission',
+    'vehicle',
+    'pet',
+    'unit_resident',
+    'invitation',
+    'membership_permission',
+    'membership',
+    'unit',
+    'person',
+    'support_session',
+  ].map((table) => `public.${table}`),
+] as const;
+
 /**
  * Removes what a test created: the barrios (with their invitations, support sessions, people and memberships) and
  * the disposable accounts. Audit events are append-only by design and stay; logo objects are removed through the
@@ -165,25 +190,24 @@ export async function cleanUp(options: {
     const userIds = rows.map((row) => row.id);
     await db.query('begin');
     try {
+      // Registry data (M02). Triggers that forbid deleting units and enforce occupied-unit holders only exist to
+      // protect production data; this connection is the local superuser, so they are skipped for the clean-up.
+      await db.query('set local session_replication_role = replica');
       await db.query(
-        'delete from public.support_session where tenant_id = any($1) or support_session_actor_user_id = any($2)',
-        [tenantIds, userIds],
+        'alter table public.unit disable trigger protect_registry_relationships',
       );
+      for (const table of TENANT_TABLES)
+        await db.query(`delete from ${table} where tenant_id = any($1)`, [
+          tenantIds,
+        ]);
       await db.query(
-        'delete from public.invitation where tenant_id = any($1)',
-        [tenantIds],
+        'alter table public.unit enable trigger protect_registry_relationships',
       );
+      await db.query('set local session_replication_role = default');
       await db.query(
-        'delete from public.membership_permission where tenant_id = any($1)',
-        [tenantIds],
+        'delete from public.support_session where support_session_actor_user_id = any($1)',
+        [userIds],
       );
-      await db.query(
-        'delete from public.membership where tenant_id = any($1)',
-        [tenantIds],
-      );
-      await db.query('delete from public.person where tenant_id = any($1)', [
-        tenantIds,
-      ]);
       await db.query('delete from public.tenant where tenant_id = any($1)', [
         tenantIds,
       ]);
@@ -215,4 +239,43 @@ export async function grantPermission(
       [tenantId, userId, permission],
     ),
   );
+}
+
+/** Active units of a tenant (test assertions on what an import really stored). */
+export async function countUnits(tenantId: string): Promise<number> {
+  const { rows } = await withDatabase((db) =>
+    db.query<{ count: string }>(
+      'select count(*) from public.unit where tenant_id = $1',
+      [tenantId],
+    ),
+  );
+  return Number(rows[0]?.count ?? 0);
+}
+
+/** Id of a unit by its code (test setup and assertions only). */
+export async function unitIdByCode(
+  tenantId: string,
+  code: string,
+): Promise<string> {
+  const { rows } = await withDatabase((db) =>
+    db.query<{ unit_id: string }>(
+      'select unit_id from public.unit where tenant_id = $1 and unit_code = $2',
+      [tenantId, code],
+    ),
+  );
+  const id = rows[0]?.unit_id;
+  if (!id) throw new Error(`No unit ${code}`);
+  return id;
+}
+
+/** Updates of a unit row, to prove a re-import did not touch live data. */
+export async function unitUpdateStamps(tenantId: string): Promise<string> {
+  const { rows } = await withDatabase((db) =>
+    db.query<{ stamp: string }>(
+      `select coalesce(max(unit_updated_at)::text, '') || '/' || count(*) as stamp
+         from public.unit where tenant_id = $1`,
+      [tenantId],
+    ),
+  );
+  return rows[0]?.stamp ?? '';
 }

@@ -29,6 +29,11 @@ export function registryErrorKey(error: RpcError, operation: string): string {
       return 'duplicate';
     case '23503':
       return 'invalid';
+    // Deadlock, serialization failure, lock timeout: another change was in flight; trying again is the answer.
+    case '40P01':
+    case '40001':
+    case '55P03':
+      return 'busy';
     default:
       reportError(
         new Error(`${operation} failed (${error.code ?? 'no code'})`),
