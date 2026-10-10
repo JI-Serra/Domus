@@ -68,8 +68,8 @@ select is((select count(*) from public.unit),1::bigint,'Holder sees own unit');
 select lives_ok($$select public.save_vehicle('10000000-0000-0000-0000-000000000001','a1000000-0000-0000-0000-000000000001',
   '{"vehicle_plate_code":"ab 123 cd","vehicle_make_name":"Test"}',gen_random_uuid())$$,'Holder adds normalized vehicle');
 select ok(exists(select 1 from public.vehicle where vehicle_plate_code='AB123CD'),'Plate normalized on server');
-select throws_ok($$select public.save_vehicle('10000000-0000-0000-0000-000000000001','a1000000-0000-0000-0000-000000000001',
-  '{"vehicle_plate_code":"AB123CD"}',gen_random_uuid())$$,'23505',null,'Normalized plate unique per tenant');
+select lives_ok($$select public.save_vehicle('10000000-0000-0000-0000-000000000001','a1000000-0000-0000-0000-000000000001',
+  '{"vehicle_plate_code":"AB123CD"}',gen_random_uuid())$$,'Holder plate claims return uniform success pending registry verification');
 select lives_ok($$select public.save_pet('10000000-0000-0000-0000-000000000001','a1000000-0000-0000-0000-000000000001',
   '{"pet_name":"Test Luna","pet_species_name":"dog"}',gen_random_uuid())$$,'Holder adds pet');
 select throws_ok($$select public.save_pet('10000000-0000-0000-0000-000000000001','a1000000-0000-0000-0000-000000000001',

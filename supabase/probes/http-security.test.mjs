@@ -712,6 +712,16 @@ describe('M02 registry over HTTP', () => {
       ),
       'accept household invitation',
     );
+    assert.equal(
+      (
+        await rows(
+          'membership?select=membership_id,person!inner(user_id)',
+          verified,
+        )
+      ).length,
+      1,
+      'the context loader can join the accepted member to their own person',
+    );
     assert.deepEqual(
       ok(
         await rpc(
@@ -742,6 +752,85 @@ describe('M02 registry over HTTP', () => {
         )
       ).status,
       403,
+    );
+  });
+  it('refuses the reviewer typed-document identity capture over HTTP', async () => {
+    const victim = 'b1000000-0000-0000-0000-000000000003';
+    const before = await rows(
+      `person?person_id=eq.${victim}&select=*`,
+      registry.admin,
+    );
+    assert.equal(before.length, 1);
+    const email = `probe.registry.capture.${run}@domus.local`;
+    await createConfirmedUser(email);
+    const caller = await passwordToken(email);
+    const code = ok(
+      await rpc(
+        'rotate_unit_join_code',
+        {
+          target_tenant_id: tenant,
+          target_unit_id: unit,
+        },
+        registry.holder,
+      ),
+      'capture code',
+    );
+    const request = ok(
+      await rpc(
+        'submit_unit_join_request',
+        {
+          join_code: code,
+          person_data: {
+            person_first_name: 'HTTP',
+            person_last_name: 'Attacker',
+            person_document_type: 'dni',
+            person_document_number: '70001003',
+          },
+          client_event_id: randomUUID(),
+        },
+        caller,
+      ),
+      'capture submission',
+    );
+    assert.equal(request.status, 'pending');
+    const decision = ok(
+      await rpc(
+        'decide_unit_join_request',
+        {
+          target_tenant_id: tenant,
+          target_unit_id: unit,
+          target_request_id: request.unit_join_request_id,
+          approve: true,
+          client_event_id: randomUUID(),
+        },
+        registry.admin,
+      ),
+      'capture decision',
+    );
+    assert.deepEqual(decision, { status: 'identity_conflict' });
+    assert.deepEqual(
+      await rows(`person?person_id=eq.${victim}&select=*`, registry.admin),
+      before,
+    );
+    assert.equal(
+      (
+        await rows(
+          `unit_join_request?unit_join_request_id=eq.${request.unit_join_request_id}&select=invitation_id`,
+          registry.admin,
+        )
+      )[0].invitation_id,
+      null,
+    );
+    ok(
+      await rpc(
+        'cancel_unit_join_request',
+        {
+          target_unit_join_request_id: request.unit_join_request_id,
+          client_event_id: randomUUID(),
+        },
+        caller,
+      ),
+      'capture cleanup',
     );
   });
   it('persists HTTP guessing limits with uniform failures', async () => {

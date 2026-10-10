@@ -9,7 +9,9 @@ export type UnitSheet = {
   unit: RegistryRow<'unit'>;
   residents: (RegistryRow<'unit_resident'> &
     Partial<Omit<RegistryRow<'person'>, 'user_id'>>)[];
-  vehicles: RegistryRow<'vehicle'>[];
+  vehicles: (Omit<RegistryRow<'vehicle'>, 'vehicle_is_verified'> & {
+    vehicle_is_verified?: boolean;
+  })[];
   pets: RegistryRow<'pet'>[];
   memberships: RegistryRow<'membership'>[];
   pending_invitations: Omit<
@@ -43,6 +45,10 @@ export const saveResident = (
   client: DomusSupabaseClient,
   input: Args<'save_resident'>,
 ) => client.rpc('save_resident', input);
+export const registryPendingVerification = (
+  client: DomusSupabaseClient,
+  input: Args<'registry_pending_verification'>,
+) => client.rpc('registry_pending_verification', input);
 export const saveVehicle = (
   client: DomusSupabaseClient,
   input: Args<'save_vehicle'>,
