@@ -1,9 +1,10 @@
 -- M01: row-level security for the platform tables, the consent capability and the private tenant-logo bucket.
 -- Client policies use uncorrelated set-returning helpers only.
+-- L4: support identities act as the target but never read invitee emails or token hashes.
 create policy "invitation managers can read invitations" on public.invitation for select to authenticated
-  using ((select app_private.is_platform_admin()) or
+  using (not (select app_private.is_impersonating()) and ((select app_private.is_platform_admin()) or
     (tenant_id in (select app_private.permission_tenant_ids('admin_management')) and invitation_membership_role='tenant_admin') or
-    (tenant_id in (select app_private.permission_tenant_ids('registry')) and invitation_membership_role<>'tenant_admin'));
+    (tenant_id in (select app_private.permission_tenant_ids('registry')) and invitation_membership_role<>'tenant_admin')));
 create policy "audit admins can read support sessions" on public.support_session for select to authenticated
   using (not (select app_private.is_impersonating()) and ((select app_private.is_platform_admin())
     or tenant_id in (select app_private.permission_tenant_ids('access_audit'))));

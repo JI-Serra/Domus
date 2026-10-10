@@ -150,6 +150,21 @@ language sql stable security definer set search_path = '' as $$
   select lower(u.email) from auth.users u where u.id=app_private.current_user_id()
     and not app_private.is_impersonating() and u.email_confirmed_at is not null;
 $$;
+-- M2: a confirmed email alone does not prove that the caller controls the mailbox (autoconfirm, pre-registration of
+-- an unclaimed address). Invitation consent additionally requires that THIS session was established by an email
+-- link or code issued after the invitation existed. Auth records every email verification (invite, magic link,
+-- signup, recovery) as amr method 'otp'; password, OAuth, TOTP and refreshed-only sessions never qualify. A missing
+-- or malformed amr claim fails closed. Phone OTP must stay disabled (see M01-db.md, hosted configuration).
+create function app_private.session_proves_email_since(since timestamptz) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select since is not null and app_private.verified_email() is not null and exists(
+    select 1 from jsonb_array_elements(case when jsonb_typeof((select auth.jwt())->'amr') = 'array'
+        then (select auth.jwt())->'amr' else '[]'::jsonb end) entry
+    where jsonb_typeof(entry) = 'object'
+      and entry->>'method' in ('otp', 'magiclink', 'invite', 'email/signup', 'email_change', 'recovery')
+      and jsonb_typeof(entry->'timestamp') = 'number'
+      and (entry->>'timestamp')::numeric >= floor(extract(epoch from since)));
+$$;
 create function app_private.can_invite(target_tenant_id uuid, target_role public.membership_role,
   permissions public.admin_permission[]) returns boolean
 language sql stable security definer set search_path = '' as $$
@@ -223,10 +238,11 @@ begin
       and i.invitation_email = email and i.invitation_status = 'pending' and i.invitation_expires_at > statement_timestamp()
       and exists(select 1 from public.tenant t where t.tenant_id = i.tenant_id and t.tenant_subscription_status in ('pilot', 'active'));
   end if;
-  -- Fixed-work hash comparison (also for a missing row) and the grantor's CURRENT authority, as in migration 3.
+  -- Fixed-work hash comparison (also for a missing row), the grantor's CURRENT authority and an email-verified session.
   if not app_private.constant_time_hash_equal(coalesce(target.invitation_token_hash, repeat('0', 64)),
       encode(extensions.digest(token, 'sha256'), 'hex')) or target.invitation_id is null
-    or not app_private.invitation_grant_is_valid(target.invitation_id) then
+    or not app_private.invitation_grant_is_valid(target.invitation_id)
+    or not app_private.session_proves_email_since(target.invitation_created_at) then
     raise exception 'Invitation unavailable' using errcode = '42501'; end if;
   return target;
 end;
@@ -246,7 +262,7 @@ language sql immutable set search_path = '' as $$
     when 'tenant' then array[]::text[] when 'platform_admin' then array[]::text[]
     when 'membership' then array[]::text[] when 'membership_permission' then array[]::text[]
     when 'invitation' then array['invitation_email','invitation_first_name','invitation_last_name','invitation_token_hash']::text[]
-    when 'support_session' then array['support_session_reason']::text[] else null::text[] end;
+    when 'support_session' then array['support_session_reason','support_session_revocation_reason']::text[] else null::text[] end;
 $$;
 
 -- Private helpers: nothing for PUBLIC/anon; clients get only the policy helper allowlist.
@@ -257,7 +273,7 @@ revoke all on function app_private.current_identity_is_valid(),app_private.is_im
   app_private.is_tenant_member(uuid),app_private.has_tenant_role(uuid,public.membership_role[]),
   app_private.has_admin_permission(uuid,public.admin_permission),app_private.tenant_allows_writes(uuid),
   app_private.writable_tenant_ids(),app_private.writable_permission_tenant_ids(public.admin_permission),
-  app_private.enforce_tenant_writes(),app_private.verified_email(),
+  app_private.enforce_tenant_writes(),app_private.verified_email(),app_private.session_proves_email_since(timestamptz),
   app_private.can_invite(uuid,public.membership_role,public.admin_permission[]),
   app_private.constant_time_hash_equal(text,text),app_private.invitation_grant_is_valid(uuid),
   app_private.pending_invitation_for_token(text,boolean) from public,anon,authenticated,service_role;
@@ -267,7 +283,7 @@ grant execute on function app_private.member_tenant_ids(),app_private.role_tenan
   app_private.is_platform_admin(),app_private.current_user_id(),app_private.current_identity_is_valid(),app_private.current_support_session_id(),
   app_private.is_impersonating(),app_private.identity_tenant_ids(),app_private.writable_tenant_ids(),app_private.tenant_allows_writes(uuid) to authenticated;
 grant execute on function app_private.current_user_id(),app_private.verified_email(),app_private.is_impersonating(),app_private.tenant_allows_writes(uuid),
-  app_private.constant_time_hash_equal(text,text),app_private.invitation_grant_is_valid(uuid),
+  app_private.session_proves_email_since(timestamptz),app_private.constant_time_hash_equal(text,text),app_private.invitation_grant_is_valid(uuid),
   app_private.pending_invitation_for_token(text,boolean) to invitation_acceptor;
 grant execute on function app_private.current_identity_is_valid(),app_private.current_user_id(),
   app_private.current_support_session_id(),app_private.is_impersonating(),app_private.can_invite(uuid,public.membership_role,public.admin_permission[]) to audit_writer;

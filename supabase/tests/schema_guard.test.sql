@@ -98,6 +98,14 @@ select ok(not has_column_privilege('authenticated','public.tenant','tenant_creat
 select ok(not has_column_privilege('authenticated','public.tenant','tenant_updated_at','UPDATE'),'Clients cannot directly update tenant_updated_at');
 select ok(not has_column_privilege('authenticated','public.person','user_id','INSERT'),'Clients lack INSERT on person.user_id');
 select ok(not has_column_privilege('authenticated','public.person','user_id','UPDATE'),'Clients lack UPDATE on person.user_id');
+-- M1 (T10 review): functions are only ever written as complete definitions. No applied migration may derive a
+-- function body from the catalog or patch source text and execute it.
+select is((select count(*) from supabase_migrations.schema_migrations m cross join unnest(m.statements) statement
+  where statement ~* '(pg_get_functiondef|prosrc)'),0::bigint,'No migration reads function source from the catalog');
+select is((select count(*) from supabase_migrations.schema_migrations m cross join unnest(m.statements) statement
+  where statement ~* 'replace\s*\(\s*(body|definition|source|function_body)\M'),0::bigint,'No migration rewrites function source with replace()');
+select is((select count(*) from supabase_migrations.schema_migrations m cross join unnest(m.statements) statement
+  where statement ~* 'execute\s+[a-z_]*(body|definition)\M'),0::bigint,'No migration executes generated function source');
 select * from finish();
 rollback;
 
