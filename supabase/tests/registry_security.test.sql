@@ -64,7 +64,7 @@ select throws_ok($$select public.unit_sheet('10000000-0000-0000-0000-00000000000
 select throws_ok($$select public.rotate_unit_join_code('10000000-0000-0000-0000-000000000001','a1000000-0000-0000-0000-000000000002')$$,
   '42501','Join code management denied','Support cannot rotate join codes');
 select is(public.redeem_device_pairing('10000000-0000-0000-0000-000000000001',repeat('a',32),'Support tablet'),'{"status":"unavailable"}'::jsonb,'Support cannot redeem device identity');
-select is(public.submit_unit_join_request('10000000-0000-0000-0000-000000000001','AAAA-AAAA-AAAA','{}',gen_random_uuid()),
+select is(public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000001',join_code=>'AAAA-AAAA-AAAA',person_data=>'{}',client_event_id=>gen_random_uuid()),
   '{"status":"unavailable"}'::jsonb,'Support cannot submit join request');
 select lives_ok($$select public.end_support_session((select(value->>'support_session_id')::uuid from security_fixture where key='support'))$$,'Support session ends');
 select is((select count(*) from public.unit),0::bigint,'Revoked support unit reads disappear immediately');

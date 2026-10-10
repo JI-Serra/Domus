@@ -17,6 +17,10 @@ export type UnitSheet = {
     'invitation_token_hash'
   >[];
   pending_join_requests: RegistryRow<'unit_join_request'>[];
+  member_permissions: Record<
+    string,
+    Database['public']['Enums']['household_permission'][]
+  >;
   permissions: Database['public']['Enums']['household_permission'][];
   movements: unknown[];
   authorizations?: unknown[];
@@ -72,6 +76,12 @@ export const submitUnitJoinRequest = (
   client: DomusSupabaseClient,
   input: Args<'submit_unit_join_request'>,
 ) => client.rpc('submit_unit_join_request', input);
+export const myUnitJoinRequests = (client: DomusSupabaseClient) =>
+  client.rpc('my_unit_join_requests');
+export const cancelUnitJoinRequest = (
+  client: DomusSupabaseClient,
+  input: Args<'cancel_unit_join_request'>,
+) => client.rpc('cancel_unit_join_request', input);
 export const decideUnitJoinRequest = (
   client: DomusSupabaseClient,
   input: Args<'decide_unit_join_request'>,

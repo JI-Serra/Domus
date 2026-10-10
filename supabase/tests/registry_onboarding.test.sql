@@ -13,24 +13,24 @@ select throws_ok($$select public.rotate_unit_join_code('10000000-0000-0000-0000-
 reset role;
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000013","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
-select is(public.submit_unit_join_request('10000000-0000-0000-0000-000000000001','AAAA-AAAA-AAAA','{"person_first_name":"Join","person_last_name":"Adult"}',gen_random_uuid()),
+select is(public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000001',join_code=>'AAAA-AAAA-AAAA',person_data=>'{"person_first_name":"Join","person_last_name":"Adult"}',client_event_id=>gen_random_uuid()),
   '{"status":"unavailable"}'::jsonb,'Wrong join code uniform result');
-select is(public.submit_unit_join_request('10000000-0000-0000-0000-000000000002',(select value#>>'{}' from onboarding_fixture where key='code'),
-  '{"person_first_name":"Join","person_last_name":"Adult"}',gen_random_uuid()),'{"status":"unavailable"}'::jsonb,'Tenant mismatch has same result');
-insert into onboarding_fixture values('request',public.submit_unit_join_request('10000000-0000-0000-0000-000000000001',
-  lower((select value#>>'{}' from onboarding_fixture where key='code')),'{"person_first_name":"Join","person_last_name":"Adult"}',
+select is(public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000002',join_code=>(select value#>>'{}' from onboarding_fixture where key='code'),person_data=>
+  '{"person_first_name":"Join","person_last_name":"Adult"}',client_event_id=>gen_random_uuid()),'{"status":"unavailable"}'::jsonb,'Tenant mismatch has same result');
+insert into onboarding_fixture values('request',public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000001',join_code=>
+  lower((select value#>>'{}' from onboarding_fixture where key='code')),person_data=>'{"person_first_name":"Join","person_last_name":"Adult"}',client_event_id=>
   'f3000000-0000-4000-8000-000000000001'));
 select is((select value->>'status' from onboarding_fixture where key='request'),'pending','Case-insensitive code creates pending request');
-select is(public.submit_unit_join_request('10000000-0000-0000-0000-000000000001',(select value#>>'{}' from onboarding_fixture where key='code'),
-  '{"person_first_name":"Join","person_last_name":"Adult"}','f3000000-0000-4000-8000-000000000001'),
+select is(public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000001',join_code=>(select value#>>'{}' from onboarding_fixture where key='code'),person_data=>
+  '{"person_first_name":"Join","person_last_name":"Adult"}',client_event_id=>'f3000000-0000-4000-8000-000000000001'),
   (select value from onboarding_fixture where key='request'),'Join request retry returns same pending request');
 select is((select count(*) from public.membership),0::bigint,'Pending applicant has no membership');
 select is((select count(*) from public.unit),0::bigint,'Pending applicant has no unit access');
 select throws_ok($$select public.unit_sheet('10000000-0000-0000-0000-000000000001','a1000000-0000-0000-0000-000000000001')$$,
   '42501','Unit sheet denied','Knowing valid code never grants sheet access');
-select is(public.submit_unit_join_request('10000000-0000-0000-0000-000000000001','short','{}',gen_random_uuid()),'{"status":"unavailable"}'::jsonb,'Malformed code uniform result');
-select is(public.submit_unit_join_request('10000000-0000-0000-0000-000000000001',(select value#>>'{}' from onboarding_fixture where key='code'),
-  '{"person_first_name":"Join","person_last_name":"Adult"}',gen_random_uuid()),'{"status":"unavailable"}'::jsonb,'Sixth attempt throttled including valid code');
+select is(public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000001',join_code=>'short',person_data=>'{}',client_event_id=>gen_random_uuid()),'{"status":"unavailable"}'::jsonb,'Malformed code uniform result');
+select is(public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000001',join_code=>(select value#>>'{}' from onboarding_fixture where key='code'),person_data=>
+  '{"person_first_name":"Join","person_last_name":"Adult"}',client_event_id=>gen_random_uuid()),'{"status":"unavailable"}'::jsonb,'Sixth attempt throttled including valid code');
 reset role;
 select is((select registry_attempt_count from app_private.registry_attempt where registry_attempt_scope_code='join:user:20000000-0000-0000-0000-000000000013'),6,'Failed attempt counters persist');
 select ok((select registry_attempt_count>=2 from app_private.registry_attempt where registry_attempt_scope_code='join:tenant:10000000-0000-0000-0000-000000000001'),'Tenant counter counts only wrong codes');
@@ -40,8 +40,8 @@ insert into app_private.registry_attempt(registry_attempt_scope_code,registry_at
   on conflict(registry_attempt_scope_code) do update set registry_attempt_count=101;
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000014","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
-insert into onboarding_fixture values('reject_request',public.submit_unit_join_request('10000000-0000-0000-0000-000000000001',
-  (select value#>>'{}' from onboarding_fixture where key='code'),'{"person_first_name":"Rejected","person_last_name":"Applicant"}',gen_random_uuid()));
+insert into onboarding_fixture values('reject_request',public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000001',join_code=>
+  (select value#>>'{}' from onboarding_fixture where key='code'),person_data=>'{"person_first_name":"Rejected","person_last_name":"Applicant"}',client_event_id=>gen_random_uuid()));
 select is((select value->>'status' from onboarding_fixture where key='reject_request'),'pending','Tenant failed counter cannot deny valid code');
 reset role;
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000004","role":"authenticated","aal":"aal1"}',true);
@@ -75,8 +75,8 @@ reset role;
 select is((select count(*) from public.membership m join public.person p using(tenant_id,person_id) where p.user_id='20000000-0000-0000-0000-000000000013'),0::bigint,'Approval still grants no account access before mailbox proof');
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000013","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
-select is(public.submit_unit_join_request('10000000-0000-0000-0000-000000000001',(select value#>>'{}' from onboarding_fixture where key='old_code'),
-  '{"person_first_name":"Join","person_last_name":"Adult"}',gen_random_uuid()),'{"status":"unavailable"}'::jsonb,'Rotated code returns same unavailable result');
+select is(public.submit_unit_join_request(target_tenant_id=>'10000000-0000-0000-0000-000000000001',join_code=>(select value#>>'{}' from onboarding_fixture where key='old_code'),person_data=>
+  '{"person_first_name":"Join","person_last_name":"Adult"}',client_event_id=>gen_random_uuid()),'{"status":"unavailable"}'::jsonb,'Rotated code returns same unavailable result');
 select throws_ok($$select public.accept_invitation((select value->>'invitation_token' from onboarding_fixture where key='invitation'))$$,
   '42501','Invitation unavailable','Approval cannot bypass H1 mailbox proof');
 reset role;
