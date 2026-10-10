@@ -5,6 +5,7 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/supabase/functions/**",
+        "$TURBO_ROOT$/supabase/migrations/**",
         "$TURBO_ROOT$/packages/observability/src/**"
       ]
     },
