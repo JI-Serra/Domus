@@ -9,9 +9,18 @@ import {
   submitUnitJoinRequest,
   myUnitJoinRequests,
   cancelUnitJoinRequest,
+  registryPendingVerification,
 } from './registry';
 const id = '10000000-0000-0000-0000-000000000001';
 describe('registry typed caller-bound wrappers', () => {
+  it('passes the tenant to the registry-only verification queue', () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as DomusSupabaseClient;
+    registryPendingVerification(client, { target_tenant_id: id });
+    expect(rpc).toHaveBeenCalledWith('registry_pending_verification', {
+      target_tenant_id: id,
+    });
+  });
   it('preserves tenant, unit and retry arguments without credentials', () => {
     const rpc = vi.fn();
     const client = { rpc } as unknown as DomusSupabaseClient;

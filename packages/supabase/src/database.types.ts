@@ -535,7 +535,12 @@ export type Database = {
       person: {
         Row: {
           person_birth_date: string | null;
+          person_claimed_document_number: string | null;
+          person_claimed_document_type:
+            Database['public']['Enums']['person_document_type'] | null;
+          person_claimed_email: string | null;
           person_created_at: string;
+          person_created_by_user_id: string | null;
           person_document_number: string | null;
           person_document_type:
             Database['public']['Enums']['person_document_type'] | null;
@@ -551,7 +556,12 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           person_birth_date?: string | null;
+          person_claimed_document_number?: string | null;
+          person_claimed_document_type?:
+            Database['public']['Enums']['person_document_type'] | null;
+          person_claimed_email?: string | null;
           person_created_at?: string;
+          person_created_by_user_id?: string | null;
           person_document_number?: string | null;
           person_document_type?:
             Database['public']['Enums']['person_document_type'] | null;
@@ -566,7 +576,12 @@ export type Database = {
         };
         Update: {
           person_birth_date?: string | null;
+          person_claimed_document_number?: string | null;
+          person_claimed_document_type?:
+            Database['public']['Enums']['person_document_type'] | null;
+          person_claimed_email?: string | null;
           person_created_at?: string;
+          person_created_by_user_id?: string | null;
           person_document_number?: string | null;
           person_document_type?:
             Database['public']['Enums']['person_document_type'] | null;
@@ -1147,6 +1162,7 @@ export type Database = {
           vehicle_color_name: string | null;
           vehicle_created_at: string;
           vehicle_id: string;
+          vehicle_is_verified: boolean;
           vehicle_make_name: string | null;
           vehicle_model_name: string | null;
           vehicle_plate_code: string;
@@ -1160,6 +1176,7 @@ export type Database = {
           vehicle_color_name?: string | null;
           vehicle_created_at?: string;
           vehicle_id?: string;
+          vehicle_is_verified?: boolean;
           vehicle_make_name?: string | null;
           vehicle_model_name?: string | null;
           vehicle_plate_code: string;
@@ -1172,6 +1189,7 @@ export type Database = {
           vehicle_color_name?: string | null;
           vehicle_created_at?: string;
           vehicle_id?: string;
+          vehicle_is_verified?: boolean;
           vehicle_make_name?: string | null;
           vehicle_model_name?: string | null;
           vehicle_plate_code?: string;
@@ -1419,6 +1437,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      registry_pending_verification: {
+        Args: { target_tenant_id: string };
+        Returns: Json;
+      };
       revoke_admin_permission: {
         Args: {
           target_membership_id: string;
@@ -1627,6 +1649,8 @@ export type Database = {
         'tenant_admin' | 'guard' | 'unit_holder' | 'household_member';
       membership_status: 'active' | 'suspended' | 'revoked';
       person_document_type: 'dni' | 'passport' | 'other';
+      registry_contact_reason:
+        'approval_phone_fallback' | 'visit_phone_fallback';
       registry_import_status: 'preview' | 'confirmed';
       support_session_status: 'active' | 'ended' | 'revoked' | 'expired';
       tenant_subscription_status:
@@ -1794,6 +1818,10 @@ export const Constants = {
       ],
       membership_status: ['active', 'suspended', 'revoked'],
       person_document_type: ['dni', 'passport', 'other'],
+      registry_contact_reason: [
+        'approval_phone_fallback',
+        'visit_phone_fallback',
+      ],
       registry_import_status: ['preview', 'confirmed'],
       support_session_status: ['active', 'ended', 'revoked', 'expired'],
       tenant_subscription_status: ['pilot', 'active', 'suspended', 'cancelled'],

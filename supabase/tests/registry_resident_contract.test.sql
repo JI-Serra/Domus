@@ -1,6 +1,7 @@
 begin;
 select no_plan();
-create temp table tenant_attempt_baseline as select coalesce((select registry_attempt_count from app_private.registry_attempt where registry_attempt_scope_code='join:tenant:10000000-0000-0000-0000-000000000002'),0) attempt_count;
+create temp table tenant_attempt_baseline as select coalesce((select registry_attempt_count from app_private.registry_attempt
+ where registry_attempt_scope_code='join:tenant:10000000-0000-0000-0000-000000000002' and registry_attempt_started_at>statement_timestamp()-interval '15 minutes'),0) attempt_count;
 create temp table contract_fixture(key text primary key,value jsonb);
 grant all on contract_fixture to authenticated;
 insert into auth.users(id,aud,role,email,email_confirmed_at) values
