@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./tenant/subscription-status": "./src/tenant/subscription-status.ts",
-    "./format": "./src/format/index.ts"
+    "./format": "./src/format/index.ts",
+    "./context": "./src/context/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
