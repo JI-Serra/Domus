@@ -9,7 +9,8 @@
     "./database.types": "./src/database.types.ts",
     "./session": "./src/session.ts",
     "./types": "./src/types.ts",
-    "./platform": "./src/platform.ts"
+    "./platform": "./src/platform.ts",
+    "./registry": "./src/registry.ts"
   },
   "scripts": {
     "lint": "eslint .",

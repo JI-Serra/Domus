@@ -58,6 +58,19 @@ export async function sendInvitation(
   ) {
     return jsonResponse({ code: 'invalid_input' }, 400);
   }
+  const residentInvitation = input.target_unit_id != null;
+  if (
+    residentInvitation &&
+    (!uuid.test(String(input.target_unit_id)) ||
+      !uuid.test(String(input.target_person_id)) ||
+      !['unit_holder', 'household_member'].includes(
+        String(input.target_role),
+      ) ||
+      (Array.isArray(input.admin_permissions) &&
+        input.admin_permissions.length > 0))
+  ) {
+    return jsonResponse({ code: 'invalid_input' }, 400);
+  }
   const actor = await deps.verifiedUser();
   if (!actor) return jsonResponse({ code: 'unauthorized' }, 401);
   // Acceptance trusts that the invitee proved the mailbox; never issue invitations while Auth autoconfirms.
@@ -70,16 +83,23 @@ export async function sendInvitation(
       ? permissions
       : (input.admin_permissions ?? []);
   // The database generates the secret and its expiry; it returns the secret once, and never again after delivery.
-  const result = await deps.rpc('create_invitation', {
-    target_tenant_id: input.target_tenant_id,
-    invited_email: input.invited_email.toLowerCase(),
-    target_role: input.target_role,
-    client_event_id: input.client_event_id,
-    target_person_id: input.target_person_id ?? null,
-    first_name: input.first_name ?? null,
-    last_name: input.last_name ?? null,
-    admin_permissions: adminPermissions,
-  });
+  const result = await deps.rpc(
+    residentInvitation ? 'create_resident_invitation' : 'create_invitation',
+    {
+      target_tenant_id: input.target_tenant_id,
+      invited_email: input.invited_email.toLowerCase(),
+      target_role: input.target_role,
+      client_event_id: input.client_event_id,
+      target_person_id: input.target_person_id ?? null,
+      ...(residentInvitation
+        ? { target_unit_id: input.target_unit_id }
+        : {
+            first_name: input.first_name ?? null,
+            last_name: input.last_name ?? null,
+            admin_permissions: adminPermissions,
+          }),
+    },
+  );
   if (result.error)
     return jsonResponse(
       { code: result.error.code === '42501' ? 'forbidden' : 'invalid_input' },
@@ -109,9 +129,20 @@ export async function sendInvitation(
     );
   }
   // Best effort: if this fails, a retry issues a fresh secret and mails again, which only invalidates this email.
-  await deps.rpc('mark_invitation_delivered', {
-    target_invitation_id: invitationId,
-  });
+  await deps.rpc(
+    residentInvitation
+      ? 'mark_resident_invitation_delivered'
+      : 'mark_invitation_delivered',
+    {
+      target_invitation_id: invitationId,
+      ...(residentInvitation
+        ? {
+            target_tenant_id: input.target_tenant_id,
+            target_unit_id: input.target_unit_id,
+          }
+        : {}),
+    },
+  );
   return jsonResponse({ invitation_id: invitationId });
 }
 

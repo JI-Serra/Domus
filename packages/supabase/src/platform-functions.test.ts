@@ -48,6 +48,59 @@ function dependencies(): PlatformDependencies {
   };
 }
 describe('platform Edge Function logic', () => {
+  it('routes resident invitations to the unit-scoped consent RPC and delivery marker', async () => {
+    const deps = dependencies();
+    vi.mocked(deps.rpc).mockImplementation(async (name) =>
+      name === 'create_resident_invitation'
+        ? created()
+        : { data: false, error: null },
+    );
+    const result = await sendInvitation(
+      request({
+        ...invitation,
+        target_role: 'household_member',
+        target_unit_id: id,
+        target_person_id: id,
+      }),
+      deps,
+    );
+    expect(result.status).toBe(200);
+    expect(deps.rpc).toHaveBeenCalledWith('create_resident_invitation', {
+      target_tenant_id: id,
+      target_unit_id: id,
+      target_person_id: id,
+      invited_email: 'invite@example.com',
+      target_role: 'household_member',
+      client_event_id: id,
+    });
+    expect(deps.rpc).toHaveBeenLastCalledWith(
+      'mark_resident_invitation_delivered',
+      { target_tenant_id: id, target_unit_id: id, target_invitation_id: id },
+    );
+  });
+  it('rejects malformed resident scopes or administrative grants before delivery', async () => {
+    for (const extra of [
+      {
+        target_unit_id: 'invalid',
+        target_person_id: id,
+        target_role: 'household_member',
+      },
+      { target_unit_id: id, target_person_id: id, target_role: 'tenant_admin' },
+      {
+        target_unit_id: id,
+        target_person_id: id,
+        target_role: 'household_member',
+        admin_permissions: ['finance'],
+      },
+    ]) {
+      const deps = dependencies();
+      expect(
+        (await sendInvitation(request({ ...invitation, ...extra }), deps))
+          .status,
+      ).toBe(400);
+      expect(deps.invite).not.toHaveBeenCalled();
+    }
+  });
   it('keeps Edge error reporting generated from the project module', () => {
     const hash = createHash('sha256');
     for (const source of [
