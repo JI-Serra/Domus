@@ -20,6 +20,9 @@ select is((select public from storage.buckets where id='tenant-logo'),false,'Ten
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
 select is(public.current_user_is_platform_admin(),true,'AAL1 platform status permits MFA routing');
+select throws_ok($$insert into storage.objects(bucket_id,name) values('tenant-logo','10000000-0000-0000-0000-000000000001/non-mfa.png')$$,'42501',null,'Logo upload requires platform MFA');
+select throws_ok($$select public.revoke_invitation(gen_random_uuid())$$,'42501','Invitation management denied','Platform invitation revoke requires MFA');
+
 select throws_ok($$select public.create_tenant('Test','test')$$,'42501','MFA platform administrator required','Tenant creation requires MFA');
 select throws_ok($$select public.start_support_session('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002','Support',gen_random_uuid())$$,
   '42501','MFA platform administrator required','Support creation requires MFA');
@@ -28,6 +31,14 @@ select throws_ok($$select public.create_invitation('10000000-0000-0000-0000-0000
 select throws_ok($$select public.end_support_session(gen_random_uuid())$$,'42501','Support session denied','Support ending requires MFA');
 select set_config('request.jwt.claims','{"sub":"20000000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal2"}',true);
 select is(public.current_user_is_platform_admin(),true,'AAL2 platform status is true');
+select lives_ok($$insert into storage.objects(bucket_id,name) values('tenant-logo','10000000-0000-0000-0000-000000000001/platform-test.png')$$,'MFA platform uploads tenant logo');
+select lives_ok($$update storage.objects set name='10000000-0000-0000-0000-000000000002/platform-test.png' where bucket_id='tenant-logo' and name='10000000-0000-0000-0000-000000000001/platform-test.png'$$,'MFA platform updates scoped logo');
+select throws_ok($$delete from storage.objects where bucket_id='tenant-logo' and name='10000000-0000-0000-0000-000000000002/platform-test.png'$$,'42501',null,'Storage deletion must use the Storage API');
+select lives_ok($$update public.tenant set tenant_billable_unit_statuses=array['occupied','vacant']::public.unit_status[] where tenant_id='10000000-0000-0000-0000-000000000001'$$,'Typed billable criteria can be configured');
+select throws_ok($$update public.tenant set tenant_billable_unit_statuses=array['occupied','occupied']::public.unit_status[] where tenant_id='10000000-0000-0000-0000-000000000001'$$,'23514',null,'Database rejects duplicate billable statuses');
+select throws_ok($$update public.tenant set tenant_billable_unit_statuses='{}'::public.unit_status[] where tenant_id='10000000-0000-0000-0000-000000000001'$$,'23514',null,'Database rejects empty billable criteria');
+select throws_ok($$update public.tenant set tenant_billable_unit_statuses=array['invalid']::public.unit_status[] where tenant_id='10000000-0000-0000-0000-000000000001'$$,'22P02',null,'Database rejects unknown billable status');
+
 select lives_ok($$select public.create_tenant('New Tenant','new-tenant',client_event_id=>'80000000-0000-0000-0000-000000000001')$$,'MFA creates tenant');
 select lives_ok($$select public.create_tenant('New Tenant','new-tenant',client_event_id=>'80000000-0000-0000-0000-000000000001')$$,'Tenant creation is idempotent');
 select is((select tenant_settings->>'locale' from public.tenant where tenant_slug='new-tenant'),'es-AR','Onboarding applies default settings');
@@ -79,6 +90,8 @@ select is((select count(*) from public.invitation where tenant_id='10000000-0000
 select is((select count(*) from public.support_session where tenant_id='10000000-0000-0000-0000-000000000002'),0::bigint,'A cannot read B support sessions');
 select is((select count(*) from public.support_session),2::bigint,'Audit admin sees support reason and duration');
 select is((select count(*) from storage.objects where bucket_id='tenant-logo'),1::bigint,'A reads own logo');
+select throws_ok($$insert into storage.objects(bucket_id,name) values('tenant-logo','10000000-0000-0000-0000-000000000001/admin.png')$$,'42501',null,'Tenant admin cannot upload platform-managed logo');
+
 select throws_ok($$update public.invitation set invitation_status='revoked'$$,'42501',null,'Client cannot update invitations');
 select throws_ok($$delete from public.invitation$$,'42501',null,'Client cannot delete invitations');
 select throws_ok($$insert into public.support_session(tenant_id) values('10000000-0000-0000-0000-000000000002')$$,'42501',null,'A cannot write B support session');

@@ -7,7 +7,7 @@ Implemented locally on 2026-10-10 on `JI-Serra/h1-t8-platform-db`. H0 migrations
 | Check                                | Result                                                                                                                      |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm supabase db reset`             | PASS: two frozen H0 migrations, six new M01 migrations and both fictional tenants                                           |
-| `pnpm test:db`                       | PASS: **491 assertions** across six files (60 audit, 31 constraints, 219 isolation, 109 platform, 71 schema guard, 1 smoke) |
+| `pnpm test:db`                       | PASS: **501 assertions** across six files (60 audit, 31 constraints, 219 isolation, 119 platform, 71 schema guard, 1 smoke) |
 | `pnpm gen:types`                     | PASS: generated Supabase types, formatted with repository Prettier                                                          |
 | `pnpm exec supabase db lint --local` | PASS: no issues                                                                                                             |
 | `pnpm lint` / `pnpm typecheck`       | PASS: six tasks each                                                                                                        |
@@ -148,16 +148,17 @@ Actual local HTTP output (2026-10-10):
 
 ```text
 PASS Mailpit email -> verified acceptance -> membership with 10 permissions
-  invitation: 3355b957-1bbc-4975-89c9-6e71491e26f6
+  invitation: 47295e66-f2af-4738-8817-16f31e856fd4
 PASS suspended tenant remains readable; profile write rejected with 42501
 PASS target write audited with impersonator, target and support session
-  support session: b09d7992-6452-4de1-b538-72125b1de174
+  support session: 3e0eb314-3bea-4a8b-b046-5697057fcb4e
 PASS direct Auth password, email, MFA enrollment and factor deletion rejected: session_not_found
 PASS support session ended from target token; subsequent reads return zero rows
+PASS Storage API platform upload/update/delete, member/support read and revoked support denial
 Local HTTP acceptance complete
 ```
 
-The demo created a dedicated fictional platform account, enrolled/challenged/verified **real TOTP** to obtain AAL2, created a tenant, sent an actual Mailpit invitation, followed its verification link and accepted it. It checked suspended read/write behavior, minted a support JWT, performed and inspected an attributed write, attempted four direct Auth mutations, then ended support and verified immediate lockout. These fixtures were removed by the final clean reset; seed retains the two original tenants, pending/accepted invitation examples and a finished support-session example. The coordinator was notified when the shared DB became available again for T9 e2e.
+The demo created a dedicated fictional platform account, enrolled/challenged/verified **real TOTP** to obtain AAL2, created a tenant, sent an actual Mailpit invitation, followed its verification link and accepted it. It checked suspended read/write behavior, minted a support JWT, performed and inspected an attributed write, attempted four direct Auth mutations, then ended support and verified immediate lockout. It also uploaded/updated/deleted a real private logo through the Storage API and checked ordinary-member/support downloads plus revoked-support denial. These fixtures were removed by the final clean reset; seed retains the two original tenants, pending/accepted invitation examples and a finished support-session example. The coordinator was notified when the shared DB became available again for T9 e2e.
 
 To repeat against the local stack:
 

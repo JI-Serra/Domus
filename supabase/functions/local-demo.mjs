@@ -116,6 +116,21 @@ const tenant = checked(
     client_event_id: randomUUID(),
   }),
 );
+const logoPath = `${tenant}/logo.png`;
+const logo = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=',
+  'base64',
+);
+checked(
+  await platform.storage
+    .from('tenant-logo')
+    .upload(logoPath, logo, { contentType: 'image/png' }),
+);
+checked(
+  await platform.storage
+    .from('tenant-logo')
+    .update(logoPath, logo, { contentType: 'image/png' }),
+);
 const invitedEmail = `invite.demo.${run}@domus.local`;
 const invite = checked(
   await platform.functions.invoke('send-invitation', {
@@ -176,6 +191,7 @@ assert.equal(
   ).length,
   10,
 );
+checked(await target.storage.from('tenant-logo').download(logoPath));
 console.log(
   `PASS Mailpit email -> verified acceptance -> membership with 10 permissions (invitation ${invite.invitation_id}).`,
 );
@@ -225,6 +241,7 @@ checked(
     .update({ person_first_name: 'SupportVerified' })
     .eq('person_id', ownMembership.person_id),
 );
+checked(await impersonated.storage.from('tenant-logo').download(logoPath));
 const events = checked(
   await platform
     .from('audit_event')
@@ -277,5 +294,16 @@ assert.equal(checked(await impersonated.from('tenant').select()).length, 0);
 assert.equal(checked(await impersonated.from('person').select()).length, 0);
 console.log(
   'PASS support session ended from target token; subsequent reads return zero rows.',
+);
+const revokedLogo = await impersonated.storage
+  .from('tenant-logo')
+  .download(logoPath);
+assert.ok(revokedLogo.error, 'Ended support token cannot download logo');
+assert.equal(
+  checked(await platform.storage.from('tenant-logo').remove([logoPath])).length,
+  1,
+);
+console.log(
+  'PASS Storage API platform upload/update/delete, member/support read and revoked support denial.',
 );
 console.log('Local HTTP acceptance complete.');
