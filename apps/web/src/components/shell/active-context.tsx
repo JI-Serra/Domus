@@ -1,5 +1,6 @@
 'use client';
 
+import type { ActiveContext } from '@domus/domain/context';
 import {
   createContext,
   useCallback,
@@ -9,35 +10,11 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 
-/** Role values from GLOSSARY.md (`membership_role`). */
-export type MembershipRole =
-  | 'platform_admin'
-  | 'tenant_admin'
-  | 'guard'
-  | 'unit_holder'
-  | 'household_member';
+export type { ActiveContext, MembershipRole } from '@domus/domain/context';
 
 /**
- * What the shell needs to know about the membership the user is currently acting as: tenant + role + unit
- * (spec §6.1). Field names follow the DB naming rules so the auth task can build it straight from `membership`
- * rows joined with `tenant` and `unit`.
- */
-export interface ActiveContext {
-  /** `membership.membership_id`: identifies the (tenant, role, unit) combination. */
-  membership_id: string;
-  tenant_id: string;
-  tenant_name: string;
-  /** IANA time zone of the tenant, passed to `@domus/domain/format`. */
-  tenant_time_zone: string;
-  membership_role: MembershipRole;
-  /** Null for roles that are not tied to a unit (administrators, guards, platform admins). */
-  unit_id: string | null;
-  unit_name: string | null;
-}
-
-/**
- * The contract between the shell and whoever knows the user's memberships. The mock provider implements it with
- * fixtures; the auth task replaces the provider (not the consumers) with real memberships.
+ * The contract between the shell and whoever knows the user's memberships. The server resolves and validates the
+ * contexts (`@domus/domain/context`); the shell only renders them and asks to switch.
  */
 export interface ActiveContextState {
   contexts: readonly ActiveContext[];
@@ -48,9 +25,12 @@ export interface ActiveContextState {
 const ActiveContextReact = createContext<ActiveContextState | null>(null);
 
 export interface ActiveContextProviderProps {
-  /** Every membership the user can act as. Must contain at least one. */
+  /** Every context the user can act as. Must contain at least one. */
   contexts: readonly ActiveContext[];
-  /** Membership active on first render; defaults to the first context. */
+  /**
+   * Context active on first render; defaults to the first context. When this value changes (the server validated
+   * a new choice) the provider follows it.
+   */
   initialMembershipId?: string;
   /** Called after the user switches context, e.g. to persist the choice server-side. */
   onSwitch?: (context: ActiveContext) => void;
@@ -67,11 +47,18 @@ export function ActiveContextProvider({
   if (!first)
     throw new Error('ActiveContextProvider needs at least one context');
 
-  const [activeId, setActiveId] = useState(
-    contexts.some((context) => context.membership_id === initialMembershipId)
-      ? initialMembershipId
-      : first.membership_id,
-  );
+  const validId = (id: string | undefined) =>
+    contexts.some((context) => context.membership_id === id)
+      ? id
+      : first.membership_id;
+
+  const [activeId, setActiveId] = useState(validId(initialMembershipId));
+  // Follow the server: when the validated initial context changes, adopt it (adjusting state while rendering).
+  const [seenInitialId, setSeenInitialId] = useState(initialMembershipId);
+  if (seenInitialId !== initialMembershipId) {
+    setSeenInitialId(initialMembershipId);
+    setActiveId(validId(initialMembershipId));
+  }
 
   const switchContext = useCallback(
     (membership_id: string) => {

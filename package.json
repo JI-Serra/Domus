@@ -13,6 +13,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:db": "supabase test db",
+    "test:e2e": "pnpm build && pnpm --filter @domus/web test:e2e",
     "format": "prettier --write .",
     "supabase": "supabase",
     "gen:types": "node scripts/generate-database-types.mjs",

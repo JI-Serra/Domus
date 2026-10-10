@@ -33,17 +33,18 @@ Internal TypeScript packages export source modules through workspace exports; Ne
 
 ## Commands
 
-| Command                   | Purpose                                                                   |
-| ------------------------- | ------------------------------------------------------------------------- |
-| `pnpm dev`                | Start the web application (start Supabase first)                          |
-| `pnpm build`              | Production web build                                                      |
-| `pnpm lint`               | ESLint across packages                                                    |
-| `pnpm typecheck`          | Generate Next.js route types and check strict TypeScript                  |
-| `pnpm test`               | Unit and smoke tests; domain coverage must be at least 80%                |
-| `pnpm test:db`            | Run local pgTAP tests (requires running Supabase)                         |
-| `pnpm format`             | Format code using the shared Prettier configuration                       |
-| `pnpm supabase <command>` | Invoke the installed Supabase CLI                                         |
-| `pnpm gen:types`          | Replace `packages/supabase/src/database.types.ts` from the local database |
+| Command                   | Purpose                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `pnpm dev`                | Start the web application (start Supabase first)                                |
+| `pnpm build`              | Production web build                                                            |
+| `pnpm lint`               | ESLint across packages                                                          |
+| `pnpm typecheck`          | Generate Next.js route types and check strict TypeScript                        |
+| `pnpm test`               | Unit and smoke tests; domain coverage must be at least 80%                      |
+| `pnpm test:db`            | Run local pgTAP tests (requires running Supabase)                               |
+| `pnpm test:e2e`           | Build, then run the Playwright suite (needs local Supabase; see Authentication) |
+| `pnpm format`             | Format code using the shared Prettier configuration                             |
+| `pnpm supabase <command>` | Invoke the installed Supabase CLI                                               |
+| `pnpm gen:types`          | Replace `packages/supabase/src/database.types.ts` from the local database       |
 
 The database type file is intentionally an empty-schema placeholder until the schema task. Type generation uses a Node script so it writes UTF-8 consistently on Windows and POSIX and preserves the existing file on CLI failure.
 
@@ -57,12 +58,39 @@ TypeScript is pinned to 6.0.3 because current typescript-eslint supports TypeScr
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. A newer push to the same branch cancels the older run (concurrency group per branch).
 
-| Job        | What it runs                                                                                                                                                                    |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `quality`  | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` through Turborepo                                                                                                      |
-| `database` | `pnpm supabase start` with only Postgres and Auth (all other services excluded with `-x`), then `pnpm test:db` (pgTAP, including the RLS/isolation suite), then `supabase stop` |
+| Job        | What it runs                                                                                                                                                                                                                                                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality`  | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` through Turborepo                                                                                                                                                                                        |
+| `e2e`      | Full local Supabase start (Postgres, Auth, API gateway, mail catcher), `pnpm build`, then Playwright (Chromium; 1440 px and 360 px projects) against `next start`. The HTML report and traces are uploaded as the `playwright-report` artifact when the job fails |
+| `database` | `pnpm supabase start` with only Postgres and Auth (all other services excluded with `-x`), then `pnpm test:db` (pgTAP, including the RLS/isolation suite), then `supabase stop`                                                                                   |
 
 Node comes from `.nvmrc`, pnpm from `packageManager` in `package.json`, and the pnpm store is cached by `actions/setup-node`; `.turbo` is cached separately. Run the same checks locally with the commands in the table above before pushing.
+
+## Authentication
+
+Sign-in uses Supabase Auth with the session in cookies (`@supabase/ssr`), so it survives reloads. All routes and copy are es-AR.
+
+| Route            | Purpose                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `/ingresar`      | Email + password, or a magic link sent by email (segmented control). Honors `?next=<path>` (same-origin paths only)        |
+| `/recuperar`     | Password recovery request. The answer is identical whether or not the email has an account                                 |
+| `/restablecer`   | Choose a new password; needs the recovery session opened by the email link                                                 |
+| `/auth/callback` | Route handler the email links land on: exchanges the `code` (PKCE) or `token_hash` for a session, then redirects to `next` |
+
+- **Protection.** `apps/web/src/proxy.ts` refreshes the session on every request and protects everything except `/ingresar`, `/recuperar`, `/restablecer`, `/auth/*`, `/design` and `/api/debug/error` (default deny; list in `lib/auth/redirect.ts`). Visitors go to `/ingresar?next=<path>`. The `(app)` layout checks the session again.
+- **Errors.** Supabase errors are mapped to es-AR messages in `lib/auth/errors.ts` (invalid credentials, unconfirmed email, rate limit, expired link, network, weak password…). The raw English message is never shown.
+- **Active context.** The server loads the user's active memberships (with their tenant) through the user's own RLS-scoped client — never `service_role` — and `@domus/domain/context` validates the choice: the `domus-context` cookie only _requests_ a context, and it is re-checked on every request, so a stale or forged value falls back to the first barrio by name. Switching uses a server action. Units arrive in M02 (unit is `null`). The "Plataforma" option appears only for an active platform admin whose session is `aal2` (MFA enrollment: M01-F05). A user without memberships sees an empty state with a logout button.
+- **Error-reporting headers.** The proxy sets `x-domus-tenant-id` and `x-domus-membership-role` from the validated context (and strips any client-supplied values), so `@domus/observability` reports tenant context.
+- **Local emails** arrive in the Supabase mail catcher (Mailpit): <http://127.0.0.1:54324>. Use **`http://127.0.0.1:3000`** (the auth `site_url`) or `http://localhost:3000`; `supabase/config.toml` allows both as email redirect targets. Restart the stack after changing that file.
+
+### End-to-end tests
+
+`pnpm test:e2e` builds the app and runs Playwright (Chromium, projects `desktop-1440` and `mobile-360`) against `next start` on port 3000, with the local Supabase stack running and seeded (`pnpm supabase start`; `pnpm supabase db reset` for a clean seed). It covers login, wrong password, logout, route protection, magic link and password recovery through the mail catcher, switching between the two barrios of `shared@domus.local`, forged context cookies, and an isolation demo (a tenant A user querying tenant B rows with supabase-js gets nothing). Recovery and empty-state tests create their own throwaway account, so the seeded users are never modified.
+
+- First run: `pnpm --filter @domus/web exec playwright install chromium`.
+- `E2E_DEV=1` runs against `next dev` instead; an already running server on the port is reused locally. `E2E_PORT`, `E2E_BASE_URL` and `MAILPIT_URL` override the defaults.
+- `E2E_SCREENSHOTS=1 pnpm --filter @domus/web test:e2e screenshots` refreshes `docs/screenshots/h0/login-*` and `context-selector-*`.
+- The tests read `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `apps/web/.env.local` (CI exports them from `supabase status`).
 
 ## Error reporting
 
@@ -91,7 +119,7 @@ The default `consoleAdapter` prints one structured JSON line per event (`console
 
 ### Web integration
 
-- `apps/web/src/instrumentation.ts`: `register()` sets `environment` and `release`; `onRequestError` reports server errors with method, route and tenant context (from the `x-domus-tenant-id` and `x-domus-membership-role` request headers, which the tenant-resolution layer will set).
+- `apps/web/src/instrumentation.ts`: `register()` sets `environment` and `release`; `onRequestError` reports server errors with method, route and tenant context (from the `x-domus-tenant-id` and `x-domus-membership-role` request headers, which the proxy sets from the validated active context, see Authentication).
 - `apps/web/src/app/global-error.tsx` reports uncaught client render errors.
 - `GET /api/debug/error` throws a forced error (HR-00 demo). It answers 404 when `NODE_ENV=production` unless `DOMUS_ENABLE_DEBUG_ROUTES=true`. Try it with `curl http://localhost:3000/api/debug/error` and read the JSON line in the dev server output: the fake email, DNI and phone in the message come out masked and the line carries the tenant context.
 

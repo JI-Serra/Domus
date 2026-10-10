@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import messages from '../../messages/es-AR.json';
 import { ActiveContextProvider } from '@/components/shell/active-context';
-import { MOCK_CONTEXTS } from '@/components/shell/mock-active-context';
+import { MOCK_CONTEXTS } from '@/test/fixtures';
 
 /** Renders with the es-AR messages, as the root layout does. */
 export function renderWithIntl(ui: ReactElement) {

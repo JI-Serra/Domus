@@ -10,13 +10,82 @@
     "unit_holder": "Titular",
     "household_member": "Miembro del hogar"
   },
+  "auth": {
+    "login": {
+      "metaTitle": "Ingresar · Domus",
+      "title": "Ingresá a Domus",
+      "description": "Usá tu email para acceder a tu barrio.",
+      "methodLegend": "Cómo querés ingresar",
+      "methodPassword": "Con contraseña",
+      "methodMagicLink": "Con enlace por email",
+      "emailLabel": "Email",
+      "passwordLabel": "Contraseña",
+      "magicHint": "Te mandamos un enlace para ingresar sin contraseña.",
+      "submitPassword": "Ingresar",
+      "submittingPassword": "Ingresando…",
+      "submitMagicLink": "Enviarme el enlace",
+      "submittingMagicLink": "Enviando…",
+      "forgotPassword": "Olvidé mi contraseña",
+      "sentTitle": "Revisá tu email",
+      "sentBody": "Si {email} tiene una cuenta en Domus, te enviamos un enlace para ingresar. Puede tardar unos minutos; mirá también en la carpeta de correo no deseado.",
+      "useAnotherEmail": "Usar otro email"
+    },
+    "recover": {
+      "metaTitle": "Recuperar contraseña · Domus",
+      "title": "Recuperá tu contraseña",
+      "description": "Escribí tu email y te mandamos un enlace para elegir una contraseña nueva.",
+      "emailLabel": "Email",
+      "submit": "Enviar enlace",
+      "submitting": "Enviando…",
+      "sentTitle": "Revisá tu email",
+      "sentBody": "Si {email} tiene una cuenta en Domus, te enviamos un enlace para elegir una contraseña nueva. Puede tardar unos minutos; mirá también en la carpeta de correo no deseado.",
+      "backToLogin": "Volver a ingresar"
+    },
+    "reset": {
+      "metaTitle": "Contraseña nueva · Domus",
+      "title": "Elegí una contraseña nueva",
+      "description": "La vas a usar la próxima vez que ingreses.",
+      "passwordLabel": "Contraseña nueva",
+      "passwordHint": "Al menos 8 caracteres.",
+      "confirmLabel": "Repetí la contraseña nueva",
+      "submit": "Guardar contraseña",
+      "submitting": "Guardando…",
+      "noSessionTitle": "El enlace venció",
+      "noSessionBody": "Los enlaces de recuperación duran poco y sirven una sola vez. Pedí uno nuevo.",
+      "requestNew": "Pedir un enlace nuevo"
+    },
+    "errors": {
+      "invalidCredentials": "El email o la contraseña no coinciden. Revisalos y volvé a intentar.",
+      "emailNotConfirmed": "Todavía no confirmaste tu email. Abrí el enlace que te enviamos y volvé a intentar.",
+      "rateLimit": "Hiciste demasiados intentos en poco tiempo. Esperá unos minutos y volvé a intentar.",
+      "expiredLink": "El enlace venció o ya se usó. Pedí uno nuevo y abrilo en el mismo navegador donde lo pediste.",
+      "network": "No pudimos conectarnos. Revisá tu conexión y volvé a intentar.",
+      "weakPassword": "Esa contraseña es muy fácil de adivinar. Elegí una más larga, con letras y números.",
+      "samePassword": "La contraseña nueva tiene que ser distinta de la actual.",
+      "sessionExpired": "Tu sesión venció. Pedí un enlace nuevo para continuar.",
+      "emailRequired": "Escribí tu email.",
+      "emailInvalid": "Revisá el email: tiene que ser como nombre@dominio.com.",
+      "passwordRequired": "Escribí tu contraseña.",
+      "passwordTooShort": "La contraseña tiene que tener al menos 8 caracteres.",
+      "passwordMismatch": "Las contraseñas no coinciden. Escribilas de nuevo.",
+      "unknown": "Algo salió mal de nuestro lado. Volvé a intentar en unos minutos."
+    },
+    "logout": {
+      "label": "Cerrar sesión"
+    }
+  },
   "context": {
     "label": "Contexto activo",
     "triggerLabel": "Contexto activo: {tenant}, {description}. Cambiar de contexto",
     "switchTitle": "Cambiar de contexto",
     "current": "Contexto actual",
     "summary": "{role}",
-    "summaryWithUnit": "{role} · {unit}"
+    "summaryWithUnit": "{role} · {unit}",
+    "platformName": "Plataforma",
+    "empty": {
+      "title": "Todavía no tenés un barrio asignado",
+      "description": "Cuando la administración de tu barrio te dé acceso, lo vas a ver acá. Si creés que es un error, escribile a tu administración."
+    }
   },
   "theme": {
     "menuLabel": "Apariencia",

@@ -8,6 +8,13 @@ import { useActiveContext } from './active-context';
 import type { ActiveContext } from './active-context';
 import { usePopover } from './use-popover';
 
+/** Tenant name, or "Plataforma" for the platform context (which has no tenant). */
+export function useContextTitle() {
+  const t = useTranslations('context');
+  return (context: ActiveContext): string =>
+    context.tenant_name ?? t('platformName');
+}
+
 /** "Rol · Unidad" line shown under the tenant name. */
 export function useContextDescription() {
   const t = useTranslations();
@@ -27,13 +34,14 @@ export function ContextSelector({ className }: { className?: string }) {
   const t = useTranslations('context');
   const { contexts, active, switchContext } = useActiveContext();
   const describe = useContextDescription();
+  const title = useContextTitle();
   const { open, toggle, close, triggerRef, rootProps } = usePopover();
   const panelId = useId();
   const canSwitch = contexts.length > 1;
 
   const label = (
     <span className="flex min-w-0 flex-col text-left">
-      <span className="truncate text-app-subheading">{active.tenant_name}</span>
+      <span className="truncate text-app-subheading">{title(active)}</span>
       <span className="truncate text-app-caption text-text-secondary">
         {describe(active)}
       </span>
@@ -63,7 +71,7 @@ export function ContextSelector({ className }: { className?: string }) {
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-label={t('triggerLabel', {
-          tenant: active.tenant_name,
+          tenant: title(active),
           description: describe(active),
         })}
         onClick={toggle}
@@ -107,7 +115,7 @@ export function ContextSelector({ className }: { className?: string }) {
                   >
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-app-subheading">
-                        {context.tenant_name}
+                        {title(context)}
                       </span>
                       <span className="truncate text-app-caption text-text-secondary">
                         {describe(context)}

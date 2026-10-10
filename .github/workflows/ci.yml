@@ -80,3 +80,58 @@ jobs:
       - name: Stop local Supabase
         if: always()
         run: pnpm supabase stop --no-backup
+
+  e2e:
+    name: E2E (Playwright, local Supabase)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOMUS_ENVIRONMENT: local
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for Playwright
+        run: pnpm --filter @domus/web exec playwright install --with-deps chromium
+
+      # Auth, API gateway, Postgres and the mail catcher are enough for the e2e suite; migrations and the seed
+      # (two fictional tenants and the test users) are applied on start.
+      - name: Start local Supabase
+        run: >
+          pnpm supabase start
+          -x realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor,postgres-meta
+
+      - name: Export the public Supabase variables
+        run: |
+          eval "$(pnpm -s supabase status -o env)"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: pnpm build
+
+      # Playwright starts `next start` itself (see apps/web/playwright.config.ts).
+      - name: Run Playwright
+        run: pnpm --filter @domus/web test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7
+
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm supabase stop --no-backup

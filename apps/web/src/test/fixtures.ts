@@ -1,13 +1,9 @@
-'use client';
-
 import { DEFAULT_TENANT_TIME_ZONE } from '@domus/domain/format';
-import type { ReactNode } from 'react';
-import { ActiveContextProvider } from './active-context';
-import type { ActiveContext } from './active-context';
+import type { ActiveContext } from '@domus/domain/context';
 
 /**
- * Fictional memberships used until authentication exists (M00-F04). They cover every role the shell renders
- * navigation for, including a person with several memberships (spec §6.1).
+ * Fictional memberships for component tests. They cover every role the shell renders navigation for, including a
+ * person with several memberships (spec §6.1). Real contexts come from `@domus/domain/context`.
  */
 export const MOCK_CONTEXTS: readonly ActiveContext[] = [
   {
@@ -47,16 +43,3 @@ export const MOCK_CONTEXTS: readonly ActiveContext[] = [
     unit_name: 'Manzana C · Lote 7',
   },
 ];
-
-/** Feeds the shell with {@link MOCK_CONTEXTS}. Swap this component for the real provider when auth lands. */
-export function MockActiveContextProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return (
-    <ActiveContextProvider contexts={MOCK_CONTEXTS}>
-      {children}
-    </ActiveContextProvider>
-  );
-}

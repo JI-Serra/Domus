@@ -1,9 +1,9 @@
 import type { Instrumentation } from 'next';
 import { reportError, setReportingContext } from '@domus/observability';
-
-/** Headers a future tenant-resolution layer sets on requests (M00 tenancy). */
-const TENANT_ID_HEADER = 'x-domus-tenant-id';
-const MEMBERSHIP_ROLE_HEADER = 'x-domus-membership-role';
+import {
+  MEMBERSHIP_ROLE_HEADER,
+  TENANT_ID_HEADER,
+} from '@/lib/context/headers';
 
 function firstHeader(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;

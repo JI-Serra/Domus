@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithShell } from '@/test/render';
 import { useActiveContext } from './active-context';
 import { AppShell } from './app-shell';
-import { MOCK_CONTEXTS } from './mock-active-context';
+import { MOCK_CONTEXTS } from '@/test/fixtures';
 import {
   getNavItemBySlug,
   getNavigation,

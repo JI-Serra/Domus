@@ -4,6 +4,7 @@ import { formatDateTime } from '@domus/domain/format';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { useActiveContext } from './active-context';
+import { useContextTitle } from './context-selector';
 
 /**
  * Placeholder home content: shows the active context and a sample instant formatted in the tenant's time zone
@@ -13,6 +14,7 @@ export function ContextSummary({ sampleInstant }: { sampleInstant: string }) {
   const t = useTranslations('home');
   const roles = useTranslations('roles');
   const { active } = useActiveContext();
+  const title = useContextTitle();
 
   return (
     <Card>
@@ -22,7 +24,7 @@ export function ContextSummary({ sampleInstant }: { sampleInstant: string }) {
           <dt className="text-app-caption text-text-secondary">
             {t('tenant')}
           </dt>
-          <dd className="text-app-subheading">{active.tenant_name}</dd>
+          <dd className="text-app-subheading">{title(active)}</dd>
         </div>
         <div>
           <dt className="text-app-caption text-text-secondary">{t('role')}</dt>

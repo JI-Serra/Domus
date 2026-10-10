@@ -7,12 +7,13 @@
     "build": "next build",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@domus/domain": "workspace:*",
-    "@domus/supabase": "workspace:*",
     "@domus/observability": "workspace:*",
+    "@domus/supabase": "workspace:*",
     "@domus/ui-tokens": "workspace:*",
     "lucide-react": "1.52.0",
     "next": "16.4.0",
@@ -22,20 +23,22 @@
   },
   "devDependencies": {
     "@domus/config": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "@supabase/supabase-js": "2.117.3",
     "@tailwindcss/postcss": "4.3.3",
-    "tailwindcss": "4.3.3",
-    "postcss": "8.5.29",
-    "eslint": "9.39.5",
-    "eslint-config-next": "16.4.0",
-    "typescript": "6.0.3",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
     "@types/node": "25.9.9",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "vitest": "4.1.11",
-    "vite": "8.3.4",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.0",
     "jsdom": "29.1.1",
-    "@testing-library/react": "16.3.3",
-    "@testing-library/dom": "10.4.2",
-    "@testing-library/jest-dom": "7.0.1"
+    "postcss": "8.5.29",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "4.1.11"
   }
 }

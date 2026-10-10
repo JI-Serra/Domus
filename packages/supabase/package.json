@@ -6,7 +6,9 @@
     "./browser": "./src/browser.ts",
     "./server": "./src/server.ts",
     "./env": "./src/env.ts",
-    "./database.types": "./src/database.types.ts"
+    "./database.types": "./src/database.types.ts",
+    "./session": "./src/session.ts",
+    "./types": "./src/types.ts"
   },
   "scripts": {
     "lint": "eslint .",
