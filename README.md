@@ -52,3 +52,90 @@ The database type file is intentionally an empty-schema placeholder until the sc
 Main dependencies are pinned: Next.js 16.4.0, React 19.3.0, Tailwind CSS 4.3.3, Turborepo 2.11.7, Zod 4.6.5 and Supabase CLI 2.120.0. The lockfile records the resolved dependency graph.
 
 TypeScript is pinned to 6.0.3 because current typescript-eslint supports TypeScript below 6.1, while the latest TypeScript is 7.0.2. Vitest and its coverage provider are pinned to 4.1.11 because Vitest 5 excludes Node 25. jsdom 29.1.1 is used because jsdom 30 also excludes Node 25. ESLint 9.39.5 is used because the plugins shipped with the latest Next.js ESLint config do not support ESLint 10. These compatibility pins are approved for this task. Vite 8.3.4 and PostCSS 8.5.29 use the latest stable releases. The workspace explicitly allows only required dependency build scripts using pnpm 11's `allowBuilds` setting.
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main`. A newer push to the same branch cancels the older run (concurrency group per branch).
+
+| Job        | What it runs                                                                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality`  | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` through Turborepo                                                                                                      |
+| `database` | `pnpm supabase start` with only Postgres and Auth (all other services excluded with `-x`), then `pnpm test:db` (pgTAP, including the RLS/isolation suite), then `supabase stop` |
+
+Node comes from `.nvmrc`, pnpm from `packageManager` in `package.json`, and the pnpm store is cached by `actions/setup-node`; `.turbo` is cached separately. Run the same checks locally with the commands in the table above before pushing.
+
+## Error reporting
+
+`packages/observability` (`@domus/observability`) is the only way application code reports errors (decision D15: no Sentry for now). It has no vendor dependency.
+
+```ts
+import {
+  reportError,
+  reportMessage,
+  setReportingContext,
+} from '@domus/observability';
+
+setReportingContext({
+  tenantId,
+  membershipRole,
+  environment: 'staging',
+  release: sha,
+});
+reportError(error, { route: '/gate/arrivals' });
+reportMessage('warning', 'Access pass nearly exhausted', { passId });
+```
+
+Every payload goes through `scrubPii` before any adapter sees it: emails, DNI numbers (7-8 digits), phone numbers, JWTs and bearer tokens are masked inside strings, and values under keys such as `email`, `phone`, `password`, `token`, `*_document_number` are replaced with `[REDACTED]`, recursively. Never log PII on purpose; the scrubber is a safety net, not a licence.
+
+The default `consoleAdapter` prints one structured JSON line per event (`console.error` for `error`/`fatal`, `console.warn` for `warning`, `console.log` otherwise).
+
+### Web integration
+
+- `apps/web/src/instrumentation.ts`: `register()` sets `environment` and `release`; `onRequestError` reports server errors with method, route and tenant context (from the `x-domus-tenant-id` and `x-domus-membership-role` request headers, which the tenant-resolution layer will set).
+- `apps/web/src/app/global-error.tsx` reports uncaught client render errors.
+- `GET /api/debug/error` throws a forced error (HR-00 demo). It answers 404 when `NODE_ENV=production` unless `DOMUS_ENABLE_DEBUG_ROUTES=true`. Try it with `curl http://localhost:3000/api/debug/error` and read the JSON line in the dev server output: the fake email, DNI and phone in the message come out masked and the line carries the tenant context.
+
+### Plugging in Sentry (or another provider) later
+
+Implement `ReportingAdapter` and register it once at startup; no business code changes. The adapter receives already-scrubbed events.
+
+```ts
+// packages/observability/src/sentry-adapter.ts (not part of this repo yet)
+import * as Sentry from '@sentry/nextjs';
+import type { ReportingAdapter } from './types';
+
+export const sentryAdapter: ReportingAdapter = {
+  name: 'sentry',
+  capture(event) {
+    Sentry.withScope((scope) => {
+      scope.setLevel(event.level === 'warning' ? 'warning' : event.level);
+      scope.setTag('tenant_id', String(event.context.tenantId ?? 'unknown'));
+      scope.setContext('domus', event.context);
+      if (event.error) {
+        const error = new Error(event.error.message);
+        error.name = event.error.name;
+        error.stack = event.error.stack;
+        Sentry.captureException(error);
+      } else {
+        Sentry.captureMessage(event.message);
+      }
+    });
+  },
+};
+
+// instrumentation.ts, inside register(): setReportingAdapter(sentryAdapter);
+```
+
+Keep Sentry's own default PII collection off (`sendDefaultPii: false`) so the provider adds nothing the scrubber removed.
+
+### Environments and variables
+
+| Variable                        | `local`                            | `staging`                                  | Notes                                                                  |
+| ------------------------------- | ---------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `http://127.0.0.1:54321`           | `https://kymaarzsbhiczmpazepm.supabase.co` | Public                                                                 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | printed by `pnpm supabase status`  | staging anon key                           | Public; never put the `service_role` key in a `NEXT_PUBLIC_*`          |
+| `DOMUS_ENVIRONMENT`             | `local` (default)                  | `staging`                                  | Attached to every report                                               |
+| `DOMUS_RELEASE`                 | empty                              | git SHA set by the deploy                  | Attached to every report                                               |
+| `DOMUS_ENABLE_DEBUG_ROUTES`     | unset (debug routes are on in dev) | `true` only while running the HR-00 demo   | Staging runs a production build, where debug routes are off by default |
+
+`apps/web/.env.example` lists the same variables with no secrets.
