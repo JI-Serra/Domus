@@ -6,7 +6,8 @@
     ".": "./src/index.ts",
     "./tenant/subscription-status": "./src/tenant/subscription-status.ts",
     "./format": "./src/format/index.ts",
-    "./context": "./src/context/index.ts"
+    "./context": "./src/context/index.ts",
+    "./platform": "./src/platform/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

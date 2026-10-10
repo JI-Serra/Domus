@@ -8,7 +8,8 @@
     "./env": "./src/env.ts",
     "./database.types": "./src/database.types.ts",
     "./session": "./src/session.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./platform": "./src/platform.ts"
   },
   "scripts": {
     "lint": "eslint .",

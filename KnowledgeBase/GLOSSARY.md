@@ -96,3 +96,19 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 |---|---|---|
 | Número de documento | `document_number` | Text, 1–32 characters; no document image or PDF417 payload. |
 | Teléfono | `phone_number` | Text, 1–32 characters; formatting is handled by shared presentation rules. |
+
+## M01 platform lifecycle additions
+
+| Spec (es) | Table / attribute / code name | Notes |
+|---|---|---|
+| Invitaci?n | `invitation` | Generic, tenant-scoped consent; only SHA256 token hashes persist. |
+| Estado de invitaci?n | `invitation_status`: `pending`, `accepted`, `revoked`, `expired` | Pendiente / aceptada / revocada / vencida. Expiry is enforced even before materializing `expired`. |
+| Sesi?n de soporte / impersonaci?n | `support_session` | MFA platform actor, concrete target user, reason and maximum 60-minute duration. |
+| Estado de sesi?n de soporte | `support_session_status`: `active`, `ended`, `revoked`, `expired` | Activa / finalizada / revocada / vencida. |
+| Duraci?n solicitada de soporte (minutos) | `support_session_duration_minutes_count` | Default 30, maximum 60. |
+| Actor de soporte | `support_session_actor_user_id` | The actual platform administrator. |
+| Usuario representado | `support_session_target_user_id`, `audit_event_on_behalf_of_user_id` | Target whose tenant privileges apply. |
+| Criterios de unidades facturables | `tenant_billable_unit_statuses` (`unit_status[]`) | Nonempty set of `occupied`, `under_construction`, `vacant`; counting arrives in M02 (D20). |
+| Logo de barrio | Private Storage bucket `tenant-logo` | Object paths begin with the tenant UUID. |
+| Identificador de reintento | `client_event_id` | Unique idempotency key for onboarding, invitation creation and support start. |
+| Permisos a otorgar al aceptar | `invitation_admin_permissions` (`admin_permission[]`) | D17 validated at creation and acceptance; first platform-invited admin receives all ten. |
