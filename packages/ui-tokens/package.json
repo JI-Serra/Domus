@@ -7,11 +7,16 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "gen:css": "node scripts/generate-css.ts"
   },
   "devDependencies": {
     "@domus/config": "workspace:*",
+    "@types/node": "25.9.9",
     "typescript": "6.0.3",
-    "eslint": "9.39.5"
+    "eslint": "9.39.5",
+    "vitest": "4.1.11",
+    "vite": "8.3.4"
   }
 }
