@@ -69,7 +69,12 @@ export function SemaphorePanel({
           size={iconSize.semaphore}
           strokeWidth={2}
         />
-        <p className={cn('text-app-result break-words', ink)}>{result}</p>
+        <p
+          className={cn('text-app-result break-words', ink)}
+          style={{ fontSize: 'min(var(--text-app-result), 11.5vw)' }}
+        >
+          {result}
+        </p>
       </div>
       <p className="text-app-reason">{reason}</p>
       <dl className="flex flex-col gap-3 text-app-rule">

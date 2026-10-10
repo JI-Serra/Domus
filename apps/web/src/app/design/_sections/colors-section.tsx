@@ -17,7 +17,7 @@ export async function ColorsSection() {
               <p className="tnum text-app-body-dense font-semibold">{`--color-${token}`}</p>
               <div
                 aria-hidden="true"
-                className="mt-3 h-10 rounded-input"
+                className="mt-3 h-10 rounded-input border border-hairline"
                 style={{ backgroundColor: `var(--color-${token})` }}
               />
               <p className="mt-1 text-app-caption text-text-secondary">

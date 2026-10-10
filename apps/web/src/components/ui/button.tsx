@@ -12,7 +12,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 export type ButtonSize = 'md' | 'gate' | 'panel' | 'icon';
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-button text-app-body whitespace-nowrap select-none cursor-pointer transition-[filter,background-color] duration-(--duration-ui) hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
+  'inline-flex items-center justify-center gap-2 rounded-button text-app-body select-none cursor-pointer transition-[filter,background-color] duration-(--duration-ui) hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
 
 const variants: Record<ButtonVariant, string> = {
   primary: 'bg-accent text-on-accent',
@@ -23,9 +23,10 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const sizes: Record<ButtonSize, string> = {
-  md: 'min-h-(--control-height) px-5 py-2',
-  gate: 'min-h-(--touch-garita) px-6 py-2',
-  panel: 'min-h-(--touch-primary-action) w-full px-6 py-3 text-app-heading',
+  md: 'min-h-(--control-height) px-5 py-2 whitespace-nowrap',
+  gate: 'min-h-(--touch-garita) px-6 py-2 whitespace-nowrap',
+  panel:
+    'min-h-(--touch-primary-action) w-full px-6 py-3 text-center text-app-heading',
   icon: 'size-(--control-height) shrink-0',
 };
 

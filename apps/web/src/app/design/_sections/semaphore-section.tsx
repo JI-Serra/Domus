@@ -10,7 +10,7 @@ export async function SemaphoreSection() {
   const t = await getTranslations('design.semaphore');
   return (
     <Section id="semaphore" title={t('title')} description={t('description')}>
-      <ul className="grid gap-6 xl:grid-cols-3">
+      <ul className="grid gap-6 lg:grid-cols-2">
         {decisions.map((decision) => (
           <li key={decision} className="flex">
             <SemaphorePanel
