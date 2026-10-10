@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openAuthLink } from './support/auth-links';
 import { ACCOUNTS, PASSWORD } from './support/accounts';
 import {
   clearMailbox,
@@ -137,7 +138,7 @@ test.describe('magic link', () => {
     await expect(page.getByRole('status')).toContainText('Revisá tu email');
 
     const link = extractAuthLink(await waitForEmailText(ACCOUNTS.holderCeibos));
-    await page.goto(link);
+    await openAuthLink(page, link);
     await expect(page).toHaveURL(/\/$/);
     await expect(contextSelector(page)).toContainText('Barrio Los Ceibos');
     await expect(contextSelector(page)).toContainText('Titular');
@@ -166,11 +167,11 @@ test.describe('magic link', () => {
     await page.getByRole('button', { name: 'Enviarme el enlace' }).click();
     const link = extractAuthLink(await waitForEmailText(ACCOUNTS.guardTipas));
 
-    await page.goto(link);
+    await openAuthLink(page, link);
     await expect(contextSelector(page)).toBeVisible();
     await logout(page);
 
-    await page.goto(link);
+    await openAuthLink(page, link);
     await expect(page).toHaveURL(/\/login/);
     await expect(formAlert(page)).toContainText(
       'El enlace venció o ya se usó.',
@@ -194,7 +195,7 @@ test.describe('password recovery', () => {
     await expect(page.getByRole('status')).toContainText('Revisá tu email');
 
     const link = extractAuthLink(await waitForEmailText(user.email));
-    await page.goto(link);
+    await openAuthLink(page, link);
     await expect(page).toHaveURL(/\/reset-password$/);
     await expect(
       page.getByRole('heading', { name: 'Elegí una contraseña nueva' }),

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { renderWithIntl } from '@/test/render';
 import { FilePicker } from './file-picker';
+import { InfoButton } from './info-button';
 import { Sheet } from './sheet';
 
 function Harness({ onClose = vi.fn() }: { onClose?: () => void }) {
@@ -119,4 +120,23 @@ it('FilePicker is disabled as a whole while busy', () => {
   );
   expect(screen.getByRole('button', { name: 'Elegir foto' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Quitar la foto' })).toBeDisabled();
+});
+
+it('Sheet keeps Escape for an open info popover and only closes itself when none is open', () => {
+  const onClose = vi.fn();
+  renderWithIntl(
+    <Sheet open title="Agregar vehículo" closeLabel="Cerrar" onClose={onClose}>
+      <InfoButton label="Más información">Ayuda</InfoButton>
+    </Sheet>,
+  );
+  const dialog = screen.getByRole('dialog', { name: 'Agregar vehículo' });
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Más información' }),
+  );
+  expect(within(dialog).getByText('Ayuda')).toBeVisible();
+  // The press that closes the popover must not also close the sheet.
+  expect(fireEvent.keyDown(dialog, { key: 'Escape' })).toBe(false);
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(within(dialog).queryByText('Ayuda')).not.toBeInTheDocument();
+  expect(fireEvent.keyDown(dialog, { key: 'Escape' })).toBe(true);
 });

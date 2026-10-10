@@ -44,6 +44,14 @@ export function Sheet({
         event.preventDefault();
         onClose();
       }}
+      onKeyDown={(event) => {
+        // Escape closes an open info popover first (its own handler does it), not the whole sheet.
+        if (
+          event.key === 'Escape' &&
+          ref.current?.querySelector('[aria-expanded="true"]')
+        )
+          event.preventDefault();
+      }}
       onClick={(event) => {
         // A press on the backdrop lands on the dialog element itself, never on its content.
         if (event.target === event.currentTarget) onClose();
