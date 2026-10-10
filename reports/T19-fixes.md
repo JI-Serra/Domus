@@ -42,6 +42,21 @@ M05 still must bind backup contacts to an active approval/visit or gate session;
 | `pnpm typecheck` | PASS; six tasks |
 | `pnpm test` | PASS; 661 tests: domain 114, Supabase 41, web 450, observability 30, tokens 26 |
 | Domain coverage | 100% statements/functions/lines; 98.25% branches; registry 100% in every category |
-| Scale HTTP probe and fresh reset | Pending coordinated final window; no reset performed without authorization |
+| Scale HTTP probe and fresh reset | Deferred to coordinator at integration by explicit reply `msg_0ebad6958f56`; UI workers are mid-e2e, so neither command was run |
 
 Runtime: Node 25.2.1, pnpm 11.11.0, Supabase CLI 2.120.0, PostgreSQL 17.11, PostgREST 16.4, Turborepo 2.11.7, Next.js 16.4.0, Vitest 4.1.11. Existing Vitest localstorage-file warnings remain nonfatal. No environment files or secrets are committed.
+
+## Coordinator integration replay
+
+Commits: `a805468` (database/functions/types/contracts/tests), `cdbf3a1` (spreadsheet helper/tests), `3ce21c3` (initial task report). The coordinator explicitly instructed T19 to skip scale/reset, transfer those checks to integration after UI e2e, document commands, and report the current evidence. They remain integration work, not claimed as worker passes.
+
+After integrating the commits and coordinating the shared-stack window:
+
+```powershell
+pnpm supabase db reset
+pnpm test:db
+node --test supabase/probes/http-security.test.mjs
+node supabase/probes/registry-scale.mjs
+```
+
+The scale command uses the existing local Auth/PostgREST stack, refuses non-local API URLs, signs in as the fictional seeded registry administrator and creates 2,000 units / 6,000 residents. It checks stage/confirmation/search/sheet responses through HTTP. Its rows persist, so run a final `pnpm supabase db reset` after collecting timings if integration needs a clean fixture; then rerun `pnpm test:db`. The HTTP security suite needs the existing served Edge Functions and Mailpit setup; if preparing a fresh local setup, follow its header (`node supabase/functions/local-demo.mjs --prepare`, then `pnpm supabase functions serve --env-file supabase/.env.local`). Do not commit that environment file. UI ports 3001/3002 were never used or stopped by T19.
