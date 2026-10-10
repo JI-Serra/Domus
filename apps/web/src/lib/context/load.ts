@@ -1,7 +1,10 @@
+import { platformMfaStep } from '@domus/domain/auth';
+import type { MfaStep } from '@domus/domain/auth';
 import { resolveActiveContext } from '@domus/domain/context';
 import type { MembershipRecord, ResolvedContext } from '@domus/domain/context';
 import type { SessionIdentity } from '@domus/supabase/session';
 import type { DomusSupabaseClient as Client } from '@domus/supabase/types';
+import { sessionHasVerifiedFactor } from '@/lib/auth/mfa';
 
 interface MembershipRow {
   membership_id: string;
@@ -67,11 +70,55 @@ export async function isPlatformAdminAal2(
   return data !== null;
 }
 
+/**
+ * True when the signed-in user is an active platform admin, whatever the session's assurance level. The
+ * `platform_admin` table itself is only readable at `aal2`, so this uses the database function that reveals just the
+ * caller's own status. It decides *navigation* (send them to enroll or answer the challenge) and never grants access:
+ * everything in the platform area still requires `aal2` and `isPlatformAdminAal2`.
+ */
+export async function isPlatformAdminAnyLevel(
+  client: Client,
+): Promise<boolean> {
+  const { data, error } = await client.rpc('current_user_is_platform_admin');
+  if (error) throw new Error(`Could not load platform role (${error.code})`);
+  return data === true;
+}
+
+export interface PlatformAccess {
+  /** True for an active platform admin at `aal2`. */
+  aal2: boolean;
+  /** The MFA step still pending for a platform admin below `aal2`; null otherwise. */
+  mfaStep: MfaStep | null;
+}
+
+/** Platform access of the signed-in user: granted at `aal2`, otherwise the MFA step that would unlock it. */
+export async function loadPlatformAccess(
+  client: Client,
+  identity: Pick<SessionIdentity, 'userId' | 'aal'>,
+  hasVerifiedFactor?: boolean,
+): Promise<PlatformAccess> {
+  if (identity.aal === 'aal2')
+    return { aal2: await isPlatformAdminAal2(client, identity), mfaStep: null };
+  if (!(await isPlatformAdminAnyLevel(client)))
+    return { aal2: false, mfaStep: null };
+  return {
+    aal2: false,
+    mfaStep: platformMfaStep({
+      isPlatformAdmin: true,
+      aal: identity.aal,
+      hasVerifiedFactor:
+        hasVerifiedFactor ?? (await sessionHasVerifiedFactor(client)),
+    }),
+  };
+}
+
 export interface LoadContextInput {
   client: Client;
   identity: SessionIdentity;
   /** Untrusted value of the context cookie. */
   requestedContextId: string | undefined;
+  /** Already known by the caller (the proxy reads it once per request); looked up when missing. */
+  hasVerifiedFactor?: boolean;
   now?: Date;
 }
 
@@ -80,16 +127,18 @@ export async function loadResolvedContext({
   client,
   identity,
   requestedContextId,
+  hasVerifiedFactor,
   now = new Date(),
 }: LoadContextInput): Promise<ResolvedContext> {
-  const [memberships, platformAdminAal2] = await Promise.all([
+  const [memberships, platform] = await Promise.all([
     loadMemberships(client, identity, now),
-    isPlatformAdminAal2(client, identity),
+    loadPlatformAccess(client, identity, hasVerifiedFactor),
   ]);
   return resolveActiveContext({
     memberships,
     requestedContextId,
-    platformAdminAal2,
+    platformAdminAal2: platform.aal2,
+    platformMfaStep: platform.mfaStep,
     now,
   });
 }

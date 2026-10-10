@@ -66,10 +66,67 @@
       "passwordRequired": "Escribí tu contraseña.",
       "passwordTooShort": "La contraseña tiene que tener al menos 8 caracteres.",
       "passwordMismatch": "Las contraseñas no coinciden. Escribilas de nuevo.",
+      "mfaCodeInvalid": "Escribí los 6 dígitos que muestra tu app de autenticación.",
+      "mfaWrongCode": "El código no es correcto o ya venció. Esperá el siguiente en tu app y volvé a intentar.",
+      "mfaNoFactor": "No encontramos ese método de verificación en tu cuenta. Volvé a ingresar.",
+      "mfaReauthRequired": "Para hacer este cambio confirmá tu identidad con un código de tu app de autenticación.",
+      "mfaUnavailable": "La verificación en dos pasos no está disponible por ahora. Volvé a intentar en unos minutos.",
       "unknown": "Algo salió mal de nuestro lado. Volvé a intentar en unos minutos."
     },
     "logout": {
       "label": "Cerrar sesión"
+    },
+    "mfa": {
+      "metaTitle": "Verificación en dos pasos · Domus",
+      "title": "Ingresá el código",
+      "codeLabel": "Código de 6 dígitos",
+      "factorLabel": "Método",
+      "verify": "Verificar",
+      "verifying": "Verificando…"
+    }
+  },
+  "account": {
+    "securityLink": "Seguridad de la cuenta",
+    "security": {
+      "metaTitle": "Seguridad · Domus",
+      "title": "Seguridad",
+      "requiredForPlatform": "Activá la verificación en dos pasos para entrar a la plataforma.",
+      "mfa": {
+        "title": "Verificación en dos pasos",
+        "infoLabel": "Más información sobre la verificación en dos pasos",
+        "info": "Además de tu contraseña, ingresás un código de 6 dígitos que genera una app de autenticación en tu celular, como Google Authenticator, Authy o 1Password.",
+        "statusOn": "Activada",
+        "statusOff": "Desactivada",
+        "start": "Activar verificación",
+        "startAnother": "Agregar otro método",
+        "starting": "Preparando…",
+        "qrAlt": "Código QR para agregar Domus a tu app de autenticación",
+        "secretLabel": "Clave manual",
+        "secretInfoLabel": "Más información sobre la clave manual",
+        "secretInfo": "Si no podés escanear el código QR, escribí esta clave en tu app de autenticación.",
+        "verify": "Verificar y activar",
+        "verifying": "Verificando…",
+        "cancel": "Cancelar",
+        "enrolled": "Verificación en dos pasos activada."
+      },
+      "factors": {
+        "title": "Métodos activos",
+        "empty": "Todavía no agregaste ninguno.",
+        "defaultName": "App de autenticación",
+        "addedOn": "Agregado el {date}",
+        "remove": "Quitar",
+        "confirmTitle": "¿Quitar este método?",
+        "confirm": "Quitar",
+        "keep": "Cancelar",
+        "removing": "Quitando…",
+        "reauth": "Confirmar mi identidad"
+      },
+      "recommendation": {
+        "title": "Protegé tu cuenta de administrador con la verificación en dos pasos",
+        "infoLabel": "Más información sobre la recomendación",
+        "info": "La administración de un barrio maneja datos de muchas personas. Con la verificación en dos pasos, una contraseña robada no alcanza para ingresar.",
+        "dismiss": "Descartar recomendación"
+      }
     }
   },
   "context": {
@@ -80,6 +137,10 @@
     "summary": "{role}",
     "summaryWithUnit": "{role} · {unit}",
     "platformName": "Plataforma",
+    "platformLocked": {
+      "challenge": "Verificá tu identidad para entrar",
+      "enroll": "Activá la verificación en dos pasos para entrar"
+    },
     "empty": {
       "title": "Todavía no tenés un barrio asignado",
       "description": "Cuando la administración de tu barrio te dé acceso, lo vas a ver acá. Si creés que es un error, escribile a tu administración."
@@ -108,7 +169,8 @@
       "present": "Presentes",
       "guardLog": "Libro de guardia",
       "packages": "Paquetería",
-      "tenants": "Barrios"
+      "tenants": "Barrios",
+      "support": "Soporte"
     },
     "tabs": {
       "home": "Inicio",
@@ -122,7 +184,8 @@
       "present": "Presentes",
       "guardLog": "Libro",
       "packages": "Paquetes",
-      "tenants": "Barrios"
+      "tenants": "Barrios",
+      "support": "Soporte"
     }
   },
   "home": {
@@ -134,6 +197,17 @@
     "unit": "Unidad",
     "noUnit": "Sin unidad",
     "designLink": "Ver el sistema de diseño"
+  },
+  "tenantStatus": {
+    "suspended": {
+      "banner": "Barrio suspendido · solo lectura",
+      "infoLabel": "Más información sobre el barrio suspendido",
+      "info": "Podés consultar la información, pero no hacer cambios. La garita sigue validando los accesos. Para reactivar el barrio, la administración tiene que comunicarse con Domus."
+    },
+    "cancelled": {
+      "title": "El servicio de este barrio está dado de baja",
+      "description": "Si creés que es un error, escribile a la administración de tu barrio."
+    }
   },
   "placeholder": {
     "title": "Esta sección llega pronto",
@@ -152,6 +226,7 @@
     "skipToContent": "Saltar al contenido",
     "indexLabel": "Secciones de esta página",
     "index": {
+      "brand": "Marca",
       "colors": "Colores",
       "typography": "Tipografía",
       "shape": "Espaciado y formas",
@@ -161,6 +236,19 @@
       "cards": "Tarjetas",
       "semaphore": "Panel semáforo",
       "formats": "Formatos"
+    },
+    "brand": {
+      "title": "Marca",
+      "info": "El emblema es el vector oficial; el logotipo suma «omus» calcado del original. Ambos usan el color del texto, así que funcionan en claro, oscuro y sobre fondos de color.",
+      "emblemTitle": "Emblema",
+      "logoTitle": "Logotipo",
+      "surfacesTitle": "Sobre fondo claro y oscuro",
+      "iconsTitle": "Íconos de la app",
+      "icons": {
+        "any": "Ícono de la app",
+        "maskable": "Ícono adaptable",
+        "apple": "Ícono de Apple"
+      }
     },
     "colors": {
       "title": "Colores",

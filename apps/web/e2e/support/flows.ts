@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { PASSWORD } from './accounts';
+import { totpCode } from './totp';
 
 /** Fills and submits the real login form. */
 export async function submitLogin(
@@ -49,4 +50,37 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 /** The form-level error message (Next's route announcer is also a `role="alert"` element, so exclude it). */
 export function formAlert(page: Page) {
   return page.locator('[role="alert"]:not(#__next-route-announcer__)');
+}
+
+/**
+ * Runs the enrollment on /account/security: starts it, reads the manual key the page shows, types the first code
+ * and verifies. Returns the key, which is all a test needs to produce later codes.
+ */
+export async function enrollTotp(page: Page): Promise<string> {
+  await page.getByRole('button', { name: 'Activar verificación' }).click();
+  const key = page.getByRole('textbox', { name: 'Clave manual' });
+  await expect(key).toBeVisible();
+  const secret = await key.inputValue();
+  await page.getByLabel('Código de 6 dígitos').fill(totpCode(secret));
+  await page.getByRole('button', { name: 'Verificar y activar' }).click();
+  return secret;
+}
+
+/** Types a code into the challenge page and submits it. */
+export async function answerChallenge(page: Page, code: string): Promise<void> {
+  await page.getByLabel('Código de 6 dígitos').fill(code);
+  await page.getByRole('button', { name: 'Verificar', exact: true }).click();
+}
+
+/**
+ * Signs in through the real form and waits until the browser has left /login (to the app, to the MFA challenge or
+ * wherever the proxy sends it). Use it for accounts that may have no shell to wait for.
+ */
+export async function signIn(
+  page: Page,
+  email: string,
+  password: string = PASSWORD,
+): Promise<void> {
+  await submitLogin(page, email, password);
+  await page.waitForURL((url) => url.pathname !== '/login');
 }

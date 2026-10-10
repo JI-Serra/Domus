@@ -13,6 +13,11 @@ export const AUTH_ERROR_KEYS = [
   'passwordRequired',
   'passwordTooShort',
   'passwordMismatch',
+  'mfaCodeInvalid',
+  'mfaWrongCode',
+  'mfaNoFactor',
+  'mfaReauthRequired',
+  'mfaUnavailable',
   'unknown',
 ] as const;
 
@@ -50,6 +55,13 @@ const BY_CODE: Record<string, AuthErrorKey> = {
   user_not_found: 'sessionExpired',
   weak_password: 'weakPassword',
   same_password: 'samePassword',
+  mfa_verification_failed: 'mfaWrongCode',
+  mfa_verification_rejected: 'mfaWrongCode',
+  mfa_challenge_expired: 'mfaWrongCode',
+  mfa_factor_not_found: 'mfaNoFactor',
+  insufficient_aal: 'mfaReauthRequired',
+  mfa_totp_enroll_not_enabled: 'mfaUnavailable',
+  mfa_totp_verify_not_enabled: 'mfaUnavailable',
 };
 
 /**

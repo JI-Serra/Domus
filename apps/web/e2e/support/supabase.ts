@@ -34,10 +34,12 @@ export async function signedInClient(email: string): Promise<SupabaseClient> {
 export async function createDisposableUser(): Promise<{
   email: string;
   password: string;
+  userId: string;
 }> {
   const email = `e2e.${Date.now()}.${Math.floor(Math.random() * 1e6)}@domus.local`;
   const password = PASSWORD;
-  const { error } = await anonClient().auth.signUp({ email, password });
-  if (error) throw new Error(`Could not create ${email}: ${error.message}`);
-  return { email, password };
+  const { data, error } = await anonClient().auth.signUp({ email, password });
+  if (error || !data.user)
+    throw new Error(`Could not create ${email}: ${error?.message}`);
+  return { email, password, userId: data.user.id };
 }

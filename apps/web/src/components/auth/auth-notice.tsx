@@ -1,4 +1,4 @@
-import { CircleAlert, CircleCheck } from 'lucide-react';
+import { CircleAlert, CircleCheck, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -12,20 +12,21 @@ export function AuthNotice({
   children,
   className,
 }: {
-  tone: 'error' | 'success';
+  tone: 'error' | 'success' | 'info';
   title?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
-  const Icon = tone === 'error' ? CircleAlert : CircleCheck;
+  const Icon =
+    tone === 'error' ? CircleAlert : tone === 'success' ? CircleCheck : Info;
   return (
     <div
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
         'flex items-start gap-3 rounded-card-dense p-4',
-        tone === 'error'
-          ? 'bg-danger-bg text-danger'
-          : 'bg-success-bg text-success',
+        tone === 'error' && 'bg-danger-bg text-danger',
+        tone === 'success' && 'bg-success-bg text-success',
+        tone === 'info' && 'bg-surface-2 text-text-primary',
         className,
       )}
     >

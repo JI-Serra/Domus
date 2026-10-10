@@ -5,6 +5,7 @@ import { useActiveContext } from './active-context';
 import { AppShell } from './app-shell';
 import { MOCK_CONTEXTS } from '@/test/fixtures';
 import {
+  getHomeHref,
   getNavItemBySlug,
   getNavigation,
   getPlaceholderSlugs,
@@ -34,9 +35,12 @@ describe('navigation model', () => {
   ];
 
   it.each(roles)(
-    '%s has a home entry and a tab bar of 2 to 5 destinations',
+    '%s has a way in and a tab bar of 2 to 5 destinations',
     (role) => {
-      expect(getNavigation(role)[0]?.href).toBe('/');
+      // Platform admins have no tenant home: their area starts at /platform.
+      expect(getNavigation(role)[0]?.href).toBe(
+        role === 'platform_admin' ? '/platform/tenants' : '/',
+      );
       const tabs = getTabBarItems(role);
       expect(tabs.length).toBeGreaterThanOrEqual(2);
       expect(tabs.length).toBeLessThanOrEqual(5);
@@ -61,8 +65,20 @@ describe('navigation model', () => {
     ).toBe(false);
   });
 
-  it('resolves placeholder slugs', () => {
+  it('gives platform admins their own navigation: Barrios and Soporte', () => {
+    expect(getNavigation('platform_admin').map((entry) => entry.href)).toEqual([
+      '/platform/tenants',
+      '/platform/support',
+    ]);
+    expect(getHomeHref('platform_admin')).toBe('/platform');
+    expect(getHomeHref('guard')).toBe('/');
+  });
+
+  it('resolves placeholder slugs (tenant area only)', () => {
     expect(getPlaceholderSlugs()).toContain('guard-log');
+    expect(getPlaceholderSlugs().every((slug) => !slug.includes('/'))).toBe(
+      true,
+    );
     expect(getPlaceholderSlugs()).not.toContain('');
     expect(getNavItemBySlug('finance')?.id).toBe('finance');
     expect(getNavItemBySlug('nope')).toBeUndefined();
@@ -179,6 +195,89 @@ describe('AppShell', () => {
     expect(
       screen.getByRole('switch', { name: 'Modo garita' }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('suspended tenant banner (M01-F02)', () => {
+  it('shows a compact persistent notice with the details behind an info button', () => {
+    renderWithShell(<AppShell>x</AppShell>, ADMIN, {
+      tenantStatus: 'suspended',
+    });
+    const notice = screen.getByRole('status');
+    expect(notice).toHaveTextContent('Barrio suspendido · solo lectura');
+    fireEvent.click(
+      within(notice).getByRole('button', {
+        name: 'Más información sobre el barrio suspendido',
+      }),
+    );
+    expect(notice).toHaveTextContent('La garita sigue validando los accesos');
+  });
+
+  it.each(['pilot', 'active', null] as const)(
+    'stays out of the way when the tenant status is %s',
+    (tenantStatus) => {
+      renderWithShell(<AppShell>x</AppShell>, ADMIN, { tenantStatus });
+      expect(screen.queryByRole('status')).toBeNull();
+    },
+  );
+});
+
+describe('platform option locked behind MFA', () => {
+  it.each([
+    ['challenge', 'Verificá tu identidad para entrar', '/login/mfa'],
+    [
+      'enroll',
+      'Activá la verificación en dos pasos para entrar',
+      '/account/security',
+    ],
+  ] as const)(
+    'offers the %s step instead of hiding "Plataforma"',
+    (platformMfaStep, text, path) => {
+      renderWithShell(<AppShell>x</AppShell>, ADMIN, { platformMfaStep });
+      const banner = screen.getByRole('banner');
+      fireEvent.click(
+        within(banner).getByRole('button', { name: /Cambiar de contexto/ }),
+      );
+      const offer = within(banner).getByRole('link', { name: /Plataforma/ });
+      expect(offer).toHaveTextContent(text);
+      expect(offer.getAttribute('href')).toBe(
+        `${path}?next=${encodeURIComponent('/platform')}`,
+      );
+    },
+  );
+
+  it('does not add the option when there is nothing to unlock', () => {
+    renderWithShell(<AppShell>x</AppShell>, ADMIN);
+    fireEvent.click(
+      screen.getByRole('button', { name: /Cambiar de contexto/ }),
+    );
+    expect(screen.queryByRole('link', { name: /Plataforma/ })).toBeNull();
+  });
+
+  it('a single-context platform admin below aal2 still gets the switcher with the offer', () => {
+    const [only] = MOCK_CONTEXTS;
+    if (!only) throw new Error('fixture missing');
+    renderWithShell(<AppShell>x</AppShell>, only.membership_id, {
+      contexts: [only],
+      platformMfaStep: 'challenge',
+    });
+    expect(
+      screen.getByRole('button', { name: /Cambiar de contexto/ }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('top bar', () => {
+  it('links to the account security page from every role', () => {
+    renderWithShell(<AppShell>x</AppShell>, GUARD);
+    expect(
+      screen.getByRole('link', { name: 'Seguridad de la cuenta' }),
+    ).toHaveAttribute('href', '/account/security');
+  });
+
+  it('carries the Domus emblem below the sidebar breakpoint, and the sidebar the logo', () => {
+    renderWithShell(<AppShell>x</AppShell>, HOLDER);
+    expect(screen.getAllByRole('img', { name: 'Domus' })).toHaveLength(2);
   });
 });
 

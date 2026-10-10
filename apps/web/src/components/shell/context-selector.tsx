@@ -1,12 +1,14 @@
 'use client';
 
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Lock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useId } from 'react';
 import { cn } from '@/lib/cn';
 import { useActiveContext } from './active-context';
 import type { ActiveContext } from './active-context';
 import { usePopover } from '@/components/ui/use-popover';
+import { challengeUrlFor, enrollmentUrlFor } from '@/lib/auth/mfa';
 
 /** Tenant name, or "Plataforma" for the platform context (which has no tenant). */
 export function useContextTitle() {
@@ -32,12 +34,13 @@ export function useContextDescription() {
  */
 export function ContextSelector({ className }: { className?: string }) {
   const t = useTranslations('context');
-  const { contexts, active, switchContext } = useActiveContext();
+  const { contexts, active, platformMfaStep, switchContext } =
+    useActiveContext();
   const describe = useContextDescription();
   const title = useContextTitle();
   const { open, toggle, close, triggerRef, rootProps } = usePopover();
   const panelId = useId();
-  const canSwitch = contexts.length > 1;
+  const canSwitch = contexts.length > 1 || platformMfaStep !== null;
 
   const label = (
     <span className="flex min-w-0 flex-col text-left">
@@ -135,6 +138,34 @@ export function ContextSelector({ className }: { className?: string }) {
                 </li>
               );
             })}
+            {platformMfaStep ? (
+              <li>
+                {/* The platform context exists for this user but needs the second factor first: offer the step. */}
+                <Link
+                  href={
+                    platformMfaStep === 'challenge'
+                      ? challengeUrlFor('/platform')
+                      : enrollmentUrlFor('/platform')
+                  }
+                  onClick={close}
+                  className="flex min-h-(--control-height) w-full items-center gap-3 rounded-input px-3 py-2 text-left hover:bg-surface-1"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-app-subheading">
+                      {t('platformName')}
+                    </span>
+                    <span className="truncate text-app-caption text-text-secondary">
+                      {t(`platformLocked.${platformMfaStep}`)}
+                    </span>
+                  </span>
+                  <Lock
+                    aria-hidden="true"
+                    className="size-5 shrink-0"
+                    strokeWidth={2}
+                  />
+                </Link>
+              </li>
+            ) : null}
           </ul>
         </div>
       ) : null}
