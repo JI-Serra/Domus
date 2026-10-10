@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PASSWORD } from './accounts';
+import { extractAuthLink, waitForEmailText } from './mailpit';
 
 function required(name: string): string {
   const value = process.env[name];
@@ -28,7 +29,8 @@ export async function signedInClient(email: string): Promise<SupabaseClient> {
 }
 
 /**
- * Creates a fresh account with no memberships through the public sign-up endpoint (local confirmations are off).
+ * Creates a fresh account with no memberships through the public sign-up endpoint, then confirms it by following
+ * the real confirmation link from Mailpit (email confirmation is required, see supabase/config.toml).
  * Used for flows that change the account, so the seeded users stay untouched.
  */
 export async function createDisposableUser(): Promise<{
@@ -41,6 +43,12 @@ export async function createDisposableUser(): Promise<{
   const { data, error } = await anonClient().auth.signUp({ email, password });
   if (error || !data.user)
     throw new Error(`Could not create ${email}: ${error?.message}`);
+  const confirmation = await fetch(
+    extractAuthLink(await waitForEmailText(email)),
+    { redirect: 'manual' },
+  );
+  if (confirmation.status >= 400)
+    throw new Error(`Could not confirm ${email}: ${confirmation.status}`);
   return { email, password, userId: data.user.id };
 }
 
