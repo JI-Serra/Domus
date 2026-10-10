@@ -2,7 +2,8 @@ export type RpcResult = { data: unknown; error: { code?: string } | null };
 export interface PlatformDependencies {
   rpc(name: string, args: Record<string, unknown>): Promise<RpcResult>;
   verifiedUser(): Promise<string | null>;
-  invitationToken(eventId: string, actorId: string): Promise<string>;
+  /** True only when Auth is known to require real email confirmation (no autoconfirm). Fails closed. */
+  emailConfirmationRequired(): Promise<boolean>;
   invite(email: string, redirect: string): Promise<boolean>;
   magicLink(email: string, redirect: string): Promise<boolean>;
   signSupport(claims: Record<string, unknown>): Promise<string>;
@@ -23,6 +24,7 @@ const permissions = [
   'admin_management',
 ];
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const invitationSecret = /^[a-f0-9]{64}$/;
 export const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -31,14 +33,6 @@ export const jsonResponse = (body: unknown, status = 200) =>
       'Cache-Control': 'no-store',
     },
   });
-const digest = async (value: string) =>
-  Array.from(
-    new Uint8Array(
-      await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)),
-    ),
-    (byte) => byte.toString(16).padStart(2, '0'),
-  ).join('');
-
 export async function sendInvitation(
   request: Request,
   deps: PlatformDependencies,
@@ -66,22 +60,20 @@ export async function sendInvitation(
   }
   const actor = await deps.verifiedUser();
   if (!actor) return jsonResponse({ code: 'unauthorized' }, 401);
+  // Acceptance trusts that the invitee proved the mailbox; never issue invitations while Auth autoconfirms.
+  if (!(await deps.emailConfirmationRequired()))
+    return jsonResponse({ code: 'service_unavailable' }, 503);
   const platform = await deps.rpc('current_user_is_platform_admin', {});
   // Every platform-created first admin receives the full documented permission set.
   const adminPermissions =
     input.target_role === 'tenant_admin' && platform.data === true
       ? permissions
       : (input.admin_permissions ?? []);
-  const token = await deps.invitationToken(
-    String(input.client_event_id),
-    actor,
-  );
+  // The database generates the secret and its expiry; it returns the secret once, and never again after delivery.
   const result = await deps.rpc('create_invitation', {
     target_tenant_id: input.target_tenant_id,
     invited_email: input.invited_email.toLowerCase(),
     target_role: input.target_role,
-    token_hash: await digest(token),
-    expires_at: new Date(deps.now() + 7 * 86400_000 - 1000).toISOString(),
     client_event_id: input.client_event_id,
     target_person_id: input.target_person_id ?? null,
     first_name: input.first_name ?? null,
@@ -93,6 +85,17 @@ export async function sendInvitation(
       { code: result.error.code === '42501' ? 'forbidden' : 'invalid_input' },
       result.error.code === '42501' ? 403 : 400,
     );
+  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as
+    { invitation_id?: unknown; invitation_token?: unknown } | undefined;
+  const invitationId = String(row?.invitation_id ?? '');
+  if (!uuid.test(invitationId))
+    return jsonResponse({ code: 'service_unavailable' }, 503);
+  // Retry of an invitation that was already delivered: idempotent, no second email.
+  if (row?.invitation_token === null)
+    return jsonResponse({ invitation_id: invitationId });
+  const token = String(row?.invitation_token ?? '');
+  if (!invitationSecret.test(token))
+    return jsonResponse({ code: 'service_unavailable' }, 503);
   const redirect = new URL('/invitations/accept', deps.appUrl);
   redirect.searchParams.set('token', token);
   const email = input.invited_email.toLowerCase();
@@ -101,11 +104,15 @@ export async function sendInvitation(
     !(await deps.magicLink(email, redirect.href))
   ) {
     return jsonResponse(
-      { code: 'delivery_failed', invitation_id: result.data },
+      { code: 'delivery_failed', invitation_id: invitationId },
       502,
     );
   }
-  return jsonResponse({ invitation_id: result.data });
+  // Best effort: if this fails, a retry issues a fresh secret and mails again, which only invalidates this email.
+  await deps.rpc('mark_invitation_delivered', {
+    target_invitation_id: invitationId,
+  });
+  return jsonResponse({ invitation_id: invitationId });
 }
 
 export async function supportSession(

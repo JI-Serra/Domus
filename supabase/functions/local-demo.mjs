@@ -31,7 +31,6 @@ if (process.argv.includes('--prepare')) {
     [
       'DOMUS_ENVIRONMENT=local',
       `DOMUS_LOCAL_JWT_SECRET=${status.JWT_SECRET}`,
-      `DOMUS_INVITATION_TOKEN_KEY=${randomBytes(32).toString('hex')}`,
       'DOMUS_APP_URL=http://127.0.0.1:3000',
       '',
     ].join('\n'),

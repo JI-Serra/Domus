@@ -94,6 +94,7 @@ export type Database = {
           invitation_admin_permissions: Database['public']['Enums']['admin_permission'][];
           invitation_created_at: string;
           invitation_created_by_user_id: string;
+          invitation_delivered_at: string | null;
           invitation_email: string;
           invitation_expires_at: string;
           invitation_first_name: string | null;
@@ -114,6 +115,7 @@ export type Database = {
           invitation_admin_permissions?: Database['public']['Enums']['admin_permission'][];
           invitation_created_at?: string;
           invitation_created_by_user_id: string;
+          invitation_delivered_at?: string | null;
           invitation_email: string;
           invitation_expires_at: string;
           invitation_first_name?: string | null;
@@ -133,6 +135,7 @@ export type Database = {
           invitation_admin_permissions?: Database['public']['Enums']['admin_permission'][];
           invitation_created_at?: string;
           invitation_created_by_user_id?: string;
+          invitation_delivered_at?: string | null;
           invitation_email?: string;
           invitation_expires_at?: string;
           invitation_first_name?: string | null;
@@ -347,6 +350,7 @@ export type Database = {
           support_session_expires_at: string;
           support_session_id: string;
           support_session_reason: string;
+          support_session_revocation_reason: string | null;
           support_session_started_at: string;
           support_session_status: Database['public']['Enums']['support_session_status'];
           support_session_target_user_id: string;
@@ -364,6 +368,7 @@ export type Database = {
           support_session_expires_at: string;
           support_session_id?: string;
           support_session_reason: string;
+          support_session_revocation_reason?: string | null;
           support_session_started_at?: string;
           support_session_status?: Database['public']['Enums']['support_session_status'];
           support_session_target_user_id: string;
@@ -380,6 +385,7 @@ export type Database = {
           support_session_expires_at?: string;
           support_session_id?: string;
           support_session_reason?: string;
+          support_session_revocation_reason?: string | null;
           support_session_started_at?: string;
           support_session_status?: Database['public']['Enums']['support_session_status'];
           support_session_target_user_id?: string;
@@ -459,16 +465,17 @@ export type Database = {
         Args: {
           admin_permissions?: Database['public']['Enums']['admin_permission'][];
           client_event_id: string;
-          expires_at: string;
           first_name?: string;
           invited_email: string;
           last_name?: string;
           target_person_id?: string;
           target_role: Database['public']['Enums']['membership_role'];
           target_tenant_id: string;
-          token_hash: string;
         };
-        Returns: string;
+        Returns: {
+          invitation_id: string;
+          invitation_token: string;
+        }[];
       };
       create_membership: {
         Args: {
@@ -534,6 +541,10 @@ export type Database = {
           user_id: string;
         }[];
       };
+      mark_invitation_delivered: {
+        Args: { target_invitation_id: string };
+        Returns: undefined;
+      };
       preview_invitation: {
         Args: { token: string };
         Returns: {
@@ -556,6 +567,10 @@ export type Database = {
         Args: { target_membership_id: string };
         Returns: undefined;
       };
+      revoke_support_session: {
+        Args: { reason: string; target_support_session_id: string };
+        Returns: undefined;
+      };
       start_support_session: {
         Args: {
           client_event_id: string;
@@ -574,6 +589,7 @@ export type Database = {
           support_session_expires_at: string;
           support_session_id: string;
           support_session_reason: string;
+          support_session_revocation_reason: string | null;
           support_session_started_at: string;
           support_session_status: Database['public']['Enums']['support_session_status'];
           support_session_target_user_id: string;

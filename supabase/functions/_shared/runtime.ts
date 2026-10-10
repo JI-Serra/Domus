@@ -90,25 +90,17 @@ export function dependencies(request: Request): PlatformDependencies {
       const { data, error } = await caller.auth.getUser();
       return !error && data.user?.email_confirmed_at ? data.user.id : null;
     },
-    invitationToken: async (event, actor) => {
-      const secret = Deno.env.get('DOMUS_INVITATION_TOKEN_KEY');
-      if (!secret || secret.length < 32)
-        throw new Error('invitation_signing_unavailable');
-      const key = await crypto.subtle.importKey(
-        'raw',
-        new TextEncoder().encode(secret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign'],
-      );
-      const bytes = await crypto.subtle.sign(
-        'HMAC',
-        key,
-        new TextEncoder().encode(`${actor}:${event}`),
-      );
-      return Array.from(new Uint8Array(bytes), (byte) =>
-        byte.toString(16).padStart(2, '0'),
-      ).join('');
+    emailConfirmationRequired: async () => {
+      try {
+        const response = await fetch(`${url}/auth/v1/settings`, {
+          headers: { apikey: Deno.env.get('SUPABASE_ANON_KEY')! },
+        });
+        if (!response.ok) return false;
+        const settings = (await response.json()) as Record<string, unknown>;
+        return settings.mailer_autoconfirm === false;
+      } catch {
+        return false;
+      }
     },
     invite: async (email, redirectTo) => {
       const { error } = await service.auth.admin.inviteUserByEmail(email, {

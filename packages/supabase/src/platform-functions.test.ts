@@ -23,11 +23,22 @@ const request = (body: unknown, method = 'POST') =>
     method,
     ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
   });
+const secret = 'a'.repeat(64);
+const created = (token: string | null = secret) => ({
+  data: [{ invitation_id: id, invitation_token: token }],
+  error: null,
+});
 function dependencies(): PlatformDependencies {
   return {
-    rpc: vi.fn(async () => ({ data: id, error: null })),
+    rpc: vi.fn(async (name: string) =>
+      name === 'create_invitation'
+        ? created()
+        : name === 'current_user_is_platform_admin'
+          ? { data: false, error: null }
+          : { data: id, error: null },
+    ),
     verifiedUser: vi.fn(async () => id),
-    invitationToken: vi.fn(async () => 'a'.repeat(64)),
+    emailConfirmationRequired: vi.fn(async () => true),
     invite: vi.fn(async () => true),
     magicLink: vi.fn(async () => true),
     signSupport: vi.fn(async () => 'signed'),
@@ -61,21 +72,63 @@ describe('platform Edge Function logic', () => {
       ),
     ).toContain(`source-sha256: ${hash.digest('hex')}`);
   });
-  it('authorizes invitation creation before sending and stores only a hash', async () => {
+  it('lets the database create the secret, mails it once and records the delivery', async () => {
     const deps = dependencies();
     const result = await sendInvitation(request(invitation), deps);
     expect(result.status).toBe(200);
-    expect(deps.rpc).toHaveBeenCalledWith(
-      'create_invitation',
-      expect.objectContaining({
-        token_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
-      }),
-    );
+    expect(await result.json()).toEqual({ invitation_id: id });
+    const args = vi
+      .mocked(deps.rpc)
+      .mock.calls.find(([name]) => name === 'create_invitation')?.[1];
+    expect(args).not.toHaveProperty('token_hash');
+    expect(args).not.toHaveProperty('expires_at');
     expect(deps.invite).toHaveBeenCalledWith(
       'invite@example.com',
-      expect.stringContaining('/invitations/accept?token='),
+      `http://localhost:3000/invitations/accept?token=${secret}`,
     );
     expect(deps.magicLink).not.toHaveBeenCalled();
+    expect(deps.rpc).toHaveBeenLastCalledWith('mark_invitation_delivered', {
+      target_invitation_id: id,
+    });
+  });
+  it('never mails again when a retry finds the invitation already delivered', async () => {
+    const deps = dependencies();
+    vi.mocked(deps.rpc).mockImplementation(async (name) =>
+      name === 'create_invitation'
+        ? created(null)
+        : { data: false, error: null },
+    );
+    const result = await sendInvitation(request(invitation), deps);
+    expect(result.status).toBe(200);
+    expect(await result.json()).toEqual({ invitation_id: id });
+    expect(deps.invite).not.toHaveBeenCalled();
+    expect(deps.magicLink).not.toHaveBeenCalled();
+    expect(deps.rpc).not.toHaveBeenCalledWith(
+      'mark_invitation_delivered',
+      expect.anything(),
+    );
+  });
+  it('fails closed while Auth may autoconfirm email addresses', async () => {
+    const deps = dependencies();
+    vi.mocked(deps.emailConfirmationRequired).mockResolvedValue(false);
+    expect((await sendInvitation(request(invitation), deps)).status).toBe(503);
+    expect(deps.rpc).not.toHaveBeenCalled();
+    expect(deps.invite).not.toHaveBeenCalled();
+  });
+  it('refuses to mail anything but a well-formed database secret', async () => {
+    const deps = dependencies();
+    vi.mocked(deps.rpc).mockImplementation(async (name) =>
+      name === 'create_invitation'
+        ? created('not-a-secret')
+        : { data: false, error: null },
+    );
+    expect((await sendInvitation(request(invitation), deps)).status).toBe(503);
+    vi.mocked(deps.rpc).mockImplementation(async () => ({
+      data: [],
+      error: null,
+    }));
+    expect((await sendInvitation(request(invitation), deps)).status).toBe(503);
+    expect(deps.invite).not.toHaveBeenCalled();
   });
   it('sends existing users a magic link and reports delivery failure', async () => {
     const deps = dependencies();
@@ -83,7 +136,17 @@ describe('platform Edge Function logic', () => {
     expect((await sendInvitation(request(invitation), deps)).status).toBe(200);
     expect(deps.magicLink).toHaveBeenCalled();
     vi.mocked(deps.magicLink).mockResolvedValue(false);
-    expect((await sendInvitation(request(invitation), deps)).status).toBe(502);
+    const failed = await sendInvitation(request(invitation), deps);
+    expect(failed.status).toBe(502);
+    expect(await failed.json()).toEqual({
+      code: 'delivery_failed',
+      invitation_id: id,
+    });
+    expect(deps.rpc).toHaveBeenCalledTimes(5);
+    expect(deps.rpc).not.toHaveBeenLastCalledWith(
+      'mark_invitation_delivered',
+      expect.anything(),
+    );
   });
   it('rejects unauthenticated, unauthorized and invalid invitations without email', async () => {
     const deps = dependencies();
@@ -103,7 +166,7 @@ describe('platform Edge Function logic', () => {
     const deps = dependencies();
     vi.mocked(deps.rpc).mockResolvedValueOnce({ data: true, error: null });
     await sendInvitation(request(invitation), deps);
-    expect(deps.rpc).toHaveBeenLastCalledWith(
+    expect(deps.rpc).toHaveBeenCalledWith(
       'create_invitation',
       expect.objectContaining({
         admin_permissions: expect.arrayContaining([

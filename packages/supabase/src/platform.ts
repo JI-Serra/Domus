@@ -30,13 +30,18 @@ export const endSupportSession = (
   client: DomusSupabaseClient,
   target_support_session_id: string,
 ) => client.rpc('end_support_session', { target_support_session_id });
+/** MFA platform administrators only: stops any live support session immediately; audited with the reason. */
+export const revokeSupportSession = (
+  client: DomusSupabaseClient,
+  target_support_session_id: string,
+  reason: string,
+) =>
+  client.rpc('revoke_support_session', { target_support_session_id, reason });
 export const currentUserIsPlatformAdmin = (client: DomusSupabaseClient) =>
   client.rpc('current_user_is_platform_admin');
 
-export type SendInvitationInput = Omit<
-  Args<'create_invitation'>,
-  'token_hash' | 'expires_at'
->;
+/** The database generates the invitation secret and expiry; only the email function ever sees the secret. */
+export type SendInvitationInput = Args<'create_invitation'>;
 export type SupportSessionToken = {
   access_token: string;
   expires_at: string;
