@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# One run per branch/PR: a newer push cancels the older run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Placeholders so the web build has the public variables; no real secrets in CI.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      DOMUS_ENVIRONMENT: local
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Cache Turborepo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  database:
+    name: Database (pgTAP, RLS isolation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # The Supabase CLI is pinned in the root devDependencies.
+      - run: pnpm install --frozen-lockfile
+
+      # Only Postgres and Auth (the `auth` schema is created by GoTrue and
+      # RLS tests create users). Every other service is excluded to start faster.
+      - name: Start local Supabase (database services only)
+        run: >
+          pnpm supabase start
+          -x realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Run pgTAP tests
+        run: pnpm test:db
+
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm supabase stop --no-backup
