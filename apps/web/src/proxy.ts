@@ -24,6 +24,8 @@ import {
 } from '@/lib/auth/mfa';
 import { siteUrlFromHeaders } from '@/lib/auth/site-url';
 import { loadResolvedContext } from '@/lib/context/load';
+import { handleSupportRequest } from '@/lib/support/proxy';
+import { SUPPORT_COOKIE_NAME, parseSupportCookie } from '@/lib/support/session';
 
 interface PendingCookie {
   name: string;
@@ -55,6 +57,16 @@ export async function proxy(request: NextRequest) {
   forwardedHeaders.delete(TENANT_ID_HEADER);
   forwardedHeaders.delete(MEMBERSHIP_ROLE_HEADER);
 
+  const supportCookie = request.cookies.get(SUPPORT_COOKIE_NAME)?.value;
+  const support = parseSupportCookie(supportCookie);
+  if (support)
+    return handleSupportRequest({
+      request,
+      forwardedHeaders,
+      support,
+      origin: siteUrlFromHeaders(request.headers),
+    });
+
   const pendingCookies: PendingCookie[] = [];
   let cacheHeaders: Record<string, string> = {};
   const supabase = createServerClient({
@@ -69,6 +81,9 @@ export async function proxy(request: NextRequest) {
   });
 
   const finish = (response: NextResponse) => {
+    // A support cookie that is malformed or past its expiry is useless: clear it.
+    if (supportCookie !== undefined)
+      response.cookies.delete(SUPPORT_COOKIE_NAME);
     for (const { name, value, options } of pendingCookies)
       response.cookies.set(name, value, options);
     for (const [key, value] of Object.entries(cacheHeaders))
