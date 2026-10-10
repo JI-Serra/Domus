@@ -1,4 +1,14 @@
-# M02 registry database contract (T14 + T18 + T19 / H2)
+# M02 registry database contract (T14 + T18 + T19 + T20 / H2)
+
+## T20 household membership termination (authoritative)
+
+`end_household_membership(target_membership_id uuid, client_event_id uuid) -> void` is available through the generated types and `endHouseholdMembership` wrapper. Migrations `20261011000022` and `20261011000023` add the complete function and explicit owner-applied ACL. Only authenticated callers can execute it.
+
+An active holder can end an active household membership in their own unit; a registry administrator can do so within their writable tenant. The central identity validator and scoped helpers apply support identities' target-user rights only within their bound tenant. Suspended tenants, foreign units/tenants, holders, admin/guard roles and any membership belonging to the caller are denied uniformly with `42501 / Household membership management denied`. Minority does not prevent termination of an existing active membership.
+
+The transaction sets membership status to `revoked` and `membership_valid_to` to the statement time, deletes that membership's household delegations and revokes all pending invitations for its person/unit, including expired pending invitations. It leaves person identity, Auth binding, residence records and other memberships/invitations intact. Existing audit triggers capture changes and support attribution. Retry receipts bind the event to actor, tenant, operation and target; the same event succeeds without duplicate effects, while a new event for an ended membership is denied. Authorization is rechecked before returning a receipt.
+
+T20 acceptance: `pnpm test:db` passes 1,077 assertions across 17 files, including 31 dedicated termination assertions; `pnpm lint`, `pnpm typecheck`, `pnpm test` and type regeneration pass. See `reports/T20-end-member.md` for runtime, test details and shared-stack notes. No UI or staging changes were made.
 
 Implemented M02-F01–F08 and the M01-F03 billable-unit count in nine new migrations (`20261011000000`–`20261011000008`). H0/H1 migration files and application UI files are unchanged. This report is the contract for the subsequent registry UI tasks. T18 extends the resident contract in migrations `20261011000009` through `20261011000011`; see `reports/T18-contract-additions.md` for current acceptance evidence.
 
