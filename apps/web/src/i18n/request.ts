@@ -1,5 +1,6 @@
 import { DEFAULT_TENANT_TIME_ZONE, DISPLAY_LOCALE } from '@domus/domain/format';
 import { getRequestConfig } from 'next-intl/server';
+import accessPolicyMessages from '../../messages/access-policy.es-AR.json';
 import registryMessages from '../../messages/registry.es-AR.json';
 
 /**
@@ -14,5 +15,6 @@ export default getRequestConfig(async () => ({
   messages: {
     ...(await import('../../messages/es-AR.json')).default,
     ...registryMessages,
+    ...accessPolicyMessages,
   },
 }));

@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import baseMessages from '../../messages/es-AR.json';
+import accessPolicyMessages from '../../messages/access-policy.es-AR.json';
 import registryMessages from '../../messages/registry.es-AR.json';
 
-const messages = { ...baseMessages, ...registryMessages };
+const messages = {
+  ...baseMessages,
+  ...registryMessages,
+  ...accessPolicyMessages,
+};
 
 function leaves(
   value: unknown,
@@ -35,6 +40,14 @@ describe('es-AR messages', () => {
   it('keeps the registry texts in top-level keys of their own', () => {
     expect(
       Object.keys(registryMessages).filter((key) => key in baseMessages),
+    ).toEqual([]);
+  });
+
+  it('keeps the access policy texts in top-level keys of their own', () => {
+    expect(
+      Object.keys(accessPolicyMessages).filter(
+        (key) => key in baseMessages || key in registryMessages,
+      ),
     ).toEqual([]);
   });
 
