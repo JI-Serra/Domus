@@ -34,6 +34,96 @@ export type Database = {
   };
   public: {
     Tables: {
+      access_policy: {
+        Row: {
+          access_policy_applied_template:
+            Database['public']['Enums']['access_policy_template'] | null;
+          access_policy_approval_timeout_seconds_count: number;
+          access_policy_event_max_guests_count: number;
+          access_policy_id: string;
+          access_policy_pass_max_days_count: number;
+          access_policy_pass_max_uses_count: number;
+          access_policy_permanent_authorization_max_days_count: number;
+          access_policy_updated_at: string;
+          access_policy_updated_by_user_id: string | null;
+          tenant_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          access_policy_applied_template?:
+            Database['public']['Enums']['access_policy_template'] | null;
+          access_policy_approval_timeout_seconds_count: number;
+          access_policy_event_max_guests_count: number;
+          access_policy_id?: string;
+          access_policy_pass_max_days_count: number;
+          access_policy_pass_max_uses_count: number;
+          access_policy_permanent_authorization_max_days_count: number;
+          access_policy_updated_at?: string;
+          access_policy_updated_by_user_id?: string | null;
+          tenant_id: string;
+        };
+        Update: {
+          access_policy_applied_template?:
+            Database['public']['Enums']['access_policy_template'] | null;
+          access_policy_approval_timeout_seconds_count?: number;
+          access_policy_event_max_guests_count?: number;
+          access_policy_id?: string;
+          access_policy_pass_max_days_count?: number;
+          access_policy_pass_max_uses_count?: number;
+          access_policy_permanent_authorization_max_days_count?: number;
+          access_policy_updated_at?: string;
+          access_policy_updated_by_user_id?: string | null;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'access_policy_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenant';
+            referencedColumns: ['tenant_id'];
+          },
+        ];
+      };
+      access_policy_rule: {
+        Row: {
+          access_policy_id: string;
+          access_policy_rule_allowed_modes: Database['public']['Enums']['household_access_mode'][];
+          access_policy_rule_default_mode: Database['public']['Enums']['household_access_mode'];
+          access_policy_rule_id: string;
+          access_policy_rule_is_identity_verification_required: boolean;
+          access_policy_rule_visitor_type: Database['public']['Enums']['visitor_type'];
+          tenant_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          access_policy_id: string;
+          access_policy_rule_allowed_modes: Database['public']['Enums']['household_access_mode'][];
+          access_policy_rule_default_mode: Database['public']['Enums']['household_access_mode'];
+          access_policy_rule_id?: string;
+          access_policy_rule_is_identity_verification_required: boolean;
+          access_policy_rule_visitor_type: Database['public']['Enums']['visitor_type'];
+          tenant_id: string;
+        };
+        Update: {
+          access_policy_id?: string;
+          access_policy_rule_allowed_modes?: Database['public']['Enums']['household_access_mode'][];
+          access_policy_rule_default_mode?: Database['public']['Enums']['household_access_mode'];
+          access_policy_rule_id?: string;
+          access_policy_rule_is_identity_verification_required?: boolean;
+          access_policy_rule_visitor_type?: Database['public']['Enums']['visitor_type'];
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'access_policy_rule_tenant_id_access_policy_id_fkey';
+            columns: ['tenant_id', 'access_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'access_policy';
+            referencedColumns: ['tenant_id', 'access_policy_id'];
+          },
+        ];
+      };
       audit_event: {
         Row: {
           audit_event_action: Database['public']['Enums']['audit_event_action'];
@@ -1218,6 +1308,28 @@ export type Database = {
     };
     Functions: {
       accept_invitation: { Args: { token: string }; Returns: string };
+      access_policy_history: {
+        Args: { target_tenant_id: string };
+        Returns: {
+          access_policy_applied_template: Database['public']['Enums']['access_policy_template'];
+          after_policy: Json;
+          audit_event_actor_user_id: string;
+          audit_event_id: string;
+          audit_event_occurred_at: string;
+          audit_event_on_behalf_of_user_id: string;
+          before_policy: Json;
+          client_event_id: string;
+          support_session_id: string;
+        }[];
+      };
+      apply_access_policy_template: {
+        Args: {
+          client_event_id: string;
+          target_tenant_id: string;
+          template: Database['public']['Enums']['access_policy_template'];
+        };
+        Returns: Json;
+      };
       archive_unit: {
         Args: {
           client_event_id: string;
@@ -1365,6 +1477,7 @@ export type Database = {
         Args: { target_support_session_id: string };
         Returns: undefined;
       };
+      get_access_policy: { Args: { target_tenant_id: string }; Returns: Json };
       grant_admin_permission: {
         Args: {
           target_membership_id: string;
@@ -1609,6 +1722,14 @@ export type Database = {
         Args: { target_tenant_id: string; target_unit_id: string };
         Returns: Json;
       };
+      update_access_policy: {
+        Args: {
+          client_event_id: string;
+          policy: Json;
+          target_tenant_id: string;
+        };
+        Returns: Json;
+      };
       update_membership: {
         Args: {
           target_membership_id: string;
@@ -1633,6 +1754,7 @@ export type Database = {
       };
     };
     Enums: {
+      access_policy_template: 'balanced' | 'strict' | 'flexible';
       admin_permission:
         | 'registry'
         | 'access_config'
@@ -1647,6 +1769,7 @@ export type Database = {
       audit_event_action: 'insert' | 'update' | 'delete';
       device_status: 'active' | 'revoked';
       gate_kind: 'vehicular' | 'pedestrian';
+      household_access_mode: 'direct_entry' | 'notify' | 'approval' | 'reject';
       household_permission:
         'view_unit_finance' | 'book_amenities' | 'manage_access_authorizations';
       invitation_status: 'pending' | 'accepted' | 'revoked' | 'expired';
@@ -1664,6 +1787,14 @@ export type Database = {
         'pending' | 'approved' | 'rejected' | 'cancelled';
       unit_resident_relationship: 'owner' | 'tenant' | 'family' | 'other';
       unit_status: 'occupied' | 'under_construction' | 'vacant';
+      visitor_type:
+        | 'permanent_authorized'
+        | 'recurring_authorized'
+        | 'pass_guest'
+        | 'event_guest'
+        | 'delivery'
+        | 'service_worker'
+        | 'unknown';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1794,6 +1925,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      access_policy_template: ['balanced', 'strict', 'flexible'],
       admin_permission: [
         'registry',
         'access_config',
@@ -1809,6 +1941,7 @@ export const Constants = {
       audit_event_action: ['insert', 'update', 'delete'],
       device_status: ['active', 'revoked'],
       gate_kind: ['vehicular', 'pedestrian'],
+      household_access_mode: ['direct_entry', 'notify', 'approval', 'reject'],
       household_permission: [
         'view_unit_finance',
         'book_amenities',
@@ -1838,6 +1971,15 @@ export const Constants = {
       ],
       unit_resident_relationship: ['owner', 'tenant', 'family', 'other'],
       unit_status: ['occupied', 'under_construction', 'vacant'],
+      visitor_type: [
+        'permanent_authorized',
+        'recurring_authorized',
+        'pass_guest',
+        'event_guest',
+        'delivery',
+        'service_worker',
+        'unknown',
+      ],
     },
   },
 } as const;
