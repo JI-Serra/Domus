@@ -8,10 +8,7 @@ import {
   newContext,
 } from './support/flows';
 import { extractAuthLink, waitForEmailTextSince } from './support/mailpit';
-import {
-  createRegistryAdmin,
-  uniqueSuffix,
-} from './support/registry';
+import { createRegistryAdmin, uniqueSuffix } from './support/registry';
 import type { RegistryAdmin } from './support/registry';
 import { openAuthLink } from './support/auth-links';
 import { createDisposableUser, signedInClient } from './support/supabase';

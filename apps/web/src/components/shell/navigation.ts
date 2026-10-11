@@ -14,6 +14,7 @@ import {
   Package,
   Settings,
   ShieldCheck,
+  UserRoundCheck,
   UsersRound,
   Wallet,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ export type NavItemId =
   | 'registryImport'
   | 'registryGuards'
   | 'registryGates'
+  | 'registryVerification'
   | 'announcements'
   | 'finance'
   | 'settings'
@@ -83,6 +85,15 @@ const registry = item('registry', '/registry', ClipboardList, true, {
     item('registryGates', '/registry/gates', DoorOpen, false, {
       permissions: ['guards'],
     }),
+    item(
+      'registryVerification',
+      '/registry/verification',
+      UserRoundCheck,
+      false,
+      {
+        permissions: ['registry'],
+      },
+    ),
   ],
 });
 

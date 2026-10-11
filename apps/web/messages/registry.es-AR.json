@@ -25,6 +25,9 @@
       "plateTaken": "Esa patente ya está registrada en el barrio.",
       "personTaken": "Ya hay una persona con ese documento o email, con otros datos de identidad.",
       "duplicate": "Ese dato ya existe.",
+      "identityTaken": "Otra persona ya tiene ese documento o email. Corregí primero a esa persona (o conservá los datos registrados) y volvé a intentar.",
+      "plateHeld": "Otro vehículo verificado ya tiene esa patente. Archivá o corregí ese vehículo primero, o descartá este reclamo.",
+      "noResidence": "Esta persona no tiene ninguna residencia: no hay desde qué unidad resolverla.",
       "identityConflict": "El documento o el email de la solicitud coincide con otra persona ya registrada con otros datos. La solicitud sigue pendiente: revisá a esa persona en el padrón y volvé a intentar.",
       "deliveryFailed": "No pudimos enviar el email. La invitación quedó creada: volvé a intentar para reenviarla.",
       "inviteInvalid": "No se puede invitar a esta persona. Revisá que sea adulta y que el email sea el suyo.",
@@ -80,7 +83,11 @@
       "gateCreated": "Puesto creado.",
       "gateSaved": "Puesto actualizado.",
       "pairingCreated": "Código generado.",
-      "deviceRevoked": "Dispositivo revocado."
+      "deviceRevoked": "Dispositivo revocado.",
+      "claimAccepted": "Datos declarados aceptados.",
+      "claimDiscarded": "Se conservaron los datos registrados.",
+      "plateVerified": "Patente verificada.",
+      "plateDiscarded": "Reclamo descartado."
     },
     "units": {
       "metaTitle": "Unidades · Domus",
@@ -163,6 +170,33 @@
         "cancel": "Cancelar"
       }
     },
+    "verification": {
+      "metaTitle": "Pendientes de verificación · Domus",
+      "title": "Pendientes de verificación",
+      "peopleTitle": "Personas",
+      "peopleInfoLabel": "Más información sobre las personas pendientes",
+      "peopleInfo": "Un hogar declaró un documento o un email que ya tiene otra persona del barrio, así que no se pudo registrar. Aceptá lo declarado (solo posible cuando nadie más lo tiene) o conservá los datos registrados. Nada se fusiona solo.",
+      "peopleEmpty": "No hay personas pendientes.",
+      "vehiclesTitle": "Vehículos",
+      "vehiclesInfoLabel": "Más información sobre los vehículos pendientes",
+      "vehiclesInfo": "La patente ya la tiene otro vehículo verificado. Un vehículo sin verificar no puede usarse en accesos. Verificalo cuando la otra patente se corrija o se archive, o descartá este reclamo.",
+      "vehiclesEmpty": "No hay vehículos pendientes.",
+      "unit": "Unidad",
+      "dni": "DNI",
+      "none": "—",
+      "registered": "Registrado",
+      "declared": "Declarado por el hogar",
+      "heldBy": "Ya lo tiene:",
+      "plateHeldBy": "Ya la tiene un vehículo verificado en:",
+      "accept": "Usar lo declarado",
+      "acceptNamed": "Usar los datos declarados de {name}",
+      "keep": "Conservar lo registrado",
+      "keepNamed": "Conservar los datos registrados de {name}",
+      "verify": "Verificar",
+      "verifyNamed": "Verificar la patente {plate}",
+      "discard": "Descartar",
+      "discardNamed": "Descartar el reclamo de la patente {plate}"
+    },
     "unit360": {
       "metaTitle": "Ficha de unidad · Domus",
       "back": "Unidades",
@@ -175,6 +209,14 @@
       "backupPhone": "Teléfono de respaldo",
       "createdOn": "Alta",
       "membershipsTitle": "Cuentas",
+      "delegationsAll": "Todos los permisos (titular)",
+      "delegationsNone": "Sin permisos delegados",
+      "delegationsLabel": "Permisos delegados",
+      "delegations": {
+        "view_unit_finance": "Ver finanzas",
+        "book_amenities": "Reservar amenities",
+        "manage_access_authorizations": "Gestionar autorizaciones"
+      },
       "membershipsEmpty": "Nadie tiene cuenta en esta unidad.",
       "membershipStatus": {
         "active": "Activa",
@@ -349,7 +391,10 @@
       "rotateTitle": "¿Generar un código nuevo?",
       "rotateConfirm": "Generar código",
       "cancel": "Cancelar",
-      "rotateBody": "El código anterior deja de funcionar. El nuevo se muestra una sola vez."
+      "rotateBody": "El código anterior deja de funcionar. El nuevo se muestra una sola vez.",
+      "conflictTitle": "Conflicto de identidad: requiere revisión",
+      "conflictBody": "Los datos de la solicitud coinciden con los de otra persona registrada. No se creó nada y la solicitud sigue pendiente.",
+      "conflictLink": "Ver pendientes de verificación"
     },
     "import": {
       "metaTitle": "Importar · Domus",

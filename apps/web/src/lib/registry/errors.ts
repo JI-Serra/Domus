@@ -18,6 +18,7 @@ export function registryErrorKey(error: RpcError, operation: string): string {
     case '22023':
       return 'invalid';
     case '23514':
+      if (text.includes('identity')) return 'identityTaken';
       return text.includes('holder') || text.includes('occupied')
         ? 'occupiedNeedsHolder'
         : 'invalid';

@@ -4,6 +4,7 @@ import { formatDate } from '@domus/domain/format';
 import { formatJoinCode } from '@domus/domain/registry-ui';
 import { Check, KeyRound, MailX, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useState } from 'react';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +79,20 @@ export function OnboardingCard({
         ) : null}
       </div>
 
-      {error ? <AuthNotice tone="error">{message(error)}</AuthNotice> : null}
+      {error === 'identityConflict' ? (
+        // Approval found another record with the same document or email: nothing was created, the request stays.
+        <AuthNotice tone="error" title={t('conflictTitle')}>
+          {t('conflictBody')}{' '}
+          <Link
+            href="/registry/verification"
+            className="underline underline-offset-4"
+          >
+            {t('conflictLink')}
+          </Link>
+        </AuthNotice>
+      ) : error ? (
+        <AuthNotice tone="error">{message(error)}</AuthNotice>
+      ) : null}
       {notice ? (
         <AuthNotice tone="success">
           {noticeT.has(notice as 'saved')

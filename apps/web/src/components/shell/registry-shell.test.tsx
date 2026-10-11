@@ -48,6 +48,7 @@ describe('Padrón navigation by permission', () => {
       'registryUnits',
       'registryImport',
       'registryGuards',
+      'registryVerification',
     ]);
     const guardsOnly = filterByPermissions(
       registryEntry ? [registryEntry] : [],

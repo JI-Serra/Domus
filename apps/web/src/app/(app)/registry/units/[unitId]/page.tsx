@@ -174,10 +174,36 @@ export default async function UnitSheetPage({
                       key={membership.membership_id}
                       className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline py-2 first:border-t-0"
                     >
-                      <span className="text-app-subheading">
-                        {person
-                          ? `${person.person_first_name} ${person.person_last_name}`
-                          : '—'}
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="text-app-subheading">
+                          {person
+                            ? `${person.person_first_name} ${person.person_last_name}`
+                            : '—'}
+                        </span>
+                        {membership.membership_status === 'active' ? (
+                          <span
+                            aria-label={t('delegationsLabel')}
+                            className="text-app-caption text-text-secondary"
+                          >
+                            {membership.membership_role === 'unit_holder'
+                              ? t('delegationsAll')
+                              : (
+                                    sheet.member_permissions?.[
+                                      membership.membership_id
+                                    ] ?? []
+                                  ).length > 0
+                                ? (
+                                    sheet.member_permissions?.[
+                                      membership.membership_id
+                                    ] ?? []
+                                  )
+                                    .map((permission) =>
+                                      t(`delegations.${permission}`),
+                                    )
+                                    .join(' · ')
+                                : t('delegationsNone')}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="flex flex-wrap items-center gap-2">
                         <Badge tone="info">

@@ -867,7 +867,9 @@ describe('ImportWizard', () => {
     expect(
       screen.queryByRole('button', { name: 'Confirmar importación' }),
     ).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Empezar de nuevo' }));
+    const restart = screen.getByRole('button', { name: 'Empezar de nuevo' });
+    await waitFor(() => expect(restart).toBeEnabled());
+    fireEvent.click(restart);
     expect(screen.queryByRole('table')).toBeNull();
   });
 

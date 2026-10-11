@@ -42,7 +42,7 @@ export const uniqueSuffix = (testInfo: TestInfo) =>
  */
 export async function openRegistrySection(
   page: Page,
-  label: 'Unidades' | 'Importar' | 'Guardias' | 'Puestos',
+  label: 'Unidades' | 'Importar' | 'Guardias' | 'Puestos' | 'Verificación',
 ): Promise<void> {
   const link = page.getByRole('link', { name: label, exact: true });
   if (!(await link.first().isVisible())) {
