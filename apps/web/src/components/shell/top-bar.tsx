@@ -9,6 +9,7 @@ import { buttonStyles } from '@/components/ui/button';
 import { MFA_SETTINGS_PATH } from '@/lib/auth/mfa';
 import { AppearanceMenu } from './appearance-menu';
 import { ContextSelector } from './context-selector';
+import { GlobalSearch } from './global-search';
 import { LogoutButton } from './logout-button';
 
 /** Sticky top bar: the active context is always visible and switchable here, on every viewport. */
@@ -17,7 +18,7 @@ export function TopBar() {
   // Acting as somebody else: no way into the account's security and no sign-out (the banner's "Terminar" is the exit).
   const supporting = useSupportSession() !== null;
   return (
-    <header className="sticky top-0 z-30 flex min-h-(--top-bar-height) items-center gap-2 bg-surface-1 px-4 py-2 lg:px-6">
+    <header className="sticky top-0 z-30 flex min-h-(--top-bar-height) flex-wrap items-center gap-2 bg-surface-1 px-4 py-2 lg:flex-nowrap lg:px-6">
       {/* The sidebar carries the logo from 1024 px; below that the emblem stands in for it. */}
       <Link
         href="/"
@@ -26,6 +27,8 @@ export function TopBar() {
         <Emblem className="h-7" />
       </Link>
       <ContextSelector className="flex-1" />
+      {/* Admins with the registry permission: one row of their own below the bar on small screens. */}
+      <GlobalSearch className="order-last w-full lg:order-none lg:w-96 lg:flex-none" />
       <AppearanceMenu />
       {supporting ? null : (
         <>

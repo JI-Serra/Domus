@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { AuthNotice } from '@/components/auth/auth-notice';
 import { Button, ButtonLink } from '@/components/ui/button';
 import { Field, Input, Select } from '@/components/ui/field';
+import { FilePicker } from '@/components/ui/file-picker';
 import { useSubmitAction } from '@/lib/platform/use-submit-action';
 import type { PlatformFormState } from '@/lib/platform/form-state';
 
@@ -46,6 +47,7 @@ export function TenantForm({ mode, action, tenant, logoUrl }: TenantFormProps) {
     tenant?.tenant_slug ?? values.tenant_slug ?? '',
   );
   const [slugEdited, setSlugEdited] = useState(false);
+  const [logoName, setLogoName] = useState<string | null>(null);
   const fieldErrors = state.status === 'error' ? state.errors : {};
   const message = (key: string | undefined) =>
     key === undefined
@@ -181,11 +183,15 @@ export function TenantForm({ mode, action, tenant, logoUrl }: TenantFormProps) {
                 </span>
               )
             ) : null}
-            <Input
+            <FilePicker
               name="logo"
-              type="file"
               accept="image/png,image/jpeg,image/webp"
-              className="min-w-0 flex-1 py-2"
+              chooseLabel={t('form.logoChoose')}
+              emptyLabel={t('form.logoEmpty')}
+              clearLabel={t('form.logoClear')}
+              fileName={logoName}
+              invalid={Boolean(fieldErrors.logo)}
+              onChange={(file) => setLogoName(file?.name ?? null)}
             />
           </div>
         </Field>

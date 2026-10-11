@@ -7,7 +7,10 @@ const endSupport = vi.fn<(sessionId?: string) => Promise<void>>();
 vi.mock('@/lib/support/actions', () => ({
   endSupportAction: (sessionId?: string) => endSupport(sessionId),
 }));
-vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 const { SupportBanner } = await import('./support-banner');
 const { SupportSessionProvider } = await import('./support-session');

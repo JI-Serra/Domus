@@ -115,7 +115,7 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
         .replace(/-+$/g, ''),
     );
     await admin.getByLabel('Dirección').fill('Calle Ficticia 123, Yerba Buena');
-    await admin.getByLabel('Logo', { exact: true }).setInputFiles({
+    await admin.locator('input[type="file"][name="logo"]').setInputFiles({
       name: 'logo.png',
       mimeType: 'image/png',
       buffer: PNG,
@@ -292,14 +292,15 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
         .getByLabel('Dirección'),
     ).toHaveValue('Avenida Nueva 456');
 
-    // D20: criteria only, with the "conteo disponible en H2" explanation behind an info button.
+    // D20 / M01-F03: the criteria and the resulting count (no units yet), explained behind an info button.
+    await expect(admin.getByTestId('billable-count')).toHaveText('0');
     await admin
       .getByRole('button', {
         name: 'Más información sobre las unidades facturables',
       })
       .click();
     await expect(
-      admin.getByText(/el conteo está disponible en H2/),
+      admin.getByText(/las unidades archivadas no cuentan/),
     ).toBeVisible();
     await admin.keyboard.press('Escape');
     await admin.locator('label', { hasText: 'Vacía' }).click();

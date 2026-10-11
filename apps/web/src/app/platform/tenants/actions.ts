@@ -194,7 +194,7 @@ export async function changeSubscriptionAction(
   return { status: 'success', notice: 'statusChanged' };
 }
 
-/** D20: which unit statuses count as billable. Only the setting is stored in H1; the count arrives in H2. */
+/** D20: which unit statuses count as billable. The count is computed by `billable_unit_count`. */
 export async function saveBillableCriteriaAction(
   tenantId: string,
   _previous: PlatformFormState,

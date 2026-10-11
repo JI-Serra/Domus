@@ -44,3 +44,30 @@ export function extractAuthLink(emailText: string): string {
   if (!match) throw new Error('No auth link found in the email');
   return match[0].replaceAll('&amp;', '&');
 }
+
+/**
+ * Waits for an email to `recipient` that arrived after `since` (so an older email to the same address, such as the
+ * sign-up confirmation, is never mistaken for the one the test is waiting for) and returns its plain-text body.
+ */
+export async function waitForEmailTextSince(
+  recipient: string,
+  since: Date,
+): Promise<string> {
+  const deadline = Date.now() + 25_000;
+  while (Date.now() < deadline) {
+    const { messages } = await getJson<{ messages: MessageSummary[] }>(
+      `/api/v1/search?query=${encodeURIComponent(`to:${recipient}`)}`,
+    );
+    const fresh = messages.find(
+      (message) => new Date(message.Created).getTime() >= since.getTime(),
+    );
+    if (fresh) {
+      const detail = await getJson<{ Text: string }>(
+        `/api/v1/message/${fresh.ID}`,
+      );
+      return detail.Text;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`No new email arrived for ${recipient} within 25 s`);
+}

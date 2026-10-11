@@ -268,8 +268,14 @@ describe('BillableForm', () => {
       .fn<Action>()
       .mockResolvedValue({ status: 'success', notice: 'saved' });
     renderWithIntl(
-      <BillableForm selected={['occupied', 'vacant']} action={action} />,
+      <BillableForm
+        selected={['occupied', 'vacant']}
+        count={28}
+        action={action}
+      />,
     );
+    // M01-F03: the count of billable units, computed by the database.
+    expect(screen.getByTestId('billable-count')).toHaveTextContent('28');
     expect(screen.getByRole('switch', { name: 'Ocupada' })).toBeChecked();
     expect(screen.getByRole('switch', { name: 'En obra' })).not.toBeChecked();
     expect(screen.getByRole('switch', { name: 'Vacía' })).toBeChecked();
@@ -280,7 +286,7 @@ describe('BillableForm', () => {
       }),
     );
     expect(
-      screen.getByText(/el conteo está disponible en H2/),
+      screen.getByText(/las unidades archivadas no cuentan/),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('switch', { name: 'En obra' }));
@@ -299,7 +305,9 @@ describe('BillableForm', () => {
       errors: {},
       formError: 'billableRequired',
     });
-    renderWithIntl(<BillableForm selected={['occupied']} action={action} />);
+    renderWithIntl(
+      <BillableForm selected={['occupied']} count={null} action={action} />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Guardar criterios' }));
     expect(
       await screen.findByText('Elegí al menos un estado de unidad.'),
