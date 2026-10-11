@@ -144,3 +144,6 @@ values('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000
   '20000000-0000-0000-0000-000000000002','Fictional support example',now()-interval '1 hour',
   now()-interval '30 minutes',now()-interval '45 minutes','ended','20000000-0000-0000-0000-000000000001',
   '70000000-0000-0000-0000-000000000001');
+
+-- M03-F05: both tenants start balanced; Las Tipas adopts strict for contrast.
+select app_private.replace_access_policy('10000000-0000-0000-0000-000000000002',app_private.access_policy_template_data('strict'),'strict');

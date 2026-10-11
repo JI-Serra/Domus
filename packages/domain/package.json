@@ -11,7 +11,8 @@
     "./auth": "./src/auth/index.ts",
     "./registry": "./src/registry/index.ts",
     "./registry-ui": "./src/registry/ui.ts",
-    "./household": "./src/household/index.ts"
+    "./household": "./src/household/index.ts",
+    "./access-policy": "./src/access-policy/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

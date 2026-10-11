@@ -10,7 +10,8 @@
     "./session": "./src/session.ts",
     "./types": "./src/types.ts",
     "./platform": "./src/platform.ts",
-    "./registry": "./src/registry.ts"
+    "./registry": "./src/registry.ts",
+    "./access-policy": "./src/access-policy.ts"
   },
   "scripts": {
     "lint": "eslint .",
