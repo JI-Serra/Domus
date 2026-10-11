@@ -48,9 +48,9 @@ import type { LimitKey } from '@/lib/access-policy/rules';
 import { useRunAction } from '@/lib/registry/use-run-action';
 import { ChangeList } from './change-list';
 
-/** Same grid on the column header and on every row, from `lg` up; below it each row is a stacked card. */
+/** Same grid on the column header and on every row, from `xl` up; below it each row is a stacked card. */
 const ROW_GRID =
-  'lg:grid-cols-[minmax(11rem,1.5fr)_repeat(4,minmax(6.5rem,1fr))_minmax(11rem,1.3fr)_minmax(10rem,1fr)]';
+  'xl:grid-cols-[minmax(10rem,1.5fr)_repeat(4,minmax(5rem,1fr))_minmax(13rem,1.3fr)_minmax(9rem,1fr)]';
 
 export interface PolicyEditorProps {
   /** The saved policy. */
@@ -113,11 +113,15 @@ export function PolicyEditor({
   };
 
   const save = () =>
-    action.run(() =>
-      saveAccessPolicyAction(
-        candidate,
-        keyFor(`save:${JSON.stringify(candidate)}`),
-      ),
+    action.run(
+      () =>
+        saveAccessPolicyAction(
+          candidate,
+          keyFor(`save:${JSON.stringify(candidate)}`),
+        ),
+      () => {
+        keys.current = null;
+      },
     );
 
   const templateName = (code: AccessPolicyTemplate) =>
@@ -211,7 +215,7 @@ export function PolicyEditor({
         </div>
         <div
           aria-hidden="true"
-          className={`hidden gap-3 border-b border-hairline pb-2 text-app-caption text-text-secondary lg:grid ${ROW_GRID}`}
+          className={`hidden gap-3 border-b border-hairline pb-2 text-app-caption text-text-secondary xl:grid ${ROW_GRID}`}
         >
           <span>{t('matrix.visitorType')}</span>
           {householdAccessModes.map((mode) => (
@@ -254,7 +258,7 @@ export function PolicyEditor({
             {t('limits.info')}
           </InfoButton>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {limitKeys.map((key) => (
             <LimitField
               key={key}
@@ -324,10 +328,15 @@ export function PolicyEditor({
               <AuthNotice tone="error">{errorText(action.error)}</AuthNotice>
             ) : null}
             {previewChanges.length > 0 ? (
-              <ChangeList
-                changes={previewChanges}
-                label={t('templates.changesLabel')}
-              />
+              <div
+                tabIndex={0}
+                className="max-h-[45dvh] overflow-y-auto overscroll-contain rounded-card-dense focus-visible:outline-(length:--ring-width) focus-visible:outline-accent focus-visible:outline-solid"
+              >
+                <ChangeList
+                  changes={previewChanges}
+                  label={t('templates.changesLabel')}
+                />
+              </div>
             ) : (
               <p className="text-app-body">{t('templates.noChanges')}</p>
             )}
@@ -352,7 +361,10 @@ export function PolicyEditor({
                         previewing,
                         keyFor(`template:${previewing}`),
                       ),
-                    () => setPreviewing(null),
+                    () => {
+                      keys.current = null;
+                      setPreviewing(null);
+                    },
                   )
                 }
               >
@@ -390,7 +402,7 @@ function MatrixRow({
     <div
       role="group"
       aria-labelledby={nameId}
-      className={`grid gap-x-3 gap-y-2 border-t border-hairline py-3 first:border-t-0 lg:items-center ${ROW_GRID}`}
+      className={`grid gap-x-3 gap-y-2 border-t border-hairline py-3 first:border-t-0 xl:items-center ${ROW_GRID}`}
     >
       <div className="flex items-center gap-1">
         <span id={nameId} className="text-app-subheading">
@@ -402,14 +414,14 @@ function MatrixRow({
           </InfoButton>
         ) : null}
       </div>
-      <div className="grid grid-cols-2 gap-x-3 sm:grid-cols-4 lg:contents">
+      <div className="grid grid-cols-2 gap-x-3 sm:grid-cols-4 xl:contents">
         {householdAccessModes.map((mode) => {
           const selectable = isModeSelectable(visitor, mode);
           const checked = allowed.includes(mode);
           return (
             <label
               key={mode}
-              className="flex min-h-(--control-height) cursor-pointer items-center gap-2 text-app-body-dense has-disabled:cursor-not-allowed has-disabled:opacity-50 lg:justify-center"
+              className="flex min-h-(--control-height) cursor-pointer items-center gap-2 text-app-body-dense has-disabled:cursor-not-allowed has-disabled:opacity-50 xl:justify-center"
             >
               <input
                 type="checkbox"
@@ -422,13 +434,13 @@ function MatrixRow({
                 }
                 onChange={(event) => onToggle(mode, event.target.checked)}
               />
-              <span className="lg:sr-only">{t(`modes.${mode}`)}</span>
+              <span className="xl:sr-only">{t(`modes.${mode}`)}</span>
             </label>
           );
         })}
       </div>
       <label className="flex flex-col gap-1">
-        <span className="text-app-caption text-text-secondary lg:sr-only">
+        <span className="text-app-caption text-text-secondary xl:sr-only">
           {t('matrix.defaultMode')}
         </span>
         <Select
@@ -447,7 +459,7 @@ function MatrixRow({
       </label>
       <Switch
         label={t('matrix.identity')}
-        className="lg:[&>span:last-child]:sr-only"
+        className="xl:[&>span:last-child]:sr-only"
         checked={rule.access_policy_rule_is_identity_verification_required}
         disabled={disabled}
         onChange={(event) => onIdentity(event.target.checked)}

@@ -199,6 +199,26 @@ describe('PolicyEditor matrix', () => {
     expect(ids[2]).not.toBe(ids[0]);
   });
 
+  it('uses a new event id for a new submission after a successful save', async () => {
+    renderEditor();
+    fireEvent.click(
+      within(row('Delivery')).getByRole('switch', {
+        name: 'Verificar identidad',
+      }),
+    );
+    const save = screen.getByRole('button', { name: 'Guardar cambios' });
+    fireEvent.click(save);
+    await screen.findByText('Reglamento guardado.');
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
+    await waitFor(() =>
+      expect(actions.saveAccessPolicyAction).toHaveBeenCalledTimes(2),
+    );
+    expect(actions.saveAccessPolicyAction.mock.calls[1]?.[1]).not.toBe(
+      actions.saveAccessPolicyAction.mock.calls[0]?.[1],
+    );
+  });
+
   it('discards the draft', () => {
     renderEditor();
     const delivery = row('Delivery');
