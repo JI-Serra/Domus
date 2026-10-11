@@ -6,6 +6,7 @@
 **Reglas duras (todas las plantillas, no configurables):**
 - `unknown` (desconocido) solo admite `approval` o `reject` (P2/P3: nunca ingreso directo ni solo aviso).
 - El timeout de aprobación va de 30 a 300 s.
+- Topes absolutos de los límites: autorización permanente 1–3650 días; pase 1–100 usos y 1–365 días; evento 1–1000 invitados.
 - Ningún modo por defecto queda fuera de los modos permitidos.
 
 Modos: `direct_entry` (ingreso directo) · `notify` (aviso) · `approval` (aprobación) · `reject` (rechazar).
