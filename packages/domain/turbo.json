@@ -1,0 +1,12 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "test": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/supabase/migrations/20261012000001_access_policy_templates.sql",
+        "$TURBO_ROOT$/supabase/tests/access_policy_templates.test.sql"
+      ]
+    }
+  }
+}

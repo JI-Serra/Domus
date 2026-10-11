@@ -41,7 +41,7 @@ select is((select count(*) from pg_policies where schemaname='public' and tablen
   and roles @> array['authenticated']::name[] and (coalesce(qual,'')||coalesce(with_check,'')) like '%is_platform_admin%'),0::bigint,'No standing platform policy exposes tenant registry data');
 select is((select count(*) from pg_policies where schemaname='public' and tablename in ('platform_admin','membership','membership_permission') and roles && array['authenticated','anon']::name[] and cmd in ('INSERT','UPDATE','DELETE')),0::bigint,'Role and permission tables have no client write policies');
 select is((select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
-  where n.nspname='public' and t.tgname='audit_row_change'),20::bigint,'All sensitive tables are audited');
+  where n.nspname='public' and t.tgname='audit_row_change'),22::bigint,'All sensitive tables are audited');
 select is((select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
   where n.nspname='public' and t.tgname in ('audit_row_change','protect_audit_event','protect_audit_event_truncate') and t.tgenabled<>'A'),0::bigint,'Audit triggers are enabled always');
 select is((select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace

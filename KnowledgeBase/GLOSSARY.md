@@ -20,7 +20,8 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Habitante | `unit_resident` | person ↔ unit link (relationship, holder, minor). |
 | Vehículo | `vehicle` | |
 | Mascota | `pet` | |
-| Reglamento de accesos | `access_policy` | One row per tenant + visitor type. |
+| Reglamento de accesos | `access_policy` | One header per tenant; rules in `access_policy_rule`. |
+| Regla de reglamento por tipo de visitante | `access_policy_rule` | One row per tenant + visitor type. |
 | Preferencia de unidad | `unit_access_preference` | |
 | Contacto de respaldo | `unit_backup_contact` | Ordered. |
 | No molestar / De viaje | `unit_do_not_disturb` | |
@@ -142,3 +143,18 @@ Table names follow the naming rules in `AGENTS.md` (singular, snake_case, GeneXu
 | Autor del alta de persona | `person_created_by_user_id` | Actor provenance; holders edit only their own created unbound members. |
 | Patente verificada | `vehicle_is_verified` | Only nonarchived verified plate claims are canonical; holder projections omit this internal flag. |
 | Motivo operativo de contacto | `registry_contact_reason`: `approval_phone_fallback`, `visit_phone_fallback` | Approval / visit phone fallback, audited; five lookups per guard per fifteen minutes until M05 context binding. |
+
+## M03 access policy additions
+
+| Spec (es) | Table / attribute / code name | Notes |
+|---|---|---|
+| Plantilla de reglamento | `access_policy_template`: `balanced`, `strict`, `flexible` | Equilibrado / Estricto / Flexible; D25. |
+| Tiempo de espera de aprobación | `access_policy_approval_timeout_seconds_count` | 30–300 seconds; silence never approves. |
+| Vigencia máxima de autorización permanente | `access_policy_permanent_authorization_max_days_count` | 1–3650 days. |
+| Máximo de usos de pase | `access_policy_pass_max_uses_count` | 1–100 uses. |
+| Duración máxima de pase | `access_policy_pass_max_days_count` | 1–365 days. |
+| Cupo máximo de evento | `access_policy_event_max_guests_count` | 1–1000 guests. |
+| Modos permitidos / por defecto | `access_policy_rule_allowed_modes`, `access_policy_rule_default_mode` | `household_access_mode[]` / `household_access_mode`; unknown only approval/reject. |
+| Verificación de identidad obligatoria | `access_policy_rule_is_identity_verification_required` | Server-enforced by future M05 decision consumers. |
+| Comprobante de cambio de reglamento | Private `access_policy_operation` | Actor/session/tenant/operation/input-bound idempotency receipt. |
+| Cambio completo del reglamento | `access_policy_change` audit event | Full before/after snapshots for the admin history RPC. |
