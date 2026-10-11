@@ -14,6 +14,7 @@ import {
 import { waitForEmailText } from './support/mailpit';
 import {
   cleanUpResidents,
+  addCoHolder,
   createHouseholdFixture,
   membershipIdOf,
   openInvitationEmail,
@@ -659,12 +660,15 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
       members.getByRole('listitem').filter({ hasText: name });
     await holder.goto('/home');
 
-    // A person with an account can't be edited or removed by the holder (T19): not offered, and refused by the database.
+    // A person with an account can be removed (T20) but not edited (T19); changing identity is refused by the database.
     const diego = rowOf('Diego Hogar');
     await expect(diego.getByText('Con cuenta')).toBeVisible();
     await expect(
-      diego.getByRole('button', { name: /Editar|Quitar/ }),
+      diego.getByRole('button', { name: 'Editar a Diego Hogar' }),
     ).toHaveCount(0);
+    await expect(
+      diego.getByRole('button', { name: 'Quitar a Diego Hogar del hogar' }),
+    ).toBeVisible();
     const asHolder = clientWithToken(
       await accessTokenFromCookies(await holderContext.cookies()),
     );
@@ -741,6 +745,71 @@ test.describe.serial('resident flows (M02-F04, M02-F05)', () => {
       .getByRole('button', { name: 'Quitar del hogar' })
       .click();
     await expect(members).not.toContainText('Lucas Hogar');
+  });
+
+  test('the holder removes an account member from the household; a co-holder is out of reach', async () => {
+    const coHolder = await addCoHolder(tenantId, fixture.unitId, {
+      first: 'Hugo',
+      last: 'Cotitular',
+    });
+    emails.push(coHolder.email);
+    const members = holder.getByRole('list', { name: 'Miembros del hogar' });
+    const rowOf = (name: string) =>
+      members.getByRole('listitem').filter({ hasText: name });
+    await holder.goto('/home');
+
+    // A co-holder is listed but offered no action; the database refuses the direct attempts too.
+    const hugo = rowOf('Hugo Cotitular');
+    await expect(hugo.getByText('Titular', { exact: true })).toBeVisible();
+    await expect(hugo.getByRole('button')).toHaveCount(0);
+    const asHolder = clientWithToken(
+      await accessTokenFromCookies(await holderContext.cookies()),
+    );
+    const endCoHolder = await asHolder.rpc('end_household_membership', {
+      target_membership_id: coHolder.membershipId,
+      client_event_id: randomUUID(),
+    });
+    expect(endCoHolder.error?.code).toBe('42501');
+    const endSelf = await asHolder.rpc('end_household_membership', {
+      target_membership_id: await membershipIdOf(tenantId, holderEmail),
+      client_event_id: randomUUID(),
+    });
+    expect(endSelf.error?.code).toBe('42501');
+
+    // The member has the unit now; removing them takes it away on their next load.
+    await member.goto('/home');
+    await expect(
+      member.getByRole('heading', { name: 'Mi hogar', level: 1 }),
+    ).toBeVisible();
+    const diego = rowOf('Diego Hogar');
+    await diego
+      .getByRole('button', { name: 'Quitar a Diego Hogar del hogar' })
+      .click();
+    const confirm = dialogOf(holder, 'Quitar a Diego Hogar del hogar');
+    await expect(confirm).toContainText(
+      'Pierde el acceso a la unidad. Sus datos no se borran.',
+    );
+    await confirm.getByRole('button', { name: 'Quitar del hogar' }).click();
+    await expect(
+      holder.getByText(
+        'Quitaste a la persona del hogar. Ya no tiene acceso a la unidad.',
+      ),
+    ).toBeVisible();
+    // Their data stays; nothing more can be done with the person from here.
+    await expect(diego.getByText('Sin acceso')).toBeVisible();
+    await expect(diego.getByRole('button')).toHaveCount(0);
+    await expect(diego.getByRole('group')).toHaveCount(0);
+
+    await member.reload();
+    await expect(
+      member.getByText('Todavía no tenés un barrio asignado'),
+    ).toBeVisible();
+    await member.goto('/');
+    await expect(
+      member.getByText('Todavía no tenés un barrio asignado'),
+    ).toBeVisible();
+    await holder.reload();
+    await expect(rowOf('Diego Hogar').getByText('Sin acceso')).toBeVisible();
   });
 
   test('Mi hogar in dark mode and the bottom tab bar on mobile', async ({

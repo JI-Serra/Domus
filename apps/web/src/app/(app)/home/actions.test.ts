@@ -11,6 +11,7 @@ const sendResidentInvitation = vi.fn();
 const revokeResidentInvitation = vi.fn();
 const setHouseholdPermissions = vi.fn();
 const decideUnitJoinRequest = vi.fn();
+const endHouseholdMembership = vi.fn();
 const rotateUnitJoinCode = vi.fn();
 const revalidatePath = vi.fn();
 const reportError = vi.fn();
@@ -36,6 +37,8 @@ vi.mock('@domus/supabase/registry', () => ({
   setHouseholdPermissions: (...args: unknown[]) =>
     setHouseholdPermissions(...args),
   decideUnitJoinRequest: (...args: unknown[]) => decideUnitJoinRequest(...args),
+  endHouseholdMembership: (...args: unknown[]) =>
+    endHouseholdMembership(...args),
   rotateUnitJoinCode: (...args: unknown[]) => rotateUnitJoinCode(...args),
 }));
 
@@ -141,6 +144,7 @@ beforeEach(() => {
   revokeResidentInvitation.mockResolvedValue({ error: null });
   setHouseholdPermissions.mockResolvedValue({ error: null });
   decideUnitJoinRequest.mockResolvedValue({ data: null, error: null });
+  endHouseholdMembership.mockResolvedValue({ error: null });
   rotateUnitJoinCode.mockResolvedValue({ data: 'ABCD-EFGH-JKMN', error: null });
 });
 
@@ -468,6 +472,80 @@ describe('endMembershipAction', () => {
       formError: 'denied',
     });
     expect(saveResident).not.toHaveBeenCalled();
+  });
+});
+
+describe('removeAccountMemberAction (T20)', () => {
+  const accountSheet = () =>
+    baseSheet({
+      memberships: [
+        {
+          membership_id: 'm-holder',
+          person_id: HOLDER_PERSON,
+          membership_role: 'unit_holder',
+          membership_status: 'active',
+          membership_valid_from: '2026-01-01T00:00:00Z',
+          membership_valid_to: null,
+        },
+        {
+          membership_id: MEMBERSHIP,
+          person_id: PERSON,
+          membership_role: 'household_member',
+          membership_status: 'active',
+          membership_valid_from: '2026-01-01T00:00:00Z',
+          membership_valid_to: null,
+        },
+      ],
+    });
+
+  it('ends the membership with a fresh event key and refreshes the page', async () => {
+    loadHouseholdSheet.mockResolvedValue(accountSheet());
+    expect(await actions.removeAccountMemberAction(MEMBERSHIP)).toEqual({
+      status: 'success',
+      notice: 'removedMember',
+    });
+    const [, sent] = endHouseholdMembership.mock.calls[0] ?? [];
+    expect(sent.target_membership_id).toBe(MEMBERSHIP);
+    expect(sent.client_event_id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(revalidatePath).toHaveBeenCalledWith('/home');
+    await actions.removeAccountMemberAction(MEMBERSHIP);
+    expect(endHouseholdMembership.mock.calls[1]?.[1].client_event_id).not.toBe(
+      sent.client_event_id,
+    );
+    expect(saveResident).not.toHaveBeenCalled();
+  });
+
+  it('is never sent for a holder, an unknown id or somebody without an account', async () => {
+    loadHouseholdSheet.mockResolvedValue(accountSheet());
+    expect(await actions.removeAccountMemberAction('m-holder')).toMatchObject({
+      formError: 'denied',
+    });
+    expect(
+      await actions.removeAccountMemberAction(
+        '40000000-0000-4000-8000-0000000000ff',
+      ),
+    ).toMatchObject({ formError: 'denied' });
+    expect(await actions.removeAccountMemberAction('nope')).toMatchObject({
+      formError: 'denied',
+    });
+    loadHouseholdSheet.mockResolvedValue(baseSheet());
+    expect(await actions.removeAccountMemberAction(MEMBERSHIP)).toMatchObject({
+      formError: 'denied',
+    });
+    expect(endHouseholdMembership).not.toHaveBeenCalled();
+  });
+
+  it('shows a database refusal and is refused for a read-only barrio', async () => {
+    loadHouseholdSheet.mockResolvedValue(accountSheet());
+    endHouseholdMembership.mockResolvedValue({ error: { code: '42501' } });
+    expect(await actions.removeAccountMemberAction(MEMBERSHIP)).toMatchObject({
+      status: 'error',
+      formError: 'denied',
+    });
+    refused('readOnly');
+    expect(await actions.removeAccountMemberAction(MEMBERSHIP)).toMatchObject({
+      formError: 'readOnly',
+    });
   });
 });
 

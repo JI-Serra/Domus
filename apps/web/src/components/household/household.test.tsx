@@ -21,6 +21,7 @@ const addMemberAction = fn();
 const updateMemberAction = fn();
 const inviteResidentAction = fn();
 const endMembershipAction = fn();
+const removeAccountMemberAction = fn();
 const resendInvitationAction = fn();
 const revokeInvitationAction = fn();
 const setPermissionsAction = fn();
@@ -37,6 +38,8 @@ vi.mock('@/app/(app)/home/actions', () => ({
   updateMemberAction: (...args: never[]) => updateMemberAction(...args),
   inviteResidentAction: (...args: never[]) => inviteResidentAction(...args),
   endMembershipAction: (...args: never[]) => endMembershipAction(...args),
+  removeAccountMemberAction: (...args: never[]) =>
+    removeAccountMemberAction(...args),
   resendInvitationAction: (...args: never[]) => resendInvitationAction(...args),
   revokeInvitationAction: (...args: never[]) => revokeInvitationAction(...args),
   setPermissionsAction: (...args: never[]) => setPermissionsAction(...args),
@@ -111,6 +114,7 @@ beforeEach(() => {
   updateMemberAction.mockResolvedValue(ok('saved'));
   inviteResidentAction.mockResolvedValue(ok('invited'));
   endMembershipAction.mockResolvedValue(ok('ended'));
+  removeAccountMemberAction.mockResolvedValue(ok('removedMember'));
   resendInvitationAction.mockResolvedValue(ok('resent'));
   revokeInvitationAction.mockResolvedValue(ok('revoked'));
   setPermissionsAction.mockResolvedValue(ok('permissionsSaved'));
@@ -241,11 +245,81 @@ describe('MemberSection (holder)', () => {
     );
   });
 
-  it('offers neither edit nor removal for a person with an account (only a registry admin can)', () => {
+  it('lets the holder remove a person with an account, after stating the effect, but not edit them', async () => {
     renderWithShell(<MemberSection canManage members={[member()]} />);
     expect(
-      screen.queryByRole('button', { name: /Editar|Quitar/ }),
+      screen.queryByRole('button', { name: 'Editar a Diego Ceibos' }),
     ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Quitar a Diego Ceibos del hogar' }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Quitar a Diego Ceibos del hogar',
+      hidden: true,
+    });
+    expect(
+      within(dialog).getByText(
+        'Pierde el acceso a la unidad. Sus datos no se borran.',
+      ),
+    ).toBeInTheDocument();
+    expect(removeAccountMemberAction).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'Quitar del hogar',
+        hidden: true,
+      }),
+    );
+    // The membership id goes, never the person id; removing somebody without account is another action.
+    await waitFor(() =>
+      expect(removeAccountMemberAction).toHaveBeenCalledWith('m1'),
+    );
+    expect(endMembershipAction).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(/Ya no tiene acceso a la unidad/),
+    ).toBeVisible();
+  });
+
+  it('shows the refusal when the database says no', async () => {
+    removeAccountMemberAction.mockResolvedValue({
+      status: 'error',
+      errors: {},
+      formError: 'denied',
+    });
+    renderWithShell(<MemberSection canManage members={[member()]} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Quitar a Diego Ceibos del hogar' }),
+    );
+    fireEvent.click(
+      within(
+        screen.getByRole('dialog', { name: /Quitar a Diego/, hidden: true }),
+      ).getByRole('button', { name: 'Quitar del hogar', hidden: true }),
+    );
+    expect(
+      await screen.findByText('No tenés permiso para hacer esto.'),
+    ).toBeVisible();
+  });
+
+  it('offers nothing for a holder, for oneself or for a person whose account was ended', () => {
+    renderWithShell(
+      <MemberSection
+        canManage
+        members={[
+          holder,
+          member({
+            residentId: 'r9',
+            personId: 'p9',
+            firstName: 'Ex',
+            standing: 'former',
+            membershipId: null,
+            permissions: [],
+          }),
+        ]}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: /Quitar|Editar|Invitar/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Sin acceso')).toBeVisible();
   });
 
   it('removes a person from the household only after confirming the effect', async () => {

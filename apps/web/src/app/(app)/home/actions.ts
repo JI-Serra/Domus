@@ -13,6 +13,7 @@ import { fieldErrors } from '@domus/domain/platform';
 import { householdPermissions } from '@domus/domain/registry';
 import {
   decideUnitJoinRequest,
+  endHouseholdMembership,
   revokeResidentInvitation,
   rotateUnitJoinCode,
   savePet,
@@ -423,6 +424,35 @@ export async function endMembershipAction(
   if (error) return failure(error, 'household.member.end');
   revalidatePath(HOME_PATH);
   return { status: 'success', notice: 'ended' };
+}
+
+/**
+ * Removes a household member who has an account from the unit (T20): the membership ends and its delegations go; the
+ * person and their data are not deleted. Holders and the person themself are never offered this, and the database
+ * refuses them too.
+ */
+export async function removeAccountMemberAction(
+  membershipId: string,
+): Promise<PlatformFormState> {
+  const loaded = await loadManaged();
+  if ('problem' in loaded) return formError(loaded.problem);
+  const target = loaded.members.find(
+    (member) => member.membershipId === membershipId,
+  );
+  if (
+    !UUID.test(membershipId) ||
+    !target ||
+    target.standing !== 'member' ||
+    target.isSelf
+  )
+    return formError('denied');
+  const { error } = await endHouseholdMembership(loaded.scope.client, {
+    target_membership_id: membershipId,
+    client_event_id: crypto.randomUUID(),
+  });
+  if (error) return failure(error, 'household.member.remove');
+  revalidatePath(HOME_PATH);
+  return { status: 'success', notice: 'removedMember' };
 }
 
 /**

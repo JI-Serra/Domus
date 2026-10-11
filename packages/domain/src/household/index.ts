@@ -67,10 +67,11 @@ export interface InvitationFacts {
  * - `minor`: never gets an account or permissions.
  * - `member`: has an active account in the unit (delegations apply).
  * - `invited`: has a pending, unexpired invitation.
+ * - `former`: had an account in this unit that was ended; the person keeps no access and the holder can't edit them.
  * - `unregistered`: a resident without account who can be invited.
  */
 export type ResidentStanding =
-  'holder' | 'minor' | 'member' | 'invited' | 'unregistered';
+  'holder' | 'minor' | 'member' | 'invited' | 'former' | 'unregistered';
 
 export function residentStanding(
   resident: ResidentFacts,
@@ -103,7 +104,16 @@ export function residentStanding(
       invitation.invitation_status === 'pending' &&
       Date.parse(invitation.invitation_expires_at) > now.getTime(),
   );
-  return isInvited ? 'invited' : 'unregistered';
+  if (isInvited) return 'invited';
+  const hadAccount = memberships.some(
+    (membership) =>
+      membership.person_id === resident.person_id &&
+      membership.membership_role === 'household_member' &&
+      (membership.membership_status !== 'active' ||
+        (membership.membership_valid_to !== null &&
+          Date.parse(membership.membership_valid_to) <= now.getTime())),
+  );
+  return hadAccount ? 'former' : 'unregistered';
 }
 
 export type PlateKind =

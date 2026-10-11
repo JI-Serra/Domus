@@ -219,7 +219,8 @@
       "minor": "Menor",
       "member": "Con cuenta",
       "invited": "Invitado",
-      "unregistered": "Sin cuenta"
+      "unregistered": "Sin cuenta",
+      "former": "Sin acceso"
     },
     "relationship": {
       "owner": "Propietario",
@@ -266,7 +267,8 @@
       "endBody": "Pierde el acceso a la unidad. Si más adelante vuelve, la podés invitar de nuevo.",
       "endConfirm": "Quitar del hogar",
       "ending": "Quitando…",
-      "listLabel": "Miembros del hogar"
+      "listLabel": "Miembros del hogar",
+      "endAccountBody": "Pierde el acceso a la unidad. Sus datos no se borran."
     },
     "delegations": {
       "title": "Permisos de {name}",
@@ -373,7 +375,8 @@
       "removed": "Eliminado.",
       "approved": "Solicitud aprobada. Enviamos la invitación por email.",
       "rejected": "Solicitud rechazada.",
-      "rotated": "Código nuevo generado."
+      "rotated": "Código nuevo generado.",
+      "removedMember": "Quitaste a la persona del hogar. Ya no tiene acceso a la unidad."
     },
     "errors": {
       "firstNameRequired": "Escribí el nombre.",

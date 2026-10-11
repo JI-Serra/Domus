@@ -222,3 +222,43 @@ export async function removePetPhotos(
       .from('pet-photo')
       .remove(data.map((object) => `${folder}/${object.name}`));
 }
+
+/**
+ * A second, active holder of the unit with a real account (test setup straight in the local database: the product
+ * only creates holders through registry administrators and invitations).
+ */
+export async function addCoHolder(
+  tenantId: string,
+  unitId: string,
+  name: { first: string; last: string },
+): Promise<{ email: string; membershipId: string }> {
+  const { userId, email } = await createDisposableUser();
+  const membershipId = await withDatabase(async (db) => {
+    const personId = randomUUID();
+    await db.query(
+      `insert into public.person (person_id, tenant_id, user_id, person_first_name, person_last_name,
+         person_document_type, person_document_number)
+       values ($1, $2, $3, $4, $5, 'dni', $6)`,
+      [
+        personId,
+        tenantId,
+        userId,
+        name.first,
+        name.last,
+        String(Date.now()).slice(-8),
+      ],
+    );
+    await db.query(
+      `insert into public.unit_resident (tenant_id, unit_id, person_id, unit_resident_relationship, unit_resident_is_holder)
+       values ($1, $2, $3, 'owner', true)`,
+      [tenantId, unitId, personId],
+    );
+    const { rows } = await db.query<{ membership_id: string }>(
+      `insert into public.membership (tenant_id, person_id, membership_role, unit_id)
+       values ($1, $2, 'unit_holder', $3) returning membership_id`,
+      [tenantId, personId, unitId],
+    );
+    return rows[0]?.membership_id ?? '';
+  });
+  return { email, membershipId };
+}

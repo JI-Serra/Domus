@@ -146,7 +146,7 @@ describe('residentStanding', () => {
         [],
         NOW,
       ),
-    ).toBe('unregistered');
+    ).toBe('former');
     expect(
       residentStanding(
         resident(),
@@ -168,6 +168,34 @@ describe('residentStanding', () => {
         resident(),
         [],
         [invitation({ invitation_status: 'revoked' })],
+        NOW,
+      ),
+    ).toBe('unregistered');
+  });
+
+  it('marks a person whose account was ended as former, not as somebody to invite or edit', () => {
+    expect(
+      residentStanding(
+        resident(),
+        [membership({ membership_status: 'revoked' })],
+        [],
+        NOW,
+      ),
+    ).toBe('former');
+    expect(
+      residentStanding(
+        resident(),
+        [membership({ membership_valid_to: '2026-10-10T12:00:00Z' })],
+        [],
+        NOW,
+      ),
+    ).toBe('former');
+    // A membership of another person or role does not count.
+    expect(
+      residentStanding(
+        resident(),
+        [membership({ membership_role: 'unit_holder' })],
+        [],
         NOW,
       ),
     ).toBe('unregistered');

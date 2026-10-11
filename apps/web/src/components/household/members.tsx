@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import {
   addMemberAction,
   endMembershipAction,
+  removeAccountMemberAction,
   inviteResidentAction,
   resendInvitationAction,
   revokeInvitationAction,
@@ -425,6 +426,8 @@ function MemberRow({
       <StatusBadge status="warning">{t('standing.invited')}</StatusBadge>
     ) : member.standing === 'minor' ? (
       <Badge>{t('standing.minor')}</Badge>
+    ) : member.standing === 'former' ? (
+      <Badge>{t('standing.former')}</Badge>
     ) : canManage ? (
       <Badge>{t('standing.unregistered')}</Badge>
     ) : null;
@@ -508,6 +511,16 @@ function MemberRow({
               </Button>
             </>
           ) : null}
+          {member.standing === 'member' ? (
+            <Button
+              variant="destructive"
+              disabled={!writable}
+              aria-label={t('members.endLabel', { name })}
+              onClick={() => setConfirmEnd(true)}
+            >
+              {t('members.end')}
+            </Button>
+          ) : null}
           {editable ? (
             <>
               <Button
@@ -569,7 +582,10 @@ function MemberRow({
         onCancel={() => setConfirmEnd(false)}
         onConfirm={() =>
           run(
-            () => endMembershipAction(member.personId),
+            () =>
+              member.standing === 'member'
+                ? removeAccountMemberAction(member.membershipId ?? '')
+                : endMembershipAction(member.personId),
             (result) => {
               setConfirmEnd(false);
               onNotice(noticeOf(result));
@@ -577,7 +593,9 @@ function MemberRow({
           )
         }
       >
-        {t('members.endBody')}
+        {member.standing === 'member'
+          ? t('members.endAccountBody')
+          : t('members.endBody')}
       </ConfirmDialog>
     </li>
   );
