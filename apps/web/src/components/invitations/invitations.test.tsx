@@ -38,6 +38,49 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
 });
 
+describe('AcceptInvitationForm (residents)', () => {
+  it('shows the short privacy notice, with the full text behind its info button, before a resident accepts', () => {
+    renderWithIntl(
+      <AcceptInvitationForm
+        token={TOKEN}
+        tenantName="Los Ceibos"
+        roleLabel="Titular"
+        role="unit_holder"
+      />,
+    );
+    expect(
+      screen.getByText('Tus datos se usan solo para la gestión de tu barrio.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Ley 25.326/)).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Más información sobre la privacidad',
+      }),
+    );
+    expect(screen.getByText(/Ley 25.326/)).toBeInTheDocument();
+    expect(document.querySelector('input[name="role"]')).toHaveAttribute(
+      'value',
+      'unit_holder',
+    );
+  });
+
+  it('does not show it for staff roles', () => {
+    renderWithIntl(
+      <AcceptInvitationForm
+        token={TOKEN}
+        tenantName="Los Ceibos"
+        roleLabel="Administrador"
+        role="tenant_admin"
+      />,
+    );
+    expect(
+      screen.queryByText(
+        'Tus datos se usan solo para la gestión de tu barrio.',
+      ),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe('AcceptInvitationForm', () => {
   it('shows the barrio and the role before accepting, with the password behind an info button', () => {
     renderWithIntl(

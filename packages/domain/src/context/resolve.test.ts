@@ -39,6 +39,26 @@ function ids(options: readonly { membership_id: string }[]): string[] {
 }
 
 describe('resolveActiveContext', () => {
+  it('carries the unit of a resident membership and leaves it empty otherwise', () => {
+    const withUnit = membership({
+      unit_id: 'unit-1',
+      unit_code: 'Mz 1 Lote 1',
+    });
+    const [resident] = resolveActiveContext({
+      memberships: [withUnit],
+      now: NOW,
+    }).options;
+    expect(resident).toMatchObject({
+      unit_id: 'unit-1',
+      unit_name: 'Mz 1 Lote 1',
+    });
+    const [plain] = resolveActiveContext({
+      memberships: [membership({ unit_id: null })],
+      now: NOW,
+    }).options;
+    expect(plain).toMatchObject({ unit_id: null, unit_name: null });
+  });
+
   it('a multi-tenant user defaults to the first tenant by name and lists every option', () => {
     const result = resolveActiveContext({
       memberships: [ceibos, tipas],

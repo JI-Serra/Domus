@@ -84,6 +84,7 @@ export default async function AcceptInvitationPage({
         token={token}
         tenantName={preview.tenantName}
         roleLabel={roles(preview.role)}
+        role={preview.role}
       />
     ) : (
       <Unavailable token={token} signedIn />

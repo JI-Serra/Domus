@@ -110,6 +110,24 @@ describe('acceptInvitationAction', () => {
     expect(updateUser).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['unit_holder', '/home'],
+    ['household_member', '/home'],
+    ['tenant_admin', '/'],
+    ['guard', '/'],
+    ['forged', '/'],
+  ])('lands a %s invitation at %s', async (role, landing) => {
+    await expect(
+      navigatesTo(() =>
+        acceptInvitationAction(IDLE, formData({ token: TOKEN, role })),
+      ),
+    ).resolves.toBe(landing);
+    expect(cookieSets).toContainEqual({
+      name: 'domus-context',
+      value: MEMBERSHIP,
+    });
+  });
+
   it('sets the password first when one was typed', async () => {
     await navigatesTo(() =>
       acceptInvitationAction(

@@ -67,9 +67,8 @@ function toContext(membership: MembershipRecord): ActiveContext {
     tenant_name: membership.tenant_name,
     tenant_time_zone: membership.tenant_time_zone,
     membership_role: membership.membership_role,
-    // Units arrive with M02; the UI keeps the slot.
-    unit_id: null,
-    unit_name: null,
+    unit_id: membership.unit_id ?? null,
+    unit_name: membership.unit_code ?? null,
   };
 }
 

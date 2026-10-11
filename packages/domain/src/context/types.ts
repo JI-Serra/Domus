@@ -34,7 +34,7 @@ export interface ActiveContext {
   /** IANA time zone of the tenant, passed to `@domus/domain/format`. */
   tenant_time_zone: string;
   membership_role: MembershipRole;
-  /** Always null until units exist (M02). Roles that are not tied to a unit keep it null afterwards too. */
+  /** The unit of resident roles; null for roles that are not tied to a unit. */
   unit_id: string | null;
   unit_name: string | null;
 }
@@ -50,4 +50,8 @@ export interface MembershipRecord {
   tenant_id: string;
   tenant_name: string;
   tenant_time_zone: string;
+  /** Set for resident roles (`unit_holder`, `household_member`): the unit the membership belongs to. */
+  unit_id?: string | null;
+  /** Human identifier of that unit (`unit.unit_code`). */
+  unit_code?: string | null;
 }
