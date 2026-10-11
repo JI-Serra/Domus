@@ -783,7 +783,7 @@ describe('ImportWizard', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Confirmar importación' }),
+      await screen.findByRole('button', { name: 'Confirmar importación' }),
     );
     expect(await screen.findByTestId('import-outcome')).toHaveTextContent(
       'Importación completa.',

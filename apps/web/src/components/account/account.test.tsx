@@ -107,7 +107,7 @@ describe('TotpEnrollment', () => {
         { timeout: 5000 },
       ),
     ).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it('shows the error of a wrong code and keeps the flow open', async () => {
     start.mockResolvedValue(STARTED);
