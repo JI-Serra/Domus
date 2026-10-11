@@ -2,8 +2,8 @@ begin;
 select no_plan();
 create temp table policy_fixture(key text primary key,value jsonb);
 grant all on policy_fixture to authenticated;
-select is((select count(*) from public.access_policy),2::bigint,'Each seed tenant has a policy');
-select is((select count(*) from public.access_policy_rule),14::bigint,'All seven visitor rules per seed tenant');
+select is((select count(*) from public.access_policy where tenant_id in ('10000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002')),2::bigint,'Each seed tenant has a policy');
+select is((select count(*) from public.access_policy_rule where tenant_id in ('10000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002')),14::bigint,'All seven visitor rules per seed tenant');
 select is(app_private.access_policy_snapshot('10000000-0000-0000-0000-000000000001'),app_private.access_policy_template_data('balanced'),'Ceibos balanced');
 select is(app_private.access_policy_snapshot('10000000-0000-0000-0000-000000000002'),app_private.access_policy_template_data('strict'),'Tipas strict');
 -- Hard bounds survive owner SQL, independently of RPC validation or RLS.
@@ -37,16 +37,17 @@ select throws_ok($$select public.access_policy_history('10000000-0000-0000-0000-
 select throws_ok(format('insert into public.%I(tenant_id) values(''10000000-0000-0000-0000-000000000002'')',t),'42501',null,'Client INSERT denied '||t) from unnest(array['access_policy','access_policy_rule']) t;
 select throws_ok(format('update public.%I set tenant_id=''10000000-0000-0000-0000-000000000002''',t),'42501',null,'Client UPDATE denied '||t) from unnest(array['access_policy','access_policy_rule']) t;
 select throws_ok(format('delete from public.%I',t),'42501',null,'Client DELETE denied '||t) from unnest(array['access_policy','access_policy_rule']) t;
+insert into policy_fixture values('history_baseline',to_jsonb((select count(*) from public.access_policy_history('10000000-0000-0000-0000-000000000001'))));
 insert into policy_fixture values('before',public.get_access_policy('10000000-0000-0000-0000-000000000001'));
 insert into policy_fixture values('strict',public.apply_access_policy_template('10000000-0000-0000-0000-000000000001','strict','f0300000-0000-4000-8000-000000000001'));
 select is(public.apply_access_policy_template('10000000-0000-0000-0000-000000000001','strict','f0300000-0000-4000-8000-000000000001'),
   (select value from policy_fixture where key='strict'),'Template retry returns identical result');
-select is((select count(*) from public.access_policy_history('10000000-0000-0000-0000-000000000001')),1::bigint,'Retry creates no history duplicate');
-select is((select before_policy from public.access_policy_history('10000000-0000-0000-0000-000000000001')),
+select is((select count(*) from public.access_policy_history('10000000-0000-0000-0000-000000000001')),(select value::text::bigint+1 from policy_fixture where key='history_baseline'),'Retry creates no history duplicate');
+select is((select before_policy from public.access_policy_history('10000000-0000-0000-0000-000000000001') where client_event_id='f0300000-0000-4000-8000-000000000001'),
   (select value->'policy' from policy_fixture where key='before'),'History retains full before snapshot');
-select is((select after_policy from public.access_policy_history('10000000-0000-0000-0000-000000000001')),
+select is((select after_policy from public.access_policy_history('10000000-0000-0000-0000-000000000001') where client_event_id='f0300000-0000-4000-8000-000000000001'),
   (select value->'policy' from policy_fixture where key='strict'),'History retains full after snapshot');
-select is((select audit_event_actor_user_id from public.access_policy_history('10000000-0000-0000-0000-000000000001')),'20000000-0000-0000-0000-000000000002'::uuid,'History attributes actor');
+select is((select audit_event_actor_user_id from public.access_policy_history('10000000-0000-0000-0000-000000000001') where client_event_id='f0300000-0000-4000-8000-000000000001'),'20000000-0000-0000-0000-000000000002'::uuid,'History attributes actor');
 select throws_ok($$select public.apply_access_policy_template('10000000-0000-0000-0000-000000000001','flexible','f0300000-0000-4000-8000-000000000001')$$,'42501','Access policy retry denied','Changed retry input denied');
 insert into policy_fixture values('custom',public.update_access_policy('10000000-0000-0000-0000-000000000001',
   jsonb_set((select value->'policy' from policy_fixture where key='strict'),'{access_policy_approval_timeout_seconds_count}','150'),'f0300000-0000-4000-8000-000000000002'));
