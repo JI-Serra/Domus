@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import type { MfaStep } from '@domus/domain/auth';
 import type { ActiveContext } from '@domus/domain/context';
 import baseMessages from '../../messages/es-AR.json';
+import accessPolicyMessages from '../../messages/access-policy.es-AR.json';
 import registryMessages from '../../messages/registry.es-AR.json';
 import { ActiveContextProvider } from '@/components/shell/active-context';
 import { AdminPermissionsProvider } from '@/components/shell/admin-permissions';
@@ -12,7 +13,11 @@ import { TenantStatusProvider } from '@/components/tenant/tenant-status';
 import type { TenantSubscriptionStatus } from '@domus/domain/tenant/subscription-status';
 import { MOCK_CONTEXTS } from '@/test/fixtures';
 
-const messages = { ...baseMessages, ...registryMessages };
+const messages = {
+  ...baseMessages,
+  ...registryMessages,
+  ...accessPolicyMessages,
+};
 
 /** Renders with the es-AR messages, as the root layout does. */
 export function renderWithIntl(ui: ReactElement) {

@@ -1,0 +1,133 @@
+{
+  "accessPolicy": {
+    "metaTitle": "Reglamento de accesos · Domus",
+    "title": "Reglamento de accesos",
+    "infoLabel": "Más información sobre el reglamento de accesos",
+    "info": "Define cómo puede ingresar cada tipo de visitante y qué modos puede elegir el hogar. Los cambios valen para todo el barrio y quedan en el historial.",
+    "readOnly": "Solo lectura",
+    "history": "Historial",
+    "backToPolicy": "Reglamento",
+    "visitorTypes": {
+      "permanent_authorized": "Autorizado permanente",
+      "recurring_authorized": "Autorizado recurrente",
+      "pass_guest": "Invitado con pase",
+      "event_guest": "Invitado de evento",
+      "delivery": "Delivery",
+      "service_worker": "Servicio o trabajador",
+      "unknown": "Desconocido"
+    },
+    "modes": {
+      "direct_entry": "Ingreso directo",
+      "notify": "Aviso",
+      "approval": "Aprobación",
+      "reject": "Rechazo"
+    },
+    "matrix": {
+      "title": "Tipos de visitante",
+      "info": "Cada tipo permite al menos un modo, y el modo por defecto tiene que ser uno de los permitidos. Si marcás la verificación de identidad, la garita no registra el ingreso sin un documento.",
+      "infoLabel": "Más información sobre los tipos de visitante",
+      "listLabel": "Reglas por tipo de visitante",
+      "visitorType": "Tipo de visitante",
+      "allowedModes": "Modos permitidos",
+      "defaultMode": "Por defecto",
+      "identity": "Verificar identidad",
+      "unknownInfoLabel": "Por qué un desconocido no admite ingreso directo ni aviso",
+      "unknownInfo": "Una persona desconocida nunca entra sin que el hogar lo apruebe: solo se puede pedir aprobación o rechazar."
+    },
+    "limits": {
+      "title": "Tiempos y límites",
+      "info": "Si el hogar no responde dentro del tiempo de espera, el ingreso no se aprueba. Los residentes no pueden crear autorizaciones, pases ni eventos que superen estos límites.",
+      "infoLabel": "Más información sobre los tiempos y límites",
+      "timeout": {
+        "label": "Tiempo de espera de aprobación",
+        "unit": "segundos"
+      },
+      "permanentDays": {
+        "label": "Vigencia máxima de una autorización permanente",
+        "unit": "días"
+      },
+      "passUses": {
+        "label": "Usos máximos de un pase",
+        "unit": "usos"
+      },
+      "passDays": {
+        "label": "Duración máxima de un pase",
+        "unit": "días"
+      },
+      "eventGuests": {
+        "label": "Invitados máximos por evento",
+        "unit": "invitados"
+      },
+      "range": "Ingresá un número entero entre {min} y {max}."
+    },
+    "templates": {
+      "title": "Plantillas",
+      "info": "Una plantilla reemplaza todo el reglamento. Antes de aplicarla ves qué cambia.",
+      "infoLabel": "Más información sobre las plantillas",
+      "listLabel": "Plantillas del reglamento",
+      "names": {
+        "strict": "Estricto",
+        "balanced": "Equilibrado",
+        "flexible": "Flexible"
+      },
+      "custom": "Personalizado",
+      "current": "Aplicada",
+      "preview": "Ver cambios",
+      "previewNamed": "Ver los cambios de la plantilla {name}",
+      "sheetTitle": "Plantilla {name}",
+      "close": "Cerrar",
+      "cancel": "Cancelar",
+      "apply": "Aplicar plantilla",
+      "noChanges": "No cambia ningún valor.",
+      "discardsDraft": "Tus cambios sin guardar se descartan.",
+      "changesLabel": "Cambios de la plantilla"
+    },
+    "actions": {
+      "save": "Guardar cambios",
+      "saving": "Guardando…",
+      "discard": "Descartar cambios",
+      "unsaved": "Hay cambios sin guardar",
+      "invalid": "Corregí los campos marcados para guardar."
+    },
+    "notices": {
+      "saved": "Reglamento guardado.",
+      "templateApplied": "Plantilla aplicada."
+    },
+    "errors": {
+      "denied": "No tenés permiso para cambiar el reglamento.",
+      "readOnly": "El barrio está en solo lectura: no se pueden hacer cambios.",
+      "invalid": "El reglamento tiene valores que no se pueden guardar. Revisalos y volvé a intentar.",
+      "retryConflict": "No pudimos reintentar ese cambio. Revisá el reglamento y volvé a guardar.",
+      "busy": "Hay otro cambio en curso. Volvé a intentar en unos segundos.",
+      "unknown": "Algo salió mal de nuestro lado. Volvé a intentar en unos minutos."
+    },
+    "fields": {
+      "allowedModes": "Modos permitidos",
+      "defaultMode": "Por defecto",
+      "identity": "Verificación de identidad"
+    },
+    "values": {
+      "identityRequired": "Requerida",
+      "identityNotRequired": "No requerida",
+      "seconds": "{count} s",
+      "days": "{count, plural, one {# día} other {# días}}",
+      "uses": "{count, plural, one {# uso} other {# usos}}",
+      "guests": "{count, plural, one {# invitado} other {# invitados}}"
+    },
+    "historyPage": {
+      "metaTitle": "Historial del reglamento · Domus",
+      "title": "Historial del reglamento",
+      "infoLabel": "Más información sobre el historial",
+      "info": "Cada cambio muestra quién lo hizo, cuándo y qué valores cambiaron.",
+      "listLabel": "Cambios del reglamento",
+      "empty": "Todavía no hay cambios",
+      "manual": "Manual",
+      "template": "Plantilla {name}",
+      "noValueChanges": "No cambió ningún valor.",
+      "adminActor": "Administrador del barrio",
+      "support": "Equipo de Domus",
+      "onBehalf": "como {name}",
+      "changesLabel": "Cambios de este registro"
+    }
+  }
+}
