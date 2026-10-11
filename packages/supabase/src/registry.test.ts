@@ -11,9 +11,18 @@ import {
   cancelUnitJoinRequest,
   registryPendingVerification,
   endHouseholdMembership,
+  listTenantGuards,
 } from './registry';
 const id = '10000000-0000-0000-0000-000000000001';
 describe('registry typed caller-bound wrappers', () => {
+  it('lists the minimized guard projection within the requested tenant', () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as DomusSupabaseClient;
+    listTenantGuards(client, { target_tenant_id: id });
+    expect(rpc).toHaveBeenCalledWith('list_tenant_guards', {
+      target_tenant_id: id,
+    });
+  });
   it('ends a household membership with the caller retry event', () => {
     const rpc = vi.fn();
     const client = { rpc } as unknown as DomusSupabaseClient;

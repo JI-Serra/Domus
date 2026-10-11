@@ -149,3 +149,8 @@ export const unitSheet = (
   input: Args<'unit_sheet'>,
 ) =>
   client.rpc('unit_sheet', input).overrideTypes<UnitSheet, { merge: false }>();
+
+export const listTenantGuards = (
+  client: DomusSupabaseClient,
+  input: Args<'list_tenant_guards'>,
+) => client.rpc('list_tenant_guards', input);

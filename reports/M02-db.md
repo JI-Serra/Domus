@@ -1,5 +1,31 @@
 # M02 registry database contract (T14 + T18 + T19 + T20 / H2)
 
+## T21 guards permission management (authoritative)
+
+Migrations `20261011000024` and `20261011000025` make M02-F06 guard management independent of `registry`. `list_tenant_guards(target_tenant_id uuid) -> jsonb` is callable by authenticated active tenant admins with `guards` or `registry`; `listTenantGuards` is its generated-types-backed wrapper. The response is:
+
+```ts
+{
+  guards: [{
+    membership_id, person_id, person_first_name, person_last_name, person_email,
+    membership_status, membership_valid_from, membership_valid_to,
+    gates: [{ gate_id, gate_name }]
+  }],
+  pending_invitations: [{
+    invitation_id, invitation_email, invitation_first_name, invitation_last_name,
+    invitation_status, invitation_expires_at, invitation_delivered_at
+  }]
+}
+```
+
+The arrays are always present, including when empty. Guard memberships include inactive/revoked and future/expired validity records; the UI determines current activity from status and validity. Gates include all assignments. Pending guard invitations include expired pending records so the UI can derive expiry from `invitation_expires_at`. No resident invitations, documents, birth dates, phone numbers, Auth bindings or token hashes are returned. Sorting is deterministic by person last/first name and membership ID, by gate name/ID, and by invitation creation time/ID.
+
+Existing `create_invitation` accepts guards-only grantors for role `guard` with no admin permissions, including delivery marking and `revoke_invitation`. Guard invitation acceptance rechecks the grantor's current `guards` or `registry` authority. Guards-only invitation targets with `target_person_id` must already have a guard membership; this does not permit converting arbitrary resident identities. New guard invitations may omit `target_person_id` and supply first/last names as before. Self-invitation and the no-support-invitation rule remain. `revoke_membership(target_membership_id)` allows guards-only admins to deactivate guard targets; self-targets, other roles and foreign tenants remain denied. It retains its existing signature and registry/admin/platform path; the guard write delegates to a private capability with an integrity exception limited to changing an existing guard status to `revoked`.
+
+`save_gate`, `assign_guard_gate`, `create_device_pairing`, `redeem_device_pairing`, `sync_device` and `revoke_device` already accepted `guards` and require no changes. Person/membership/resident/unit RLS and direct permission-table writes are not broadened. Suspended tenants allow the minimized read but reject writes. Valid support identities can read/deactivate only within their binding, even when the target admin has `guards` in another tenant; audit records attribute the actual actor and represented user.
+
+T21 acceptance: `pnpm test:db` passes 1,135 assertions across 18 files (58 new dedicated guard assertions); `pnpm lint`, `pnpm typecheck`, `pnpm test` and type regeneration pass. Both migrations were announced and applied using `pnpm supabase migration up` to the existing shared local stack, with no reset or restart. See `reports/T21-guards-access.md` for implementation and runtime details.
+
 ## T20 household membership termination (authoritative)
 
 `end_household_membership(target_membership_id uuid, client_event_id uuid) -> void` is available through the generated types and `endHouseholdMembership` wrapper. Migrations `20261011000022` and `20261011000023` add the complete function and explicit owner-applied ACL. Only authenticated callers can execute it.

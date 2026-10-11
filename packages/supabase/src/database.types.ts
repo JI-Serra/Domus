@@ -1400,6 +1400,7 @@ export type Database = {
           user_id: string;
         }[];
       };
+      list_tenant_guards: { Args: { target_tenant_id: string }; Returns: Json };
       mark_invitation_delivered: {
         Args: { target_invitation_id: string };
         Returns: undefined;
