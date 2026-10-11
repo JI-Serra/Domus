@@ -19,8 +19,8 @@ import {
   newContext,
   signIn,
 } from './support/flows';
+import { openAuthLink } from './support/auth-links';
 import { extractAuthLink, waitForEmailText } from './support/mailpit';
-import { followAuthLink } from './support/registry';
 import {
   accessTokenFromCookies,
   clientWithToken,
@@ -185,7 +185,7 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
     inviteLink = extractAuthLink(await waitForEmailText(inviteeEmail));
     inviteeContext = await newContext(browser, testInfo);
     invitee = await inviteeContext.newPage();
-    await followAuthLink(invitee, inviteLink);
+    await openAuthLink(invitee, inviteLink);
     await expect(invitee).toHaveURL(
       /\/invitations\/accept\?token=[a-f0-9]{64}$/,
     );
@@ -242,7 +242,7 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
     // The email link works once: a second visit shows the expired-link message.
     const again = await newContext(browser, testInfo);
     const reused = await again.newPage();
-    await followAuthLink(reused, inviteLink);
+    await openAuthLink(reused, inviteLink);
     await expect(
       reused.getByText(
         'El enlace venció. Pedí una invitación nueva a quien te invitó.',
@@ -634,7 +634,7 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
 
     const context = await newContext(browser, testInfo);
     const page = await context.newPage();
-    await followAuthLink(page, link);
+    await openAuthLink(page, link);
     await expect(
       page.getByText('Esta invitación no está disponible', { exact: true }),
     ).toBeVisible();

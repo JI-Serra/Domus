@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { ButtonLink } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useActiveContext } from './active-context';
 import { getNavigation } from './navigation';
@@ -38,6 +39,12 @@ export function SectionShortcuts() {
           );
         })}
       </ul>
+      {active.membership_role === 'unit_holder' ||
+      active.membership_role === 'household_member' ? (
+        <ButtonLink href="/join" variant="secondary" className="mt-4">
+          {t('joinLink')}
+        </ButtonLink>
+      ) : null}
     </Card>
   );
 }

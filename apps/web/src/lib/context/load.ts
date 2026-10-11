@@ -12,6 +12,8 @@ interface MembershipRow {
   membership_status: MembershipRecord['membership_status'];
   membership_valid_from: string;
   membership_valid_to: string | null;
+  unit_id: string | null;
+  unit: { unit_code: string } | null;
   tenant: {
     tenant_id: string;
     tenant_name: string;
@@ -35,7 +37,8 @@ export async function loadMemberships(
   const { data, error } = await client
     .from('membership')
     .select(
-      `membership_id, membership_role, membership_status, membership_valid_from, membership_valid_to,
+      `membership_id, membership_role, membership_status, membership_valid_from, membership_valid_to, unit_id,
+       unit(unit_code),
        tenant!inner(tenant_id, tenant_name, tenant_time_zone),
        person!inner(user_id)`,
     )
@@ -45,9 +48,10 @@ export async function loadMemberships(
     .or(`membership_valid_to.is.null,membership_valid_to.gt.${instant}`)
     .returns<MembershipRow[]>();
   if (error) throw new Error(`Could not load memberships (${error.code})`);
-  return data.map(({ tenant, ...membership }) => ({
+  return data.map(({ tenant, unit, ...membership }) => ({
     ...membership,
     ...tenant,
+    unit_code: unit?.unit_code ?? null,
   }));
 }
 

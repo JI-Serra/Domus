@@ -10,7 +10,8 @@
     "./platform": "./src/platform/index.ts",
     "./auth": "./src/auth/index.ts",
     "./registry": "./src/registry/index.ts",
-    "./registry-ui": "./src/registry/ui.ts"
+    "./registry-ui": "./src/registry/ui.ts",
+    "./household": "./src/household/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

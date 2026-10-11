@@ -1,5 +1,6 @@
 import { Building2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { ButtonLink } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LogoutButton } from './logout-button';
 
@@ -14,7 +15,12 @@ export function NoMemberships() {
         icon={Building2}
         title={t('title')}
         description={t('description')}
-        action={<LogoutButton />}
+        action={
+          <div className="flex flex-wrap gap-3">
+            <ButtonLink href="/join">{t('joinAction')}</ButtonLink>
+            <LogoutButton />
+          </div>
+        }
       />
     </main>
   );

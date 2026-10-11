@@ -6,6 +6,7 @@ import {
   DoorOpen,
   FileUp,
   House,
+  HousePlus,
   KeyRound,
   LifeBuoy,
   MapPin,
@@ -22,6 +23,7 @@ import type { MembershipRole } from './active-context';
 
 export type NavItemId =
   | 'home'
+  | 'household'
   | 'access'
   | 'neighborhood'
   | 'account'
@@ -85,18 +87,22 @@ const registry = item('registry', '/registry', ClipboardList, true, {
 });
 
 const home = item('home', '/', House);
+/** "Mi hogar": members, vehicles, pets and delegations of the resident's unit (M02-F05). */
+const household = item('household', '/home', HousePlus);
 
 /** Placeholder navigation per role. Each href renders the "coming soon" page until its module is built. */
 const NAVIGATION: Record<MembershipRole, readonly NavItem[]> = {
-  // Resident tab bar: Inicio · Accesos · Barrio · Cuenta (DESIGN.md §A.6).
+  // Resident tab bar: Inicio · Mi hogar · Accesos · Barrio · Cuenta (DESIGN.md §A.6).
   unit_holder: [
     home,
+    household,
     item('access', '/access', KeyRound),
     item('neighborhood', '/neighborhood', MapPin),
     item('account', '/account', CircleUser),
   ],
   household_member: [
     home,
+    household,
     item('access', '/access', KeyRound),
     item('neighborhood', '/neighborhood', MapPin),
     item('account', '/account', CircleUser),
@@ -121,6 +127,9 @@ const NAVIGATION: Record<MembershipRole, readonly NavItem[]> = {
     item('support', '/platform/support', LifeBuoy),
   ],
 };
+
+/** Destinations that already have their own page and therefore no "coming soon" placeholder. */
+const BUILT_SECTIONS = new Set<NavItemId>(['household']);
 
 export function getNavigation(role: MembershipRole): readonly NavItem[] {
   return NAVIGATION[role];
@@ -168,7 +177,11 @@ export function getPlaceholderSlugs(): string[] {
   const slugs = new Set<string>();
   for (const entries of Object.values(NAVIGATION)) {
     for (const entry of entries)
-      if (entry.href !== '/' && entry.href.split('/').length === 2)
+      if (
+        entry.href !== '/' &&
+        entry.href.split('/').length === 2 &&
+        !BUILT_SECTIONS.has(entry.id)
+      )
         slugs.add(entry.href.slice(1));
   }
   return [...slugs];

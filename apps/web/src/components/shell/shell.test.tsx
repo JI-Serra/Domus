@@ -50,13 +50,20 @@ describe('navigation model', () => {
     },
   );
 
-  it('gives residents Inicio · Accesos · Barrio · Cuenta', () => {
-    expect(getTabBarItems('unit_holder').map((entry) => entry.id)).toEqual([
-      'home',
-      'access',
-      'neighborhood',
-      'account',
-    ]);
+  it('gives residents Inicio · Mi hogar · Accesos · Barrio · Cuenta', () => {
+    for (const role of ['unit_holder', 'household_member'] as const)
+      expect(getTabBarItems(role).map((entry) => entry.id)).toEqual([
+        'home',
+        'household',
+        'access',
+        'neighborhood',
+        'account',
+      ]);
+  });
+
+  it('does not pre-render a placeholder where Mi hogar has its own page', () => {
+    expect(getPlaceholderSlugs()).not.toContain('home');
+    expect(getNavItemBySlug('home')?.id).toBe('household');
   });
 
   it('keeps settings out of the admin tab bar but in the sidebar', () => {

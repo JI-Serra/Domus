@@ -55,16 +55,3 @@ export async function openRegistrySection(
   await link.first().click();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 }
-
-/** Follows an Auth email link and lands on the app origin under test (the Edge Function's app URL may differ). */
-export async function followAuthLink(
-  page: Page,
-  authLink: string,
-): Promise<void> {
-  const response = await fetch(authLink, { redirect: 'manual' });
-  const location = response.headers.get('location');
-  if (!location)
-    throw new Error(`The auth link did not redirect (${response.status})`);
-  const target = new URL(location);
-  await page.goto(`${target.pathname}${target.search}${target.hash}`);
-}

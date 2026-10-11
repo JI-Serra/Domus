@@ -10,10 +10,10 @@ import {
 import { extractAuthLink, waitForEmailTextSince } from './support/mailpit';
 import {
   createRegistryAdmin,
-  followAuthLink,
   uniqueSuffix,
 } from './support/registry';
 import type { RegistryAdmin } from './support/registry';
+import { openAuthLink } from './support/auth-links';
 import { createDisposableUser, signedInClient } from './support/supabase';
 
 test.describe
@@ -90,7 +90,7 @@ test.describe
     const invitee = await newContext(browser, testInfo);
     contexts.push(invitee);
     const inviteePage = await invitee.newPage();
-    await followAuthLink(
+    await openAuthLink(
       inviteePage,
       extractAuthLink(await waitForEmailTextSince(holderEmail(), since)),
     );
@@ -178,7 +178,7 @@ test.describe
       .getByRole('button', { name: 'Enviarme el enlace' })
       .click();
     await expect(memberPage.getByText('Revisá tu email')).toBeVisible();
-    await followAuthLink(
+    await openAuthLink(
       memberPage,
       extractAuthLink(await waitForEmailTextSince(member.email, since)),
     );
@@ -280,7 +280,7 @@ test.describe
     const context = await newContext(browser, testInfo);
     contexts.push(context);
     const applicant = await context.newPage();
-    await followAuthLink(
+    await openAuthLink(
       applicant,
       extractAuthLink(await waitForEmailTextSince(approved.email, since)),
     );

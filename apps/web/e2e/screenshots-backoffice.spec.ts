@@ -11,8 +11,8 @@ import {
   tenantIdByName,
 } from './support/database';
 import { PNG, enrollTotp, newContext, signIn } from './support/flows';
+import { openAuthLink } from './support/auth-links';
 import { extractAuthLink, waitForEmailText } from './support/mailpit';
-import { followAuthLink } from './support/registry';
 import {
   accessTokenFromCookies,
   clientWithToken,
@@ -175,7 +175,7 @@ test.describe.serial('backoffice screenshots', () => {
     const link = extractAuthLink(await waitForEmailText(adminEmail));
     const invited = await newContext(browser, testInfo);
     const page = await invited.newPage();
-    await followAuthLink(page, link);
+    await openAuthLink(page, link);
     await expect(
       page.getByRole('heading', { name: 'Invitación a un barrio' }),
     ).toBeVisible();
