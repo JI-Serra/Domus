@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
 // Node 25 ships an experimental global `localStorage` that shadows jsdom's and is unusable without
@@ -35,5 +35,8 @@ if (
     this.dispatchEvent(new Event('close'));
   };
 }
+
+// Async queries (`findBy*`, `waitFor`) wait up to 10 s: the machine is shared and jsdom is slow on big tables.
+configure({ asyncUtilTimeout: 10_000 });
 
 afterEach(cleanup);

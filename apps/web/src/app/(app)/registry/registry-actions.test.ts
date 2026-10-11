@@ -568,6 +568,23 @@ describe('invitations and join requests', () => {
     );
   });
 
+  it('keeps the request pending and explains an identity collision', async () => {
+    loadUnitSheet.mockResolvedValue(sheetWith());
+    registry.decideUnitJoinRequest.mockResolvedValue({
+      data: { status: 'identity_conflict' },
+      error: null,
+    });
+    expect(
+      await units.decideJoinRequestAction(
+        UNIT,
+        MEMBERSHIP,
+        true,
+        'household_member',
+      ),
+    ).toMatchObject({ formError: 'identityConflict' });
+    expect(registry.sendResidentInvitation).not.toHaveBeenCalled();
+  });
+
   it('rejects without sending anything, and ignores a request that is not on the unit', async () => {
     loadUnitSheet.mockResolvedValue(sheetWith());
     registry.decideUnitJoinRequest.mockResolvedValue({

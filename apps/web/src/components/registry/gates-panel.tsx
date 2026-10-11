@@ -402,13 +402,16 @@ export function GatesPanel({
                       {writable && device.device_status === 'active' ? (
                         <Button
                           variant="secondary"
+                          className="max-md:size-(--control-height) max-md:px-0"
                           icon={<Unplug {...iconProps} />}
                           aria-label={t('device.revokeNamed', {
                             name: device.device_name,
                           })}
                           onClick={() => setRevoking(device)}
                         >
-                          {t('device.revoke')}
+                          <span className="max-md:sr-only">
+                            {t('device.revoke')}
+                          </span>
                         </Button>
                       ) : null}
                     </td>

@@ -403,6 +403,9 @@ export async function decideJoinRequestAction(
     invitation_client_event_id?: string;
     person_id?: string;
   } | null;
+  // The person's identity collides with another recorded person: nothing was created, the request stays pending.
+  if (decision?.status === 'identity_conflict')
+    return formError('identityConflict');
   if (
     decision?.status !== 'approved' ||
     !isUuid(decision.invitation_client_event_id) ||

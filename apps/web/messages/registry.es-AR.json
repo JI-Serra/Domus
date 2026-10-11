@@ -25,6 +25,7 @@
       "plateTaken": "Esa patente ya está registrada en el barrio.",
       "personTaken": "Ya hay una persona con ese documento o email, con otros datos de identidad.",
       "duplicate": "Ese dato ya existe.",
+      "identityConflict": "El documento o el email de la solicitud coincide con otra persona ya registrada con otros datos. La solicitud sigue pendiente: revisá a esa persona en el padrón y volvé a intentar.",
       "deliveryFailed": "No pudimos enviar el email. La invitación quedó creada: volvé a intentar para reenviarla.",
       "inviteInvalid": "No se puede invitar a esta persona. Revisá que sea adulta y que el email sea el suyo.",
       "linkUnavailable": "Esa invitación ya se entregó. Revocala y creá una nueva.",

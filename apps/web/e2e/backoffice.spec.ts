@@ -20,6 +20,7 @@ import {
   signIn,
 } from './support/flows';
 import { extractAuthLink, waitForEmailText } from './support/mailpit';
+import { followAuthLink } from './support/registry';
 import {
   accessTokenFromCookies,
   clientWithToken,
@@ -184,7 +185,7 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
     inviteLink = extractAuthLink(await waitForEmailText(inviteeEmail));
     inviteeContext = await newContext(browser, testInfo);
     invitee = await inviteeContext.newPage();
-    await invitee.goto(inviteLink);
+    await followAuthLink(invitee, inviteLink);
     await expect(invitee).toHaveURL(
       /\/invitations\/accept\?token=[a-f0-9]{64}$/,
     );
@@ -241,7 +242,7 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
     // The email link works once: a second visit shows the expired-link message.
     const again = await newContext(browser, testInfo);
     const reused = await again.newPage();
-    await reused.goto(inviteLink);
+    await followAuthLink(reused, inviteLink);
     await expect(
       reused.getByText(
         'El enlace venció. Pedí una invitación nueva a quien te invitó.',
@@ -291,14 +292,15 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
         .getByLabel('Dirección'),
     ).toHaveValue('Avenida Nueva 456');
 
-    // D20: criteria only, with the "conteo disponible en H2" explanation behind an info button.
+    // D20 / M01-F03: the criteria and the resulting count (no units yet), explained behind an info button.
+    await expect(admin.getByTestId('billable-count')).toHaveText('0');
     await admin
       .getByRole('button', {
         name: 'Más información sobre las unidades facturables',
       })
       .click();
     await expect(
-      admin.getByText(/el conteo está disponible en H2/),
+      admin.getByText(/las unidades archivadas no cuentan/),
     ).toBeVisible();
     await admin.keyboard.press('Escape');
     await admin.locator('label', { hasText: 'Vacía' }).click();
@@ -632,7 +634,7 @@ test.describe.serial('platform backoffice (M01-F01..F04)', () => {
 
     const context = await newContext(browser, testInfo);
     const page = await context.newPage();
-    await page.goto(link);
+    await followAuthLink(page, link);
     await expect(
       page.getByText('Esta invitación no está disponible', { exact: true }),
     ).toBeVisible();
