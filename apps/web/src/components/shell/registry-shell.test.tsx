@@ -38,7 +38,7 @@ describe('Padrón navigation by permission', () => {
     (e) => e.id === 'registry',
   );
 
-  it('offers Unidades, Importar and Guardias with registry, and Puestos with guards', () => {
+  it('offers Unidades, Importar and Verificación with registry, and Guardias and Puestos with guards', () => {
     const registryOnly = filterByPermissions(
       registryEntry ? [registryEntry] : [],
       ['registry'],
@@ -47,14 +47,17 @@ describe('Padrón navigation by permission', () => {
       'registry',
       'registryUnits',
       'registryImport',
-      'registryGuards',
       'registryVerification',
     ]);
     const guardsOnly = filterByPermissions(
       registryEntry ? [registryEntry] : [],
       ['guards'],
     );
-    expect(ids(guardsOnly)).toEqual(['registry', 'registryGates']);
+    expect(ids(guardsOnly)).toEqual([
+      'registry',
+      'registryGuards',
+      'registryGates',
+    ]);
   });
 
   it('drops the whole section without either permission, and keeps entries that need none', () => {
@@ -69,7 +72,9 @@ describe('Padrón navigation by permission', () => {
     expect(firstAllowedChild(parent, ['registry', 'guards'])?.href).toBe(
       '/registry/units',
     );
-    expect(firstAllowedChild(parent, ['guards'])?.href).toBe('/registry/gates');
+    expect(firstAllowedChild(parent, ['guards'])?.href).toBe(
+      '/registry/guards',
+    );
     expect(firstAllowedChild(parent, [])).toBeUndefined();
     expect(firstAllowedChild(undefined, ['registry'])).toBeUndefined();
   });

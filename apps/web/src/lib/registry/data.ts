@@ -1,7 +1,11 @@
 import { isBillableUnit } from '@domus/domain/registry';
 import { UNIT_PAGE_SIZE } from '@domus/domain/registry-ui';
 import type { UnitListFilters } from '@domus/domain/registry-ui';
-import { billableUnitCount, unitSheet } from '@domus/supabase/registry';
+import {
+  billableUnitCount,
+  listTenantGuards,
+  unitSheet,
+} from '@domus/supabase/registry';
 import type { UnitSheet } from '@domus/supabase/registry';
 import type { Database } from '@domus/supabase/database.types';
 import type { DomusSupabaseClient as Client } from '@domus/supabase/types';
@@ -210,69 +214,50 @@ export interface GuardItem {
   gate_ids: string[];
 }
 
-interface GuardRow {
-  membership_id: string;
-  membership_status: GuardItem['membership_status'];
-  membership_valid_from: string;
-  membership_valid_to: string | null;
-  person: {
-    person_first_name: string;
-    person_last_name: string;
-    person_email: string | null;
-  };
-  gate_guard: { gate_id: string }[];
+export interface GuardInvitationRow {
+  invitation_id: string;
+  invitation_email: string;
+  invitation_first_name: string | null;
+  invitation_last_name: string | null;
+  invitation_status: Tables['invitation']['Row']['invitation_status'];
+  invitation_expires_at: string;
+  invitation_delivered_at: string | null;
 }
 
-/** Guard memberships of the barrio with the gates each one is assigned to. */
-export async function listGuards(
+interface TenantGuards {
+  guards?: (Omit<GuardItem, 'gate_ids'> & {
+    person_id: string;
+    gates: { gate_id: string; gate_name: string }[];
+  })[];
+  pending_invitations?: GuardInvitationRow[];
+}
+
+/**
+ * Guards of the barrio with the gates each is assigned to, and the guard invitations still pending
+ * (`list_tenant_guards`: for administrators with `guards`, who cannot read memberships or people directly).
+ */
+export async function loadTenantGuards(
   client: Client,
   tenantId: string,
-): Promise<GuardItem[]> {
-  const { data, error } = await client
-    .from('membership')
-    .select(
-      `membership_id, membership_status, membership_valid_from, membership_valid_to,
-       person!inner(person_first_name, person_last_name, person_email), gate_guard(gate_id)`,
-    )
-    .eq('tenant_id', tenantId)
-    .eq('membership_role', 'guard')
-    .order('membership_created_at', { ascending: true })
-    .returns<GuardRow[]>();
+): Promise<{ guards: GuardItem[]; invitations: GuardInvitationRow[] }> {
+  const { data, error } = await listTenantGuards(client, {
+    target_tenant_id: tenantId,
+  });
   if (error) throw new Error(`Could not load guards (${error.code})`);
-  return data.map(({ person, gate_guard, ...membership }) => ({
-    ...membership,
-    ...person,
-    gate_ids: gate_guard.map((assignment) => assignment.gate_id),
-  }));
-}
-
-export type GuardInvitationRow = Pick<
-  Tables['invitation']['Row'],
-  | 'invitation_id'
-  | 'invitation_email'
-  | 'invitation_first_name'
-  | 'invitation_last_name'
-  | 'invitation_status'
-  | 'invitation_expires_at'
->;
-
-/** Pending guard invitations of the barrio. */
-export async function listGuardInvitations(
-  client: Client,
-  tenantId: string,
-): Promise<GuardInvitationRow[]> {
-  const { data, error } = await client
-    .from('invitation')
-    .select(
-      'invitation_id, invitation_email, invitation_first_name, invitation_last_name, invitation_status, invitation_expires_at',
-    )
-    .eq('tenant_id', tenantId)
-    .eq('invitation_membership_role', 'guard')
-    .eq('invitation_status', 'pending')
-    .order('invitation_created_at', { ascending: false })
-    .limit(100);
-  if (error) throw new Error(`Could not load invitations (${error.code})`);
-  return data;
+  const body = (data ?? {}) as TenantGuards;
+  return {
+    guards: (body.guards ?? []).map((guard) => ({
+      membership_id: guard.membership_id,
+      membership_status: guard.membership_status,
+      membership_valid_from: guard.membership_valid_from,
+      membership_valid_to: guard.membership_valid_to,
+      person_first_name: guard.person_first_name,
+      person_last_name: guard.person_last_name,
+      person_email: guard.person_email,
+      gate_ids: guard.gates.map((gate) => gate.gate_id),
+    })),
+    invitations: body.pending_invitations ?? [],
+  };
 }
 
 export type GateRow = Pick<

@@ -133,7 +133,7 @@ describe('every registry action starts with the permission and the writable barr
     expect(registry.revokeDevice).not.toHaveBeenCalled();
   });
 
-  it('asks for the guards permission for gates and devices, and registry for guards', async () => {
+  it('asks for the guards permission for gates, devices and guards', async () => {
     registry.saveGate.mockResolvedValue({ data: GATE, error: null });
     await gates.saveGateAction(
       null,
@@ -148,7 +148,7 @@ describe('every registry action starts with the permission and the writable barr
     rpc.mockResolvedValue(ok);
     registry.assignGuardGate.mockResolvedValue(ok);
     await guards.deactivateGuardAction(MEMBERSHIP);
-    expect(getAdminScope).toHaveBeenLastCalledWith('registry');
+    expect(getAdminScope).toHaveBeenLastCalledWith('guards');
     await guards.assignGuardGateAction(MEMBERSHIP, GATE, true);
     expect(getAdminScope).toHaveBeenLastCalledWith('guards');
   });

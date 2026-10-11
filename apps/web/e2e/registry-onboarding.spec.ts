@@ -103,7 +103,7 @@ test.describe
     await inviteePage
       .getByRole('button', { name: 'Aceptar invitación' })
       .click();
-    await expect(inviteePage).toHaveURL(/\/$/);
+    await expect(inviteePage).toHaveURL(/\/(home)?$/);
     await expect(contextSelector(inviteePage)).toContainText(admin.tenantName);
     await expect(contextSelector(inviteePage)).toContainText('Titular');
 

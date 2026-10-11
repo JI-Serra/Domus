@@ -4,12 +4,11 @@ import {
   listBlockCodes,
   listDevices,
   listGates,
-  listGuardInvitations,
-  listGuards,
   listUnits,
   loadBillableCount,
   loadBillableCriteria,
   loadPeople,
+  loadTenantGuards,
   loadUnitSheet,
 } from './data';
 
@@ -230,41 +229,59 @@ describe('registry reads', () => {
     expect(none.tables.person).toBeUndefined();
   });
 
-  it('flattens guards with their gate assignments, and lists invitations, gates and devices', async () => {
-    const { client } = clientFor({
-      membership: {
-        data: [
-          {
-            membership_id: 'm1',
-            membership_status: 'active',
-            membership_valid_from: 'a',
-            membership_valid_to: null,
-            person: {
+  it('reads guards with their gates and pending invitations from one function, and lists gates and devices', async () => {
+    const { client } = clientFor(
+      {
+        gate: { data: [{ gate_id: 'g1' }], error: null },
+        device: { data: [{ device_id: 'd1' }], error: null },
+      },
+      {
+        data: {
+          guards: [
+            {
+              membership_id: 'm1',
+              person_id: 'p1',
               person_first_name: 'Gabi',
               person_last_name: 'G',
               person_email: null,
+              membership_status: 'active',
+              membership_valid_from: 'a',
+              membership_valid_to: null,
+              gates: [
+                { gate_id: 'g1', gate_name: 'Norte' },
+                { gate_id: 'g2', gate_name: 'Sur' },
+              ],
             },
-            gate_guard: [{ gate_id: 'g1' }, { gate_id: 'g2' }],
-          },
-        ],
+          ],
+          pending_invitations: [{ invitation_id: 'i1' }],
+        },
         error: null,
       },
-      invitation: { data: [{ invitation_id: 'i1' }], error: null },
-      gate: { data: [{ gate_id: 'g1' }], error: null },
-      device: { data: [{ device_id: 'd1' }], error: null },
-    });
-    expect(await listGuards(client, 't1')).toEqual([
+    );
+    const { guards, invitations } = await loadTenantGuards(client, 't1');
+    expect(guards).toEqual([
       expect.objectContaining({
         membership_id: 'm1',
         person_first_name: 'Gabi',
         gate_ids: ['g1', 'g2'],
       }),
     ]);
-    expect(await listGuardInvitations(client, 't1')).toEqual([
-      { invitation_id: 'i1' },
-    ]);
+    expect(guards[0]).not.toHaveProperty('gates');
+    expect(invitations).toEqual([{ invitation_id: 'i1' }]);
     expect(await listGates(client, 't1')).toEqual([{ gate_id: 'g1' }]);
     expect(await listDevices(client, 't1')).toEqual([{ device_id: 'd1' }]);
+  });
+
+  it('tolerates empty answers and fails loudly with the code only', async () => {
+    let { client } = clientFor({}, { data: {}, error: null });
+    expect(await loadTenantGuards(client, 't1')).toEqual({
+      guards: [],
+      invitations: [],
+    });
+    ({ client } = clientFor({}, { data: null, error: { code: '42501' } }));
+    await expect(loadTenantGuards(client, 't1')).rejects.toThrow(
+      'Could not load guards (42501)',
+    );
   });
 
   it('throws with the code (never the message) when a read fails', async () => {

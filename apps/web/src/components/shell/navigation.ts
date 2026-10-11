@@ -80,7 +80,7 @@ const registry = item('registry', '/registry', ClipboardList, true, {
       permissions: ['registry'],
     }),
     item('registryGuards', '/registry/guards', ShieldCheck, false, {
-      permissions: ['registry'],
+      permissions: ['guards'],
     }),
     item('registryGates', '/registry/gates', DoorOpen, false, {
       permissions: ['guards'],

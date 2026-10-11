@@ -356,9 +356,12 @@ describe('OnboardingCard', () => {
         'Solicitud aprobada. Enviamos la invitación por email.',
       ),
     ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Rechazar a Raúl Solicitante' }),
-    );
+    const reject = screen.getByRole('button', {
+      name: 'Rechazar a Raúl Solicitante',
+    });
+    // The approval is still settling: the buttons are disabled until it ends.
+    await waitFor(() => expect(reject).toBeEnabled());
+    fireEvent.click(reject);
     expect(actions.decideJoinRequestAction).toHaveBeenLastCalledWith(
       'u1',
       'q1',
@@ -456,9 +459,9 @@ describe('GuardsList', () => {
         invitation_last_name: 'Nuevo',
         invitation_status: 'pending' as const,
         invitation_expires_at: '2026-10-17T12:00:00Z',
+        invitation_delivered_at: null,
       },
     ],
-    canAssign: true,
     writable: true,
     timeZone: 'America/Argentina/Tucuman',
   };
@@ -481,10 +484,10 @@ describe('GuardsList', () => {
     );
   });
 
-  it('shows the assignments but cannot change them without the guards permission', () => {
-    renderWithIntl(<GuardsList {...props} canAssign={false} gates={[]} />);
-    expect(screen.queryByRole('switch')).toBeNull();
-    expect(screen.getByText('—')).toBeInTheDocument();
+  it('cannot change assignments when the barrio is read-only', () => {
+    renderWithIntl(<GuardsList {...props} writable={false} />);
+    expect(screen.getByRole('switch', { name: 'Norte' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Desactivar/ })).toBeNull();
   });
 
   it('deactivates after a confirmation that names the effect', async () => {

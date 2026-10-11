@@ -25,7 +25,7 @@ export async function inviteGuardAction(
   formData: FormData,
 ): Promise<PlatformFormState> {
   const values = textValues(formData, INVITE_FIELDS);
-  const checked = await writableScope('registry', values);
+  const checked = await writableScope('guards', values);
   if ('state' in checked) return checked.state;
   const { scope } = checked;
   if (!isUuid(values.client_event_id)) return formError('unknown', values);
@@ -58,7 +58,7 @@ export async function inviteGuardAction(
 export async function revokeGuardInvitationAction(
   invitationId: string,
 ): Promise<PlatformFormState> {
-  const checked = await writableScope('registry');
+  const checked = await writableScope('guards');
   if ('state' in checked) return checked.state;
   const { scope } = checked;
   if (!isUuid(invitationId)) return formError('denied');
@@ -69,7 +69,7 @@ export async function revokeGuardInvitationAction(
   return { status: 'success', notice: 'invitationRevoked' };
 }
 
-/** Assigns a guard to a gate, or takes them off it. Needs the `guards` permission. */
+/** Assigns a guard to a gate, or takes them off it.  */
 export async function assignGuardGateAction(
   membershipId: string,
   gateId: string,
@@ -95,7 +95,7 @@ export async function assignGuardGateAction(
 export async function deactivateGuardAction(
   membershipId: string,
 ): Promise<PlatformFormState> {
-  const checked = await writableScope('registry');
+  const checked = await writableScope('guards');
   if ('state' in checked) return checked.state;
   const { scope } = checked;
   if (!isUuid(membershipId)) return formError('denied');

@@ -67,10 +67,11 @@ test.describe.serial('guards, gates and devices (M02-F06/F07)', () => {
     await expect(registryPage).toHaveURL(/\/registry\/units$/);
     const gated = await registryPage.goto('/registry/gates');
     expect(gated?.status()).toBe(404);
-    // The guards page opens, but the gate switches are not there to change.
-    await registryPage.goto('/registry/guards');
+    // Guards belong to the `guards` permission now: the registry-only administrator does not get the page.
+    expect((await registryPage.goto('/registry/guards'))?.status()).toBe(404);
+    await registryPage.goto('/registry/verification');
     await expect(registryPage.getByRole('heading', { level: 1 })).toHaveText(
-      'Guardias',
+      'Pendientes de verificación',
     );
 
     const guardsContext = await newContext(browser, testInfo);
@@ -78,7 +79,28 @@ test.describe.serial('guards, gates and devices (M02-F06/F07)', () => {
     const guardsPage = await guardsContext.newPage();
     await loginWithPassword(guardsPage, guardsOnly.email);
     await guardsPage.goto('/registry');
-    await expect(guardsPage).toHaveURL(/\/registry\/gates$/);
+    await expect(guardsPage).toHaveURL(/\/registry\/guards$/);
+    // The guards-only administrator manages guards: list, invitations (with the email sent) and revocation.
+    const since = new Date(Date.now() - 2000);
+    const invited = `e2e.guard.only.${suffix}@domus.local`;
+    emails.push(invited);
+    await guardsPage.getByLabel('Nombre', { exact: true }).fill('Olga');
+    await guardsPage.getByLabel('Apellido', { exact: true }).fill('Solo');
+    await guardsPage.getByLabel('Email', { exact: true }).fill(invited);
+    await guardsPage.getByRole('button', { name: 'Enviar invitación' }).click();
+    await expect(guardsPage.getByText('Invitación enviada.')).toBeVisible();
+    await expect(
+      guardsPage.getByRole('region', { name: 'Invitaciones pendientes' }),
+    ).toContainText(invited);
+    expect(
+      extractAuthLink(await waitForEmailTextSince(invited, since)),
+    ).toContain('/auth/v1/verify');
+    await guardsPage
+      .getByRole('button', { name: `Revocar la invitación a ${invited}` })
+      .click();
+    await expect(
+      guardsPage.getByRole('region', { name: 'Invitaciones pendientes' }),
+    ).toHaveCount(0);
     expect((await guardsPage.goto('/registry/units'))?.status()).toBe(404);
     expect((await guardsPage.goto('/registry/import'))?.status()).toBe(404);
     // And the global search belongs to `registry` only.

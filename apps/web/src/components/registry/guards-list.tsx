@@ -41,8 +41,6 @@ export interface GuardsListProps {
   guards: readonly GuardItem[];
   gates: readonly GateRow[];
   invitations: readonly GuardInvitationRow[];
-  /** The administrator holds `guards`: they can assign gates. */
-  canAssign: boolean;
   writable: boolean;
   timeZone: string;
 }
@@ -52,7 +50,6 @@ export function GuardsList({
   guards,
   gates,
   invitations,
-  canAssign,
   writable,
   timeZone,
 }: GuardsListProps) {
@@ -165,7 +162,7 @@ export function GuardsList({
                             key={gate.gate_id}
                             label={gate.gate_name}
                             checked={guard.gate_ids.includes(gate.gate_id)}
-                            disabled={!canAssign || !writable || action.pending}
+                            disabled={!writable || action.pending}
                             onChange={(event) =>
                               action.run(() =>
                                 assignGuardGateAction(
